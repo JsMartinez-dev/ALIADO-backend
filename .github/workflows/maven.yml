@@ -1,5 +1,5 @@
 
-name: ALIADO - CI and Docker Publish
+name: ALIADO - CI/CD
 
 on:
   push:
@@ -124,3 +124,55 @@ jobs:
           echo "Image published successfully"
           echo "$ACR_LOGIN_SERVER/$IMAGE_NAME:v1"
           echo "$ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}"
+  # 3. CD
+  deploy:
+    name: Deploy to Azure Container Apps
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      RESOURCE_GROUP: rg-aliado-dev
+      CONTAINER_APP_NAME: aliado-backend
+      ACR_LOGIN_SERVER: acraliadodev.azurecr.io
+      IMAGE_NAME: aliado-backend
+
+    steps:
+      - name: Login to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy image to Azure Container Apps
+        run: |
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}" \
+            --output none
+
+      - name: Verify deployed image
+        run: |
+          EXPECTED_IMAGE="$ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}"
+
+          ACTUAL_IMAGE=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.template.containers[0].image" \
+            --output tsv)
+
+          echo "Expected image: $EXPECTED_IMAGE"
+          echo "Actual image: $ACTUAL_IMAGE"
+
+          if [ "$ACTUAL_IMAGE" != "$EXPECTED_IMAGE" ]; then
+            echo "::error::Deployed image does not match the commit SHA"
+            exit 1
+          fi
+
+          echo "Image configuration verified successfully"
