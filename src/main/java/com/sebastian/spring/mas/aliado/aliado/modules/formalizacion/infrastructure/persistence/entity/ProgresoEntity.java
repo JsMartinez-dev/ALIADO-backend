@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -17,6 +19,7 @@ public class ProgresoEntity {
     @Column(name = "ruta_id", nullable = false)
     private UUID rutaId;
     @Column(name = "valor_orientativo", nullable = false)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     private int valorOrientativo;
     @Column(name = "fecha_actualizacion", nullable = false)
     private OffsetDateTime fechaActualizacion;

@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -17,6 +19,7 @@ public class IdempotencyKeyEntity {
     @Column(name = "status_code", nullable = false)
     private int statusCode;
     @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
     private String respuesta;
     @Column(name = "fecha_creacion", nullable = false)
     private OffsetDateTime fechaCreacion;
