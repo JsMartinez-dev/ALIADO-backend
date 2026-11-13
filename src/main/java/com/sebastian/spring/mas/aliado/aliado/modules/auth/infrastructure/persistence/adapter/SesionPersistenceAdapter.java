@@ -24,7 +24,7 @@ public class SesionPersistenceAdapter implements SesionRepository {
     }
 
     @Override
-    public List<Sesion> activasDeUsuario(UUID usuarioId) {
+    public List<Sesion> sesionesActivasDeUsuario(UUID usuarioId) {
         return jpa.findByUsuarioIdAndEstado(usuarioId, EstadoSesion.ACTIVA.name()).stream()
                 .map(AuthPersistenceMapper::aDominio).toList();
     }

@@ -2,16 +2,21 @@ package com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.control
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.BaseController;
-import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.AuthService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.AuthService;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.RegistrarUsuarioCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ResultadoLogin;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.RegistrarUsuarioUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.IniciarSesionUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.CerrarSesionUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.SolicitarRecuperacionAccesoUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.ConfirmarRecuperacionAccesoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.AuthDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.mapper.AuthPresentationMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,22 +24,27 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController extends BaseController {
     private final AuthService authService;
-    private final SesionPort sesionService;
+    private final CerrarSesionUseCase cerrarSesionUseCase;
     private final RegistrarUsuarioUseCase registrarUsuarioUseCase;
+    private final IniciarSesionUseCase iniciarSesionUseCase;
+    private final SolicitarRecuperacionAccesoUseCase solicitarRecuperacionUseCase;
+    private final ConfirmarRecuperacionAccesoUseCase confirmarRecuperacionUseCase;
 
-    public AuthController(AuthService authService, SesionPort sesionService,
+    public AuthController(AuthService authService, CerrarSesionUseCase cerrarSesionUseCase,
                           RegistrarUsuarioUseCase registrarUsuarioUseCase,
+                          IniciarSesionUseCase iniciarSesionUseCase,
+                          SolicitarRecuperacionAccesoUseCase solicitarRecuperacionUseCase,
+                          ConfirmarRecuperacionAccesoUseCase confirmarRecuperacionUseCase,
                           ObjectMapper objectMapper, IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
         this.authService = authService;
-        this.sesionService = sesionService;
+        this.cerrarSesionUseCase = cerrarSesionUseCase;
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
+        this.iniciarSesionUseCase = iniciarSesionUseCase;
+        this.solicitarRecuperacionUseCase = solicitarRecuperacionUseCase;
+        this.confirmarRecuperacionUseCase = confirmarRecuperacionUseCase;
     }
 
-    @GetMapping("/hola")
-    public String hola(){
-        return "hola";
-    }
 
     @PostMapping("/registro")
     public ResponseEntity<?> registro(@Valid @RequestBody AuthDtos.RegistroRequest req,
@@ -46,37 +56,33 @@ public class AuthController extends BaseController {
     }
 
     @PostMapping("/login")
+    @SecurityRequirements
     public ResponseEntity<AuthDtos.LoginResponse> login(@Valid @RequestBody AuthDtos.LoginRequest req) {
-        AuthService.LoginResultado resultado = authService.login(req.email(), req.password());
-        return ResponseEntity.ok(new AuthDtos.LoginResponse(resultado.sessionToken(), resultado.rol()));
+        ResultadoLogin resultado = iniciarSesionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
+        return ResponseEntity.ok(AuthPresentationMapper.aResponse(resultado));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request) {
-        // Plan SPEC-01: 401 sin sesión activa (no 204 siempre).
         String auth = request.getHeader("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
             throw new BusinessException.Unauthorized("SESION_INVALIDA", "No hay sesión activa.");
         }
-        boolean cerrada = sesionService.cerrarSesion(auth.substring("Bearer ".length()).trim());
-        if (!cerrada) {
-            throw new BusinessException.Unauthorized("SESION_INVALIDA", "La sesión no existe o ya fue cerrada.");
-        }
+        cerrarSesionUseCase.ejecutar(auth.substring("Bearer ".length()).trim());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/recuperacion")
-    public ResponseEntity<AuthDtos.MensajeResponse> recuperacion(
-            @Valid @RequestBody AuthDtos.RecuperacionRequest req) {
-        authService.solicitarRecuperacion(req.email());
+    public ResponseEntity<AuthDtos.MensajeResponse> recuperacion(@Valid @RequestBody AuthDtos.RecuperacionRequest req) {
+        solicitarRecuperacionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
         return ResponseEntity.accepted().body(new AuthDtos.MensajeResponse(
-                "Si la cuenta existe, recibirás las instrucciones de recuperación."));
+                "Recibirás el código de recuperación."));
     }
 
     @PostMapping("/recuperacion/confirmar")
     public ResponseEntity<AuthDtos.MensajeResponse> confirmar(
             @Valid @RequestBody AuthDtos.ConfirmarRecuperacionRequest req) {
-        authService.confirmarRecuperacion(req.token(), req.nuevaPassword());
+        confirmarRecuperacionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
         return ResponseEntity.ok(new AuthDtos.MensajeResponse("Contraseña actualizada."));
     }
 }
