@@ -52,24 +52,6 @@ public class AuthService implements UsuarioConsultaPort, RolConsultaPort, Cuenta
         this.passwordEncoder = passwordEncoder;
     }
 
-    public record LoginResultado(String sessionToken, String rol) {}
-
-    @Transactional
-    public LoginResultado login(String email, String password) {
-        String correo = Usuario.normalizarEmail(email);
-        // FR-004: mensaje genérico, sin revelar si falló el correo o la contraseña.
-        Usuario usuario = usuarios.porEmail(correo)
-                .filter(u -> passwordEncoder.matches(password, u.passwordHash()))
-                .orElseThrow(() -> new BusinessException.Unauthorized(
-                        "CREDENCIALES_INVALIDAS", "Credenciales inválidas."));
-        if (usuario.bloqueado()) {
-            throw new BusinessException.Forbidden("CUENTA_BLOQUEADA",
-                    "La cuenta está bloqueada preventivamente.");
-        }
-        String token = sesionService.crearSesion(usuario.id());
-        return new LoginResultado(token, usuario.rol().name());
-    }
-
     @Transactional
     public void solicitarRecuperacion(String email) {
         String correo = Usuario.normalizarEmail(email);

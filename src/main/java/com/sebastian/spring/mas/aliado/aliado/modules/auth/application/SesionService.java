@@ -8,13 +8,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.Ses
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.UsuarioRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.OffsetDateTime;
-import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class SesionService implements SesionPort {
     private final SesionRepository sesiones;
     private final UsuarioRepository usuarios;
-    private final int ttlHoras;
 
-    public SesionService(SesionRepository sesiones, UsuarioRepository usuarios,
-                         @Value("${aliado.session.ttl-hours:24}") int ttlHoras) {
+    public SesionService(SesionRepository sesiones, UsuarioRepository usuarios) {
         this.sesiones = sesiones;
         this.usuarios = usuarios;
-        this.ttlHoras = ttlHoras;
     }
 
     public static String hashToken(String token) {
@@ -44,23 +38,6 @@ public class SesionService implements SesionPort {
         } catch (Exception ex) {
             throw new IllegalStateException("SHA-256 no disponible.", ex);
         }
-    }
-
-    /** Crea una sesión y devuelve el token en claro (única vez que existe fuera de BD). */
-    @Override
-    @Transactional
-    public String crearSesion(UUID usuarioId) {
-        OffsetDateTime ahora = OffsetDateTime.now();
-        for (Sesion anterior : sesiones.activasDeUsuario(usuarioId)) {
-            sesiones.guardar(anterior.cerrada(ahora));
-        }
-        byte[] aleatorio = new byte[32];
-        new SecureRandom().nextBytes(aleatorio);
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(aleatorio);
-        Sesion sesion = new Sesion(UUID.randomUUID(), usuarioId, hashToken(token),
-                ahora, ahora.plusHours(ttlHoras), null, EstadoSesion.ACTIVA);
-        sesiones.guardar(sesion);
-        return token;
     }
 
     /** Valida un token opaco: sesión activa, no vencida y cuenta no bloqueada. */
@@ -104,7 +81,7 @@ public class SesionService implements SesionPort {
     @Transactional
     public void cerrarSesionesDeUsuario(UUID usuarioId) {
         OffsetDateTime ahora = OffsetDateTime.now();
-        for (Sesion sesion : sesiones.activasDeUsuario(usuarioId)) {
+        for (Sesion sesion : sesiones.sesionesActivasDeUsuario(usuarioId)) {
             sesiones.guardar(sesion.cerrada(ahora));
         }
     }

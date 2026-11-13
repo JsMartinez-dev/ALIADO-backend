@@ -8,6 +8,7 @@ import java.util.UUID;
 public interface UsuarioRepository {
     Optional<Usuario> porId(UUID id);
     Optional<Usuario> porEmail(String emailNormalizado);
+    Optional<Usuario> porEmailParaIniciarSesion(String emailNormalizado);
     boolean existeEmail(String emailNormalizado);
     Usuario guardar(Usuario usuario);
     List<Usuario> buscarPorTexto(String texto);

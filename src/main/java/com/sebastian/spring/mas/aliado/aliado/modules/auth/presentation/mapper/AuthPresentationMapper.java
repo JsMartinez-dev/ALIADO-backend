@@ -2,6 +2,8 @@ package com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.mapper;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.RegistrarUsuarioCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.LoginCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ResultadoLogin;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ResultadoRegistro;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Rol;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.AuthDtos;
@@ -9,6 +11,14 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.Auth
 /** Conversión exclusiva entre contratos HTTP y objetos del caso de uso auth. */
 public final class AuthPresentationMapper {
     private AuthPresentationMapper() {}
+
+    public static LoginCommand aCommand(AuthDtos.LoginRequest request) {
+        return new LoginCommand(request.email(), request.password());
+    }
+
+    public static AuthDtos.LoginResponse aResponse(ResultadoLogin result) {
+        return new AuthDtos.LoginResponse(result.sessionToken(), result.rol());
+    }
 
     public static RegistrarUsuarioCommand aCommand(AuthDtos.RegistroRequest request) {
         try {

@@ -93,7 +93,8 @@ modulo/
 │   └── exception/             # Excepciones propias del dominio, cuando aplique
 │
 ├── application/
-│   ├── usecase/               # Contratos explícitos de casos de uso, si aportan claridad
+│   ├── usecase/                # Contratos explícitos de casos de uso, si aportan claridad
+|   ├── service/               # Implementacion de cada interfaz de caso de uso 
 │   ├── dto/                   # Commands, queries y resultados de aplicación; no DTO HTTP
 │   └── port/                  # Otros puertos de entrada/salida, especialmente integraciones externas
 │

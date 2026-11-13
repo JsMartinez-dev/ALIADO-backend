@@ -1,6 +1,10 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.auth.infrastructure.config;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HasheadorPassword;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.GeneradorTokenSesion;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HuellaToken;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.IniciarSesionService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.IniciarSesionUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.PerfilBasePort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.RegistrarUsuarioService;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.RegistrarConsentimientoService;
@@ -8,6 +12,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.R
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.RegistrarUsuarioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.ConsentimientoRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.UsuarioRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.SesionRepository;
+import java.time.Clock;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -17,6 +25,23 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Composición técnica de los casos de uso del módulo auth. */
 @Configuration
 public class AuthApplicationConfig {
+
+    @Bean
+    public IniciarSesionService iniciarSesionService(UsuarioRepository usuarios, SesionRepository sesiones,
+                                                     HasheadorPassword passwords, GeneradorTokenSesion generador,
+                                                     HuellaToken huella,
+                                                     @Value("${aliado.session.ttl-hours:24}") int ttlHoras) {
+        return new IniciarSesionService(usuarios, sesiones, passwords, generador, huella,
+                Clock.systemUTC(), Duration.ofHours(ttlHoras));
+    }
+
+    @Bean
+    @Primary
+    public IniciarSesionUseCase iniciarSesionUseCase(IniciarSesionService service,
+                                                     PlatformTransactionManager transactionManager) {
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        return command -> transaction.execute(status -> service.ejecutar(command));
+    }
 
     @Bean
     public RegistrarConsentimientoUseCase registrarConsentimientoUseCase(

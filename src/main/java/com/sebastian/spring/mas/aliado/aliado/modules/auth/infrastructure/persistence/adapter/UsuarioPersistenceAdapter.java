@@ -29,6 +29,11 @@ public class UsuarioPersistenceAdapter implements UsuarioRepository {
     }
 
     @Override
+    public Optional<Usuario> porEmailParaIniciarSesion(String emailNormalizado) {
+        return jpa.findByEmailParaIniciarSesion(emailNormalizado).map(AuthPersistenceMapper::aDominio);
+    }
+
+    @Override
     public boolean existeEmail(String emailNormalizado) {
         return jpa.existsByEmailIgnoreCase(emailNormalizado);
     }

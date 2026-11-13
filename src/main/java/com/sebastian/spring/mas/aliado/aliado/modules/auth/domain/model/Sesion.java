@@ -15,6 +15,7 @@ public record Sesion(UUID id, UUID usuarioId, String tokenHash, OffsetDateTime f
         return new Sesion(id, usuarioId, tokenHash, fechaInicio, fechaExpiracion, ahora, EstadoSesion.CERRADA);
     }
 
+
     public Sesion expirada() {
         return new Sesion(id, usuarioId, tokenHash, fechaInicio, fechaExpiracion, fechaCierre, EstadoSesion.EXPIRADA);
     }
