@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public interface SesionRepository {
     Optional<Sesion> porTokenHash(String tokenHash);
-    List<Sesion> activasDeUsuario(UUID usuarioId);
+    List<Sesion> sesionesActivasDeUsuario(UUID usuarioId);
     Sesion guardar(Sesion sesion);
 }

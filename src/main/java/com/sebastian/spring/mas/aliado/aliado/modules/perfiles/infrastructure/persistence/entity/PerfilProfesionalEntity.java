@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,6 +27,7 @@ public class PerfilProfesionalEntity {
     @Column(name = "prestador_id", nullable = false)
     private UUID prestadorId;
     @Column(name = "datos_generales")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String datosGenerales;
     @Column(name = "estado_exposicion_publica", nullable = false)
     private String estadoExposicionPublica;

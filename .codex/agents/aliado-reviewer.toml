@@ -1,5 +1,6 @@
 name = "aliado-reviewer"
 description = "Audita y refactoriza incrementalmente un caso de uso de ALIADO. Puede editar código dentro del alcance autorizado."
+model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 
 developer_instructions = """
