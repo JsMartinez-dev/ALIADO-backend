@@ -8,6 +8,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.Resul
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.RegistrarUsuarioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.IniciarSesionUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.CerrarSesionUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.SolicitarRecuperacionAccesoUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.ConfirmarRecuperacionAccesoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.AuthDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.mapper.AuthPresentationMapper;
@@ -25,16 +27,22 @@ public class AuthController extends BaseController {
     private final CerrarSesionUseCase cerrarSesionUseCase;
     private final RegistrarUsuarioUseCase registrarUsuarioUseCase;
     private final IniciarSesionUseCase iniciarSesionUseCase;
+    private final SolicitarRecuperacionAccesoUseCase solicitarRecuperacionUseCase;
+    private final ConfirmarRecuperacionAccesoUseCase confirmarRecuperacionUseCase;
 
     public AuthController(AuthService authService, CerrarSesionUseCase cerrarSesionUseCase,
                           RegistrarUsuarioUseCase registrarUsuarioUseCase,
                           IniciarSesionUseCase iniciarSesionUseCase,
+                          SolicitarRecuperacionAccesoUseCase solicitarRecuperacionUseCase,
+                          ConfirmarRecuperacionAccesoUseCase confirmarRecuperacionUseCase,
                           ObjectMapper objectMapper, IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
         this.authService = authService;
         this.cerrarSesionUseCase = cerrarSesionUseCase;
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.iniciarSesionUseCase = iniciarSesionUseCase;
+        this.solicitarRecuperacionUseCase = solicitarRecuperacionUseCase;
+        this.confirmarRecuperacionUseCase = confirmarRecuperacionUseCase;
     }
 
     @GetMapping("/hola")
@@ -69,17 +77,16 @@ public class AuthController extends BaseController {
     }
 
     @PostMapping("/recuperacion")
-    public ResponseEntity<AuthDtos.MensajeResponse> recuperacion(
-            @Valid @RequestBody AuthDtos.RecuperacionRequest req) {
-        authService.solicitarRecuperacion(req.email());
+    public ResponseEntity<AuthDtos.MensajeResponse> recuperacion(@Valid @RequestBody AuthDtos.RecuperacionRequest req) {
+        solicitarRecuperacionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
         return ResponseEntity.accepted().body(new AuthDtos.MensajeResponse(
-                "Si la cuenta existe, recibirás las instrucciones de recuperación."));
+                "Si la cuenta existe, recibirás el código de recuperación."));
     }
 
     @PostMapping("/recuperacion/confirmar")
     public ResponseEntity<AuthDtos.MensajeResponse> confirmar(
             @Valid @RequestBody AuthDtos.ConfirmarRecuperacionRequest req) {
-        authService.confirmarRecuperacion(req.token(), req.nuevaPassword());
+        confirmarRecuperacionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
         return ResponseEntity.ok(new AuthDtos.MensajeResponse("Contraseña actualizada."));
     }
 }

@@ -12,6 +12,11 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.R
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.RegistrarConsentimientoService;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.RegistrarConsentimientoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.RegistrarUsuarioUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.SolicitarRecuperacionAccesoService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.ConfirmarRecuperacionAccesoService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.AuthService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.SolicitarRecuperacionAccesoUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.ConfirmarRecuperacionAccesoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.ConsentimientoRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.UsuarioRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.SesionRepository;
@@ -27,6 +32,16 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Composición técnica de los casos de uso del módulo auth. */
 @Configuration
 public class AuthApplicationConfig {
+
+    @Bean
+    public SolicitarRecuperacionAccesoUseCase solicitarRecuperacionAccesoUseCase(AuthService authService) {
+        return new SolicitarRecuperacionAccesoService(authService);
+    }
+
+    @Bean
+    public ConfirmarRecuperacionAccesoUseCase confirmarRecuperacionAccesoUseCase(AuthService authService) {
+        return new ConfirmarRecuperacionAccesoService(authService);
+    }
 
     @Bean
     public CerrarSesionUseCase cerrarSesionUseCase(com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort sesiones,

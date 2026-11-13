@@ -5,6 +5,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.Regis
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.LoginCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ResultadoLogin;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ResultadoRegistro;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.SolicitarRecuperacionCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ConfirmarRecuperacionCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Rol;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.AuthDtos;
 
@@ -31,5 +33,13 @@ public final class AuthPresentationMapper {
 
     public static AuthDtos.RegistroResponse aResponse(ResultadoRegistro result) {
         return new AuthDtos.RegistroResponse(result.id(), result.email(), result.rol());
+    }
+
+    public static SolicitarRecuperacionCommand aCommand(AuthDtos.RecuperacionRequest request) {
+        return new SolicitarRecuperacionCommand(request.email());
+    }
+
+    public static ConfirmarRecuperacionCommand aCommand(AuthDtos.ConfirmarRecuperacionRequest request) {
+        return new ConfirmarRecuperacionCommand(request.token(), request.nuevaPassword());
     }
 }
