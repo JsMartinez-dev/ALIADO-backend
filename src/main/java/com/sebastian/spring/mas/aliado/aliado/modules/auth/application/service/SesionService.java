@@ -1,4 +1,4 @@
-package com.sebastian.spring.mas.aliado.aliado.modules.auth.application;
+package com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.EstadoSesion;
@@ -15,11 +15,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Sesiones opacas (SPEC-01, plan general 6.2): token aleatorio seguro, en BD solo su hash SHA-256.
- * Decisión documentada (la política de sesiones simultáneas no estaba definida):
- * al iniciar sesión se cierran las sesiones activas anteriores del usuario.
- */
+
 @Service
 public class SesionService implements SesionPort {
     private final SesionRepository sesiones;
@@ -68,13 +64,9 @@ public class SesionService implements SesionPort {
         if (token == null || token.isBlank()) {
             return false;
         }
-        return sesiones.porTokenHash(hashToken(token))
-                .filter(sesion -> sesion.estado() == EstadoSesion.ACTIVA)
-                .map(sesion -> {
-                    sesiones.guardar(sesion.cerrada(OffsetDateTime.now()));
-                    return true;
-                })
-                .orElse(false);
+        return sesiones.porTokenHash(hashToken(token)).filter(sesion -> sesion.estado() == EstadoSesion.ACTIVA)
+                .map(sesion -> {sesiones.guardar(sesion.cerrada(OffsetDateTime.now()));
+                    return true;}).orElse(false);
     }
 
     @Override

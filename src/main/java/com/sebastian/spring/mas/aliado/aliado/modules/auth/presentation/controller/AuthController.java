@@ -2,13 +2,13 @@ package com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.control
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.BaseController;
-import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.AuthService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.AuthService;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.RegistrarUsuarioCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.dto.ResultadoLogin;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.RegistrarUsuarioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.IniciarSesionUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.CerrarSesionUseCase;
 import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.AuthDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.mapper.AuthPresentationMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,17 +22,17 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController extends BaseController {
     private final AuthService authService;
-    private final SesionPort sesionService;
+    private final CerrarSesionUseCase cerrarSesionUseCase;
     private final RegistrarUsuarioUseCase registrarUsuarioUseCase;
     private final IniciarSesionUseCase iniciarSesionUseCase;
 
-    public AuthController(AuthService authService, SesionPort sesionService,
+    public AuthController(AuthService authService, CerrarSesionUseCase cerrarSesionUseCase,
                           RegistrarUsuarioUseCase registrarUsuarioUseCase,
                           IniciarSesionUseCase iniciarSesionUseCase,
                           ObjectMapper objectMapper, IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
         this.authService = authService;
-        this.sesionService = sesionService;
+        this.cerrarSesionUseCase = cerrarSesionUseCase;
         this.registrarUsuarioUseCase = registrarUsuarioUseCase;
         this.iniciarSesionUseCase = iniciarSesionUseCase;
     }
@@ -64,10 +64,7 @@ public class AuthController extends BaseController {
         if (auth == null || !auth.startsWith("Bearer ")) {
             throw new BusinessException.Unauthorized("SESION_INVALIDA", "No hay sesión activa.");
         }
-        boolean cerrada = sesionService.cerrarSesion(auth.substring("Bearer ".length()).trim());
-        if (!cerrada) {
-            throw new BusinessException.Unauthorized("SESION_INVALIDA", "La sesión no existe o ya fue cerrada.");
-        }
+        cerrarSesionUseCase.ejecutar(auth.substring("Bearer ".length()).trim());
         return ResponseEntity.noContent().build();
     }
 

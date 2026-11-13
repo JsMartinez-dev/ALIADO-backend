@@ -1,4 +1,4 @@
-package com.sebastian.spring.mas.aliado.aliado.modules.auth.application;
+package com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.CuentaBloqueoPort;

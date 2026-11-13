@@ -8,7 +8,7 @@
 | 2 | UC001 | Registro exitoso como Cliente | Base técnica de SPEC-01 | Finalizado |
 | 3 | UC002 | Registro exitoso como Prestador | Base técnica de SPEC-01 | Finalizado |
 | 4 | UC007 | Aceptación obligatoria de términos y tratamiento de datos | Base técnica de SPEC-01 | Finalizado |
-| 5 | UC003 | Inicio de sesión exitoso | UC001, UC002, UC007 | Refactorizado; compilación aprobada, verificación funcional pendiente |
-| 6 | UC004 | Cierre de sesión | UC001, UC002, UC007 | Pendiente |
+| 5 | UC003 | Inicio de sesión exitoso | UC001, UC002, UC007 | Finalizado |
+| 6 | UC004 | Cierre de sesión | UC001, UC002, UC007 | Refactorizado; compilación no verificada, verificación funcional pendiente |
 | 7 | UC005 | Recuperación de acceso | UC001, UC002, UC007 | Pendiente |
 | 8 | UC006 | Acceso restringido según rol | UC001, UC002, UC007 | Pendiente |

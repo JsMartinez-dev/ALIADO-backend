@@ -1,6 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.config;
 
-import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.AuthService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.AuthService;
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

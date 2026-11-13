@@ -4,6 +4,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.Hash
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.GeneradorTokenSesion;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HuellaToken;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.IniciarSesionService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.CerrarSesionService;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.CerrarSesionUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.IniciarSesionUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.PerfilBasePort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.RegistrarUsuarioService;
@@ -25,6 +27,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Composición técnica de los casos de uso del módulo auth. */
 @Configuration
 public class AuthApplicationConfig {
+
+    @Bean
+    public CerrarSesionUseCase cerrarSesionUseCase(com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort sesiones,
+                                                    PlatformTransactionManager transactionManager) {
+        CerrarSesionService service = new CerrarSesionService(sesiones);
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        return token -> transaction.executeWithoutResult(status -> service.ejecutar(token));
+    }
 
     @Bean
     public IniciarSesionService iniciarSesionService(UsuarioRepository usuarios, SesionRepository sesiones,

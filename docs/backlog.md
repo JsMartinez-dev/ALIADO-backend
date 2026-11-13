@@ -7,8 +7,8 @@ Fuente: `docs/specs/spec-01-autenticacion-registro-control-acceso.md`. El estado
 | UC001 | Registro exitoso como Cliente | Implementado y revisado previamente (backlog de revisión) |
 | UC002 | Registro exitoso como Prestador | Implementado y revisado previamente (backlog de revisión) |
 | UC007 | Aceptación obligatoria de términos y tratamiento de datos | Implementado y revisado previamente (backlog de revisión) |
-| UC003 | Inicio de sesión exitoso y rechazo genérico de credenciales inválidas | Refactorizado y compilado; verificación funcional pendiente |
-| UC004 | Cierre de sesión verificable | Pendiente de auditoría |
+| UC003 | Inicio de sesión exitoso y rechazo genérico de credenciales inválidas | Finalizado (verificado y aprobado por el usuario) |
+| UC004 | Cierre de sesión verificable | Refactorizado; compilación no verificada, verificación funcional pendiente |
 | UC005 | Recuperación de acceso con respuesta no reveladora | Pendiente de auditoría |
 | UC006 | Restricción de capacidades según rol | Pendiente de auditoría |
 
