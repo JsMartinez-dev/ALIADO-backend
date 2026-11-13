@@ -10,5 +10,5 @@
 | 4 | UC007 | Aceptación obligatoria de términos y tratamiento de datos | Base técnica de SPEC-01 | Finalizado |
 | 5 | UC003 | Inicio de sesión exitoso | UC001, UC002, UC007 | Finalizado |
 | 6 | UC004 | Cierre de sesión | UC001, UC002, UC007 | Finalizado |
-| 7 | UC005 | Recuperación de acceso | UC001, UC002, UC007 | Refactorización parcial: interfaces/DTO/mapeo creados; lógica sigue en AuthService; compilación no verificada |
+| 7 | UC005 | Recuperación de acceso | UC001, UC002, UC007 | Refactorizado para envío SMTP y código de 6 dígitos; compilación y pruebas no verificadas; Sandbox pendiente del usuario |
 | 8 | UC006 | Acceso restringido según rol | UC001, UC002, UC007 | Pendiente |

@@ -14,19 +14,15 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Usuario;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.ConsentimientoRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.TokenRecuperacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.UsuarioRepository;
-import java.security.SecureRandom;
 import java.time.OffsetDateTime;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 public class AuthService implements UsuarioConsultaPort, RolConsultaPort, CuentaBloqueoPort {
 
@@ -49,23 +45,8 @@ public class AuthService implements UsuarioConsultaPort, RolConsultaPort, Cuenta
     }
 
     @Transactional
-    public void solicitarRecuperacion(String email) {
-        String correo = Usuario.normalizarEmail(email);
-        usuarioRepository.porEmail(correo).ifPresent(usuario -> {
-            byte[] aleatorio = new byte[24];
-            new SecureRandom().nextBytes(aleatorio);
-            String codigo = HexFormat.of().formatHex(aleatorio);
-            OffsetDateTime ahora = OffsetDateTime.now();
-            tokenRecuperacionRepository.guardar(new TokenRecuperacion(UUID.randomUUID(), usuario.id(),
-                    SesionService.hashToken(codigo), ahora, ahora.plusMinutes(30), false));
-            log.warn("Código de recuperación (solo desarrollo, no exponer en API): {}", codigo);
-        });
-    }
-
-    @Transactional
     public void confirmarRecuperacion(String codigo, String nuevaPassword) {
         OffsetDateTime ahora = OffsetDateTime.now();
-        // Plan SPEC-01: 400 si el código no existe, 410 si fue usado o expiró.
         TokenRecuperacion token = tokenRecuperacionRepository.porCodigoHash(SesionService.hashToken(codigo))
                 .orElseThrow(() -> new BusinessException.BadRequest("TOKEN_INVALIDO",
                         "El código es inválido."));

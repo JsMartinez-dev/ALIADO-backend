@@ -45,10 +45,6 @@ public class AuthController extends BaseController {
         this.confirmarRecuperacionUseCase = confirmarRecuperacionUseCase;
     }
 
-    @GetMapping("/hola")
-    public String hola(){
-        return "hola";
-    }
 
     @PostMapping("/registro")
     public ResponseEntity<?> registro(@Valid @RequestBody AuthDtos.RegistroRequest req,
@@ -80,7 +76,7 @@ public class AuthController extends BaseController {
     public ResponseEntity<AuthDtos.MensajeResponse> recuperacion(@Valid @RequestBody AuthDtos.RecuperacionRequest req) {
         solicitarRecuperacionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
         return ResponseEntity.accepted().body(new AuthDtos.MensajeResponse(
-                "Si la cuenta existe, recibirás el código de recuperación."));
+                "Recibirás el código de recuperación."));
     }
 
     @PostMapping("/recuperacion/confirmar")
