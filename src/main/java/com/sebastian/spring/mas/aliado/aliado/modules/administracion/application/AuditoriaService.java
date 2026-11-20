@@ -12,19 +12,29 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuditoriaService implements AuditoriaPort {
 
-    private final AuditoriaRepository auditoria;
+  private final AuditoriaRepository auditoria;
 
-    public AuditoriaService(AuditoriaRepository auditoria) {
-        this.auditoria = auditoria;
-    }
+  public AuditoriaService(AuditoriaRepository auditoria) {
+    this.auditoria = auditoria;
+  }
 
-    @Override
-    @Transactional
-    public void registrar(UUID administradorId, String accion, String objetivoTipo, UUID objetivoId,
-                          String detalle) {
-        String detalleSeguro = detalle == null ? null
-                : detalle.replaceAll("(?i)(password|token|correo|email|direccion)[^,;]*", "[omitido]");
-        auditoria.guardar(new Auditoria(UUID.randomUUID(), administradorId, accion, objetivoTipo,
-                objetivoId, detalleSeguro, OffsetDateTime.now(), UUID.randomUUID().toString()));
-    }
+  @Override
+  @Transactional
+  public void registrar(
+      UUID administradorId, String accion, String objetivoTipo, UUID objetivoId, String detalle) {
+    String detalleSeguro =
+        detalle == null
+            ? null
+            : detalle.replaceAll("(?i)(password|token|correo|email|direccion)[^,;]*", "[omitido]");
+    auditoria.guardar(
+        new Auditoria(
+            UUID.randomUUID(),
+            administradorId,
+            accion,
+            objetivoTipo,
+            objetivoId,
+            detalleSeguro,
+            OffsetDateTime.now(),
+            UUID.randomUUID().toString()));
+  }
 }

@@ -2,6 +2,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -15,6 +16,7 @@ public final class PerfilProfesionalDtos {
 
     public record ExperienciaInput(String descripcion, LocalDate fechaInicio, LocalDate fechaFin) {}
 
+    @Schema(name = "CrearPerfilProfesionalRequest")
     public record CrearRequest(Map<String, Object> datosGenerales,
                                @NotNull List<UUID> categoriaIds,
                                @NotNull List<UUID> zonaIds,

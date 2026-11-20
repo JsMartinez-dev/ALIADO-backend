@@ -1,9 +1,10 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.modules.catalogo.application.port.CatalogoConsultaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.CompatibilidadPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.domain.model.Oportunidad;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.CalcularCompatibilidadService;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.CalcularCompatibilidadUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.domain.model.CriteriosCompatibilidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.PerfilVisibilidadPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.Visibilidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.PerfilProfesionalConsultaPort;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -27,48 +29,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class OportunidadService implements CompatibilidadPort {
     private final SolicitudConsultaPort solicitudes;
     private final PerfilProfesionalConsultaPort perfiles;
-    private final CatalogoConsultaPort catalogo;
     private final PerfilVisibilidadPort visibilidad;
+    private final CalcularCompatibilidadUseCase calcularCompatibilidad;
 
     public OportunidadService(SolicitudConsultaPort solicitudes, PerfilProfesionalConsultaPort perfiles,
                               CatalogoConsultaPort catalogo, PerfilVisibilidadPort visibilidad) {
+        this(solicitudes, perfiles, catalogo, visibilidad, new CalcularCompatibilidadService());
+    }
+
+    @Autowired
+    public OportunidadService(SolicitudConsultaPort solicitudes, PerfilProfesionalConsultaPort perfiles,
+                              CatalogoConsultaPort catalogo, PerfilVisibilidadPort visibilidad,
+                              CalcularCompatibilidadUseCase calcularCompatibilidad) {
         this.solicitudes = solicitudes;
         this.perfiles = perfiles;
-        this.catalogo = catalogo;
         this.visibilidad = visibilidad;
-    }
-
-    @Transactional(readOnly = true)
-    public List<Oportunidad> listar(UUID prestadorId, String categoriaFiltro, String urgenciaFiltro) {
-        PerfilProfesional perfil = perfiles.porPrestadorId(prestadorId).orElse(null);
-        if (perfil == null || perfil.estadoExposicion() != EstadoExposicion.PUBLICO) {
-            return List.of();
-        }
-        UUID categoriaId = null;
-        if (categoriaFiltro != null && !categoriaFiltro.isBlank()) {
-            categoriaId = resolverCategoria(categoriaFiltro);
-            if (categoriaId == null) {
-                return List.of();
-            }
-        }
-        UUID categoriaBuscada = categoriaId;
-        return solicitudes.publicadas().stream()
-                .filter(s -> compatible(s, perfil))
-                .filter(s -> categoriaBuscada == null || s.categoriaId().equals(categoriaBuscada))
-                .filter(s -> urgenciaFiltro == null || urgenciaFiltro.isBlank()
-                        || (s.urgencia() != null && s.urgencia().name().equalsIgnoreCase(urgenciaFiltro)))
-                .map(this::aOportunidad).toList();
-    }
-
-    @Transactional(readOnly = true)
-    public Oportunidad detalle(UUID solicitudId, UUID prestadorId) {
-        PerfilProfesional perfil = perfiles.porPrestadorId(prestadorId).orElse(null);
-        Solicitud solicitud = solicitudes.porId(solicitudId).orElse(null);
-        if (perfil == null || solicitud == null || !compatible(solicitud, perfil)) {
-            // 404 unificado, sin distinguir inexistente de no compatible (FR-037).
-            throw new BusinessException.NotFound("OPORTUNIDAD_NO_ENCONTRADA", "Oportunidad no encontrada.");
-        }
-        return aOportunidad(solicitud);
+        this.calcularCompatibilidad = calcularCompatibilidad;
     }
 
     @Override
@@ -92,39 +68,13 @@ public class OportunidadService implements CompatibilidadPort {
     }
 
     private boolean compatible(Solicitud solicitud, PerfilProfesional perfil) {
-        if (solicitud.estado() != EstadoSolicitud.PUBLICADA) {
-            return false;
-        }
-        if (perfil.estadoExposicion() != EstadoExposicion.PUBLICO) {
-            return false;
-        }
-        // SPEC-02 FR-004: un perfil PRIVADO nunca se ofrece ni se notifica como compatible.
-        if (visibilidad.preferenciaDe(perfil.prestadorId()) == Visibilidad.PRIVADO) {
-            return false;
-        }
-        if (!perfil.categoriaIds().contains(solicitud.categoriaId())) {
-            return false;
-        }
-        if (!perfil.zonaIds().contains(solicitud.zonaId())) {
-            return false;
-        }
-        // P-02: la solicitud no define ventana temporal; la disponibilidad es tener bloques declarados.
-        return !perfil.disponibilidades().isEmpty();
+        boolean publicada = solicitud.estado() == EstadoSolicitud.PUBLICADA;
+        boolean publico = perfil.estadoExposicion() == EstadoExposicion.PUBLICO;
+        boolean privado = publicada && publico
+                && visibilidad.preferenciaDe(perfil.prestadorId()) == Visibilidad.PRIVADO;
+        return calcularCompatibilidad.ejecutar(new CriteriosCompatibilidad(publicada, publico, privado,
+                solicitud.categoriaId(), solicitud.zonaId(), perfil.categoriaIds(), perfil.zonaIds(),
+                !perfil.disponibilidades().isEmpty()));
     }
 
-    private UUID resolverCategoria(String filtro) {
-        try {
-            return UUID.fromString(filtro.trim());
-        } catch (IllegalArgumentException ex) {
-            return catalogo.categoriaPorNombre(filtro.trim()).map(c -> c.id()).orElse(null);
-        }
-    }
-
-    private Oportunidad aOportunidad(Solicitud s) {
-        String categoria = catalogo.categoriaPorId(s.categoriaId()).map(c -> c.nombre()).orElse(s.categoriaId().toString());
-        String zona = catalogo.zonaPorId(s.zonaId()).map(z -> z.nombre()).orElse(s.zonaId().toString());
-        return new Oportunidad(s.id(), categoria, zona,
-                s.urgencia() == null ? null : s.urgencia().name(), s.descripcion(), s.fechaCreacion(),
-                s.fotos().stream().map(f -> f.archivoKey()).toList());
-    }
 }

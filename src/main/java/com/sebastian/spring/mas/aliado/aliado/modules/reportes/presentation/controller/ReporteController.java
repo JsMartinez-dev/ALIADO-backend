@@ -2,8 +2,9 @@ package com.sebastian.spring.mas.aliado.aliado.modules.reportes.presentation.con
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
-import com.sebastian.spring.mas.aliado.aliado.modules.reportes.application.ReporteService;
-import com.sebastian.spring.mas.aliado.aliado.modules.reportes.domain.model.Reporte;
+import com.sebastian.spring.mas.aliado.aliado.modules.reportes.application.usecase.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.reportes.application.dto.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.reportes.presentation.mapper.ReportePresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.reportes.presentation.dto.ReporteDtos;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -24,31 +25,31 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1")
 public class ReporteController {
-    private final ReporteService service;
 
-    public ReporteController(ReporteService service) {
-        this.service = service;
-    }
-
-    private ReporteDtos.ReporteResponse aRespuesta(Reporte r) {
-        return new ReporteDtos.ReporteResponse(r.id(), r.tipo().name(), r.objetivoId(), r.motivo(),
-                r.estado().name(), r.fechaCreacion(),
-                service.evidenciasDe(r.id(), r.reportanteId()).stream()
-                        .map(e -> new ReporteDtos.EvidenciaResponse(e.id(), e.archivoKey(), e.tipoContenido()))
-                        .toList());
+    private final ReportarUsuarioUseCase usuarioUseCase;
+    private final ReportarServicioUseCase servicioUseCase;
+    private final AdjuntarEvidenciaReporteUseCase evidenciaUseCase;
+    private final ConsultarReportePropioUseCase consultaUseCase;
+    private final DescargarEvidenciaPropiaUseCase descargaUseCase;
+    public ReporteController(ReportarUsuarioUseCase usuarioUseCase, ReportarServicioUseCase servicioUseCase, AdjuntarEvidenciaReporteUseCase evidenciaUseCase, ConsultarReportePropioUseCase consultaUseCase, DescargarEvidenciaPropiaUseCase descargaUseCase) {
+        this.usuarioUseCase = usuarioUseCase;
+        this.servicioUseCase = servicioUseCase;
+        this.evidenciaUseCase = evidenciaUseCase;
+        this.consultaUseCase = consultaUseCase;
+        this.descargaUseCase = descargaUseCase;
     }
 
     @PostMapping("/usuarios/{id}/reportes")
     public ResponseEntity<ReporteDtos.ReporteIdResponse> reportarUsuario(@PathVariable UUID id,
             @Valid @RequestBody ReporteDtos.CrearRequest req) {
-        UUID reporteId = service.crearReporteUsuario(id, SecurityUtils.actual().id(), req.motivo());
+        UUID reporteId = usuarioUseCase.ejecutar(ReportePresentationMapper.aUsuarioCommand(id, SecurityUtils.actual().id(), req));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ReporteDtos.ReporteIdResponse(reporteId));
     }
 
     @PostMapping("/servicios/{id}/reportes")
     public ResponseEntity<ReporteDtos.ReporteIdResponse> reportarServicio(@PathVariable UUID id,
             @Valid @RequestBody ReporteDtos.CrearRequest req) {
-        UUID reporteId = service.crearReporteServicio(id, SecurityUtils.actual().id(), req.motivo());
+        UUID reporteId = servicioUseCase.ejecutar(ReportePresentationMapper.aServicioCommand(id, SecurityUtils.actual().id(), req));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ReporteDtos.ReporteIdResponse(reporteId));
     }
 
@@ -61,15 +62,14 @@ public class ReporteController {
         } catch (IOException ex) {
             throw new BusinessException.BadRequest("ARCHIVO_INVALIDO", "No se pudo leer el archivo enviado.");
         }
-        var evidencia = service.agregarEvidencia(id, SecurityUtils.actual().id(),
-                archivo.getOriginalFilename(), archivo.getContentType(), contenido);
+        var evidencia = evidenciaUseCase.ejecutar(new AdjuntarEvidenciaReporteCommand(id, SecurityUtils.actual().id(), archivo.getOriginalFilename(), archivo.getContentType(), contenido));
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 new ReporteDtos.EvidenciaResponse(evidencia.id(), evidencia.archivoKey(), evidencia.tipoContenido()));
     }
 
     @GetMapping("/reportes/{id}/evidencias/{evidenciaId}")
     public ResponseEntity<byte[]> descargarEvidencia(@PathVariable UUID id, @PathVariable UUID evidenciaId) {
-        var contenido = service.descargarEvidenciaPropia(id, evidenciaId, SecurityUtils.actual().id());
+        var contenido = descargaUseCase.ejecutar(new DescargarEvidenciaPropiaCommand(id, evidenciaId, SecurityUtils.actual().id()));
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contenido.tipoContenido()))
                 .body(contenido.contenido());
@@ -77,7 +77,7 @@ public class ReporteController {
 
     @GetMapping("/reportes/mios/{id}")
     public ResponseEntity<ReporteDtos.ReporteResponse> miReporte(@PathVariable UUID id) {
-        Reporte reporte = service.miReporte(id, SecurityUtils.actual().id());
-        return ResponseEntity.ok(aRespuesta(reporte));
+        var reporte = consultaUseCase.ejecutar(new ConsultarReportePropioCommand(id, SecurityUtils.actual().id()));
+        return ResponseEntity.ok(ReportePresentationMapper.aResponse(reporte));
     }
 }

@@ -28,6 +28,11 @@ public class ReportePersistenceAdapter implements ReporteRepository, EvidenciaRe
     }
 
     @Override
+    public Optional<Reporte> porIdParaActualizar(UUID id) {
+        return reportes.findByIdForUpdate(id).map(ReportePersistenceMapper::aDominio);
+    }
+
+    @Override
     public Optional<Reporte> abiertoEquivalente(UUID reportanteId, String tipo, UUID objetivoId, String motivo) {
         return reportes.findAbiertosEquivalentes(reportanteId, tipo, motivo).stream()
                 .map(ReportePersistenceMapper::aDominio)

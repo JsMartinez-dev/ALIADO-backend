@@ -1,10 +1,8 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter;
 
 import com.sebastian.spring.mas.aliado.aliado.common.events.Eventos;
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
-import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.CompatibilidadPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.DetectarNuevaOportunidadUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.usecase.NotificarPropuestaRecibidaUseCase;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -14,41 +12,35 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class NotificacionEventListener {
-    private final NotificacionPort notificaciones;
-    private final CompatibilidadPort compatibilidad;
+    private final com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarAceptacionPropuestaUseCase aceptacion;
+    private final com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarCambioEstadoServicioUseCase cambio;
+    private final NotificarPropuestaRecibidaUseCase notificarPropuesta;
+    private final DetectarNuevaOportunidadUseCase detectarNuevaOportunidad;
 
-    public NotificacionEventListener(NotificacionPort notificaciones, CompatibilidadPort compatibilidad) {
-        this.notificaciones = notificaciones;
-        this.compatibilidad = compatibilidad;
+    public NotificacionEventListener(com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarAceptacionPropuestaUseCase aceptacion, com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarCambioEstadoServicioUseCase cambio, DetectarNuevaOportunidadUseCase detectarNuevaOportunidad, NotificarPropuestaRecibidaUseCase notificarPropuesta) {
+        this.aceptacion = aceptacion;
+        this.cambio = cambio;
+        this.notificarPropuesta = notificarPropuesta;
+        this.detectarNuevaOportunidad = detectarNuevaOportunidad;
     }
 
     @EventListener
     public void alPublicarSolicitud(Eventos.SolicitudPublicada evento) {
-        for (var prestadorId : compatibilidad.prestadoresCompatibles(evento.solicitudId())) {
-            notificaciones.registrar(TipoNotificacion.NUEVA_OPORTUNIDAD, evento.solicitudId(), prestadorId, 1,
-                    "Nueva oportunidad compatible con tu perfil.", Canal.PUSH);
-        }
+        detectarNuevaOportunidad.ejecutar(evento.solicitudId());
     }
 
     @EventListener
     public void alCrearPropuesta(Eventos.PropuestaCreada evento) {
-        notificaciones.registrar(TipoNotificacion.PROPUESTA_RECIBIDA, evento.propuestaId(), evento.clienteId(), 1,
-                "Recibiste una nueva propuesta para tu solicitud.", Canal.PUSH);
+        notificarPropuesta.ejecutar(evento.propuestaId());
     }
 
     @EventListener
     public void alAceptarPropuesta(Eventos.PropuestaAceptada evento) {
-        notificaciones.registrar(TipoNotificacion.ACEPTACION_PROPUESTA, evento.servicioId(), evento.prestadorId(), 1,
-                "Tu propuesta fue aceptada. El servicio está contratado.", Canal.PUSH);
+        aceptacion.ejecutar(evento);
     }
 
     @EventListener
     public void alCambiarEstadoServicio(Eventos.ServicioEstadoCambiado evento) {
-        // La contraparte es quien no ejecutó la transición.
-        var destinatario = evento.actorId().equals(evento.clienteId())
-                ? evento.prestadorId() : evento.clienteId();
-        notificaciones.registrar(TipoNotificacion.CAMBIO_ESTADO_SERVICIO, evento.servicioId(), destinatario,
-                evento.version(),
-                "El servicio cambió de estado a " + evento.estadoNuevo() + ".", Canal.PUSH);
+        cambio.ejecutar(evento);
     }
 }

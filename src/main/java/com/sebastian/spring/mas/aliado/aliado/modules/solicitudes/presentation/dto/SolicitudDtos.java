@@ -1,5 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.presentation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 public final class SolicitudDtos {
     private SolicitudDtos() {}
 
+    @Schema(name = "CrearSolicitudRequest")
     public record CrearRequest(
             UUID categoriaId,
             String descripcion,

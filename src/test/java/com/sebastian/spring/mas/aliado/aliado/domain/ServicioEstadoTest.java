@@ -1,6 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.domain;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.exception.TransicionServicioInvalidaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.model.EstadoServicio;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.model.ServicioContratado;
 import java.time.OffsetDateTime;
@@ -32,19 +32,19 @@ class ServicioEstadoTest {
 
     @Test
     void terminadoExigeEnEjecucion() {
-        assertThrows(BusinessException.Conflict.class, () -> servicio(EstadoServicio.CONTRATADO)
+        assertThrows(TransicionServicioInvalidaException.class, () -> servicio(EstadoServicio.CONTRATADO)
                 .transitarA(EstadoServicio.TERMINADO, UUID.randomUUID(), OffsetDateTime.now()));
     }
 
     @Test
     void finalizadoEsTerminal() {
-        assertThrows(BusinessException.Conflict.class, () -> servicio(EstadoServicio.FINALIZADO)
+        assertThrows(TransicionServicioInvalidaException.class, () -> servicio(EstadoServicio.FINALIZADO)
                 .transitarA(EstadoServicio.CANCELADO, UUID.randomUUID(), OffsetDateTime.now()));
     }
 
     @Test
     void canceladoEsTerminal() {
-        assertThrows(BusinessException.Conflict.class, () -> servicio(EstadoServicio.CANCELADO)
+        assertThrows(TransicionServicioInvalidaException.class, () -> servicio(EstadoServicio.CANCELADO)
                 .transitarA(EstadoServicio.EN_EJECUCION, UUID.randomUUID(), OffsetDateTime.now()));
     }
 

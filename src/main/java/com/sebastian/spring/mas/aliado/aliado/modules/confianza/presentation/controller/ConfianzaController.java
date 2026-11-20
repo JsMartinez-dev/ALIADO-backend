@@ -2,8 +2,9 @@ package com.sebastian.spring.mas.aliado.aliado.modules.confianza.presentation.co
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
-import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.ConfianzaService;
-import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.VerificacionService;
+import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.usecase.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.dto.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.confianza.presentation.mapper.ConfianzaPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.presentation.dto.ConfianzaDtos;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -26,40 +27,48 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1")
 public class ConfianzaController {
-    private final ConfianzaService service;
-    private final VerificacionService verificaciones;
 
-    public ConfianzaController(ConfianzaService service, VerificacionService verificaciones) {
-        this.service = service;
-        this.verificaciones = verificaciones;
+    private final CalificarServicioUseCase calificarUseCase;
+    private final AgregarResenaUseCase resenaUseCase;
+    private final ConsultarConfianzaUseCase confianzaUseCase;
+    private final ConsultarResenasPublicasUseCase resenasUseCase;
+    private final SolicitarVerificacionUseCase verificacionUseCase;
+    private final ConsultarVerificacionPropiaUseCase miVerificacionUseCase;
+    private final ReportarResenaUseCase reporteUseCase;
+    public ConfianzaController(CalificarServicioUseCase calificarUseCase, AgregarResenaUseCase resenaUseCase, ConsultarConfianzaUseCase confianzaUseCase, ConsultarResenasPublicasUseCase resenasUseCase, SolicitarVerificacionUseCase verificacionUseCase, ConsultarVerificacionPropiaUseCase miVerificacionUseCase, ReportarResenaUseCase reporteUseCase) {
+        this.calificarUseCase = calificarUseCase;
+        this.resenaUseCase = resenaUseCase;
+        this.confianzaUseCase = confianzaUseCase;
+        this.resenasUseCase = resenasUseCase;
+        this.verificacionUseCase = verificacionUseCase;
+        this.miVerificacionUseCase = miVerificacionUseCase;
+        this.reporteUseCase = reporteUseCase;
     }
 
     @PostMapping("/servicios/{servicioId}/calificacion")
     public ResponseEntity<ConfianzaDtos.CalificacionResponse> calificar(@PathVariable UUID servicioId,
             @Valid @RequestBody ConfianzaDtos.CalificarRequest req) {
-        var calificacion = service.calificar(servicioId, SecurityUtils.actual().id(), req.valor());
-        var confianza = service.confianzaDe(calificacion.prestadorId());
+        var calificacion = calificarUseCase.ejecutar(ConfianzaPresentationMapper.aCommand(servicioId, SecurityUtils.actual().id(), req));
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                new ConfianzaDtos.CalificacionResponse(calificacion.id(), confianza.reputacion().valor()));
+                ConfianzaPresentationMapper.aResponse(calificacion));
     }
 
     @PostMapping("/calificaciones/{id}/resena")
     public ResponseEntity<ConfianzaDtos.ResenaResponse> resena(@PathVariable UUID id,
             @Valid @RequestBody ConfianzaDtos.ResenaRequest req) {
-        var resena = service.agregarResena(id, SecurityUtils.actual().id(), req.texto());
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ConfianzaDtos.ResenaResponse(resena.id()));
+        var resena = resenaUseCase.ejecutar(ConfianzaPresentationMapper.aCommand(id, SecurityUtils.actual().id(), req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ConfianzaDtos.ResenaResponse(resena));
     }
 
     @GetMapping("/prestadores/{prestadorId}/confianza")
     public ResponseEntity<ConfianzaDtos.ConfianzaResponse> confianza(@PathVariable UUID prestadorId) {
-        var info = service.confianzaDe(prestadorId);
-        return ResponseEntity.ok(new ConfianzaDtos.ConfianzaResponse(
-                info.reputacion().valor(), info.reputacion().cantidad(), info.nivelVerificacion().name()));
+        var info = confianzaUseCase.ejecutar(new ConsultarConfianzaCommand(prestadorId));
+        return ResponseEntity.ok(ConfianzaPresentationMapper.aResponse(info));
     }
 
     @GetMapping("/prestadores/{prestadorId}/resenas")
     public ResponseEntity<List<ConfianzaDtos.ResenaPublicaResponse>> resenas(@PathVariable UUID prestadorId) {
-        return ResponseEntity.ok(service.resenasVisiblesDe(prestadorId).stream()
+        return ResponseEntity.ok(resenasUseCase.ejecutar(new ConsultarResenasPublicasCommand(prestadorId)).stream()
                 .map(r -> new ConfianzaDtos.ResenaPublicaResponse(r.id(), r.valor(), r.texto(),
                         r.fechaCreacion()))
                 .toList());
@@ -69,7 +78,7 @@ public class ConfianzaController {
     public ResponseEntity<ConfianzaDtos.VerificacionResponse> solicitarVerificacion(
             @RequestPart("documentos") List<MultipartFile> documentos) {
         SecurityUtils.exigirRol("PRESTADOR");
-        List<VerificacionService.ArchivoSubido> archivos = new ArrayList<>();
+        List<ArchivoVerificacion> archivos = new ArrayList<>();
         for (MultipartFile archivo : documentos) {
             byte[] contenido;
             try {
@@ -78,25 +87,25 @@ public class ConfianzaController {
                 throw new BusinessException.BadRequest("ARCHIVO_INVALIDO",
                         "No se pudo leer el archivo enviado.");
             }
-            archivos.add(new VerificacionService.ArchivoSubido(archivo.getOriginalFilename(),
+            archivos.add(new ArchivoVerificacion(archivo.getOriginalFilename(),
                     archivo.getContentType(), contenido));
         }
-        var solicitud = verificaciones.solicitarVerificacion(SecurityUtils.actual().id(), archivos);
+        var solicitud = verificacionUseCase.ejecutar(new SolicitarVerificacionCommand(SecurityUtils.actual().id(), archivos));
         return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body(new ConfianzaDtos.VerificacionResponse(solicitud.id(), solicitud.estado().name()));
+                .body(new ConfianzaDtos.VerificacionResponse(solicitud.id(), solicitud.estado()));
     }
 
     @GetMapping("/verificaciones/mia")
     public ResponseEntity<ConfianzaDtos.VerificacionResponse> miVerificacion() {
         SecurityUtils.exigirRol("PRESTADOR");
-        var solicitud = verificaciones.miVerificacion(SecurityUtils.actual().id());
-        return ResponseEntity.ok(new ConfianzaDtos.VerificacionResponse(solicitud.id(), solicitud.estado().name()));
+        var solicitud = miVerificacionUseCase.ejecutar(new ConsultarVerificacionPropiaCommand(SecurityUtils.actual().id()));
+        return ResponseEntity.ok(new ConfianzaDtos.VerificacionResponse(solicitud.id(), solicitud.estado()));
     }
 
     @PostMapping("/resenas/{id}/reportes")
     public ResponseEntity<ConfianzaDtos.ReporteResponse> reportarResena(@PathVariable UUID id,
             @Valid @RequestBody ConfianzaDtos.ReporteRequest req) {
-        UUID reporteId = service.reportarResena(id, SecurityUtils.actual().id(), req.motivo());
+        UUID reporteId = reporteUseCase.ejecutar(ConfianzaPresentationMapper.aCommand(id, SecurityUtils.actual().id(), req));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ConfianzaDtos.ReporteResponse(reporteId));
     }
 }

@@ -1,85 +1,78 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.controller;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
-import com.sebastian.spring.mas.aliado.aliado.config.FeatureFlags;
-import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.FormalizacionService;
+import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.dto.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.usecase.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.dto.FormalizacionDtos;
+import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.mapper.FormalizacionPresentationMapper;
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/** Formalización (SPEC-13). La vinculación institucional (UC080) es Future: apagada. */
 @RestController
 @RequestMapping("/api/v1/formalizacion")
 public class FormalizacionController {
-    private final FormalizacionService service;
-    private final FeatureFlags features;
+  private final ConsultarRutaFormalizacionUseCase rutas;
+  private final ConsultarEnlaceInstitucionalUseCase enlaces;
+  private final ConsultarProgresoFormalizacionUseCase progreso;
+  private final ActualizarProgresoFormalizacionUseCase actualizar;
+  private final ConsultarVinculacionInstitucionalUseCase vinculacion;
 
-    public FormalizacionController(FormalizacionService service, FeatureFlags features) {
-        this.service = service;
-        this.features = features;
-    }
+  public FormalizacionController(
+      ConsultarRutaFormalizacionUseCase rutas,
+      ConsultarEnlaceInstitucionalUseCase enlaces,
+      ConsultarProgresoFormalizacionUseCase progreso,
+      ActualizarProgresoFormalizacionUseCase actualizar,
+      ConsultarVinculacionInstitucionalUseCase vinculacion) {
+    this.rutas = rutas;
+    this.enlaces = enlaces;
+    this.progreso = progreso;
+    this.actualizar = actualizar;
+    this.vinculacion = vinculacion;
+  }
 
-    @GetMapping("/ruta")
-    public ResponseEntity<List<FormalizacionDtos.RutaResponse>> ruta() {
-        SecurityUtils.exigirRol("PRESTADOR");
-        var rutas = service.rutasActivas().stream()
-                .map(r -> new FormalizacionDtos.RutaResponse(r.id(), r.nombre(), r.descripcion(),
-                        service.pasosDe(r.id()).stream()
-                                .map(p -> new FormalizacionDtos.PasoResponse(p.paso().id(), p.paso().titulo(),
-                                        p.paso().descripcion(), p.paso().orden(),
-                                        p.enlaces().stream()
-                                                .map(e -> new FormalizacionDtos.EnlaceResponse(e.id(), e.nombre(),
-                                                        e.url(), e.estado().name()))
-                                                .toList()))
-                                .toList(),
-                        FormalizacionService.AVISO_LEGAL))
-                .toList();
-        return ResponseEntity.ok(rutas);
-    }
+  @GetMapping("/ruta")
+  public ResponseEntity<List<FormalizacionDtos.RutaResponse>> ruta() {
+    SecurityUtils.exigirRol("PRESTADOR");
+    return ResponseEntity.ok(
+        rutas.ejecutar().stream().map(FormalizacionPresentationMapper::aResponse).toList());
+  }
 
-    @GetMapping("/enlaces/{id}")
-    public ResponseEntity<FormalizacionDtos.EnlaceResponse> enlace(@PathVariable UUID id) {
-        var e = service.enlace(id);
-        return ResponseEntity.ok(new FormalizacionDtos.EnlaceResponse(e.id(), e.nombre(), e.url(),
-                e.estado().name()));
-    }
+  @GetMapping("/enlaces/{id}")
+  public ResponseEntity<FormalizacionDtos.EnlaceResponse> enlace(@PathVariable UUID id) {
+    SecurityUtils.exigirRol("PRESTADOR");
+    return ResponseEntity.ok(
+        FormalizacionPresentationMapper.aResponse(
+            enlaces.ejecutar(new ConsultarEnlaceInstitucionalCommand(id))));
+  }
 
-    @GetMapping("/progreso")
-    public ResponseEntity<List<FormalizacionDtos.ProgresoResponse>> progreso() {
-        SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(service.progreso(SecurityUtils.actual().id()).stream()
-                .map(p -> new FormalizacionDtos.ProgresoResponse(p.rutaId(), p.valorOrientativo(),
-                        FormalizacionService.AVISO_LEGAL))
-                .toList());
-    }
+  @GetMapping("/progreso")
+  public ResponseEntity<List<FormalizacionDtos.ProgresoResponse>> progreso() {
+    SecurityUtils.exigirRol("PRESTADOR");
+    return ResponseEntity.ok(
+        progreso
+            .ejecutar(new ConsultarProgresoFormalizacionCommand(SecurityUtils.actual().id()))
+            .stream()
+            .map(FormalizacionPresentationMapper::aResponse)
+            .toList());
+  }
 
-    @PutMapping("/progreso")
-    public ResponseEntity<FormalizacionDtos.ProgresoResponse> actualizarProgreso(
-            @Valid @RequestBody FormalizacionDtos.ActualizarProgresoRequest req) {
-        SecurityUtils.exigirRol("PRESTADOR");
-        var p = service.actualizarProgreso(SecurityUtils.actual().id(), req.rutaId(), req.valor());
-        return ResponseEntity.ok(new FormalizacionDtos.ProgresoResponse(p.rutaId(), p.valorOrientativo(),
-                FormalizacionService.AVISO_LEGAL));
-    }
+  @PutMapping("/progreso")
+  public ResponseEntity<FormalizacionDtos.ProgresoResponse> actualizarProgreso(
+      @Valid @RequestBody FormalizacionDtos.ActualizarProgresoRequest req) {
+    SecurityUtils.exigirRol("PRESTADOR");
+    return ResponseEntity.ok(
+        FormalizacionPresentationMapper.aResponse(
+            actualizar.ejecutar(
+                new ActualizarProgresoFormalizacionCommand(
+                    SecurityUtils.actual().id(), req.rutaId(), req.valor()))));
+  }
 
-    @GetMapping("/vinculacion")
-    public ResponseEntity<Void> vinculacion() {
-        // UC080 consulta el flag: apagado sigue siendo 404; encendido, 501 porque
-        // no hay implementación detrás (nunca 200 vacío ni éxito fingido).
-        if (!features.integracionInstitucional()) {
-            throw new BusinessException.NotFound("FUNCIONALIDAD_DESHABILITADA",
-                    "La vinculación institucional (UC080) es una función futura y no está disponible.");
-        }
-        throw new BusinessException(501, "NO_IMPLEMENTADO",
-                "La vinculación institucional está habilitada pero aún no implementada.");
-    }
+  @GetMapping("/vinculacion")
+  public ResponseEntity<Void> vinculacion() {
+    SecurityUtils.exigirRol("PRESTADOR");
+    vinculacion.ejecutar();
+    return ResponseEntity.noContent().build();
+  }
 }
