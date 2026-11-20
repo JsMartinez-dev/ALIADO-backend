@@ -2,6 +2,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.perfil.infrastructure.per
 
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.Perfil;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.SolicitudEliminacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.EstadoEliminacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.PerfilRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.SolicitudEliminacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.infrastructure.persistence.jpa.PerfilJpaRepository;
@@ -15,28 +16,28 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PerfilPersistenceAdapter implements PerfilRepository, SolicitudEliminacionRepository {
-    private final PerfilJpaRepository perfiles;
+    private final PerfilJpaRepository jpaPerfil;
     private final SolicitudEliminacionJpaRepository eliminaciones;
 
-    public PerfilPersistenceAdapter(PerfilJpaRepository perfiles,
+    public PerfilPersistenceAdapter(PerfilJpaRepository jpaPerfil,
                                     SolicitudEliminacionJpaRepository eliminaciones) {
-        this.perfiles = perfiles;
+        this.jpaPerfil = jpaPerfil;
         this.eliminaciones = eliminaciones;
     }
 
     @Override
     public Optional<Perfil> porUsuarioId(UUID usuarioId) {
-        return perfiles.findById(usuarioId).map(PerfilPersistenceMapper::aDominio);
+        return jpaPerfil.findById(usuarioId).map(PerfilPersistenceMapper::aDominio);
     }
 
     @Override
     public Perfil guardar(Perfil perfil) {
-        return PerfilPersistenceMapper.aDominio(perfiles.save(PerfilPersistenceMapper.aEntidad(perfil)));
+        return PerfilPersistenceMapper.aDominio(jpaPerfil.save(PerfilPersistenceMapper.aEntidad(perfil)));
     }
 
     @Override
     public List<Perfil> buscarPorNombre(String texto) {
-        return perfiles.findByNombreContainingIgnoreCase(texto).stream()
+        return jpaPerfil.findByNombreContainingIgnoreCase(texto).stream()
                 .map(PerfilPersistenceMapper::aDominio).toList();
     }
 
@@ -44,6 +45,23 @@ public class PerfilPersistenceAdapter implements PerfilRepository, SolicitudElim
     public Optional<SolicitudEliminacion> pendienteDeUsuario(UUID usuarioId) {
         return eliminaciones.findByUsuarioIdAndEstado(usuarioId, "PENDIENTE")
                 .map(PerfilPersistenceMapper::aDominio);
+    }
+
+    @Override
+    public Optional<SolicitudEliminacion> ultimaDeUsuario(UUID usuarioId) {
+        return eliminaciones.findFirstByUsuarioIdOrderByFechaSolicitudDesc(usuarioId)
+                .map(PerfilPersistenceMapper::aDominio);
+    }
+
+    @Override
+    public boolean transicionar(UUID id, EstadoEliminacion esperado, EstadoEliminacion nuevo,
+                                OffsetDateTime fechaConfirmacion) {
+        return eliminaciones.transicionar(id, esperado.name(), nuevo.name(), fechaConfirmacion) == 1;
+    }
+
+    @Override
+    public void expirarVencidas(OffsetDateTime ahora) {
+        eliminaciones.expirarVencidas(ahora);
     }
 
     @Override

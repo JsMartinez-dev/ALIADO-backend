@@ -14,3 +14,25 @@ La refactorización caso por caso de UC001–UC007 se cierra por aprobación del
 | 6 | UC004 | Cierre de sesión | UC001, UC002, UC007 | Finalizado |
 | 7 | UC005 | Recuperación de acceso | UC001, UC002, UC007 | Finalizado |
 | 8 | UC006 | Acceso restringido según rol | UC001, UC002, UC007 | Finalizado |
+
+## SPEC-02 — Gestión de perfil y privacidad
+
+Estado de seguimiento: **Refactorizado por decisión del usuario**. Permanece pendiente el filtro definitivo de servicios de UC012, además de compilación y aceptación. Detalle en [diagnóstico](reviews/auditoria-spec-02.md).
+
+| Orden recomendado | ID | Caso de uso | Dependencias | Estado de la revisión |
+|---|---|---|---|---|
+| 1 | UC011 | Consultar datos propios | Autenticación | Revisado y finalizado por decisión del usuario — compilación y aceptación pendientes |
+| 2 | UC008 | Editar datos personales | Autenticación, resultado compartido | Refactorizado — compilación y aceptación pendientes |
+| 3 | UC009 | Configurar zona aproximada | Autenticación, cifrado | Refactorizado — compilación y aceptación pendientes |
+| 4 | UC010 | Configurar visibilidad | Autenticación, política de privacidad | Refactorizado — compilación y aceptación pendientes |
+| 5 | UC013 | Separar zona y dirección exacta | UC009, UC010 | Refactorizado — compilación y aceptación pendientes |
+| 6 | UC012 | Solicitar eliminación | Perfil, servicios de SPEC-08 | Parcial — filtro de servicios y verificaciones pendientes |
+
+## SPEC-03 — Descubrimiento de prestadores
+
+Auditoría estática completa; revisado no significa refactorizado ni probado. Ver [diagnóstico](reviews/auditoria-spec-03.md).
+
+| Orden | ID | Caso de uso | Dependencias | Estado de revisión |
+|---|---|---|---|---|
+| 1 | UC014 | Buscar prestadores | SPEC-01, perfil profesional, catálogo, confianza y visibilidad | Arquitectura refactorizada — decisiones funcionales y verificación pendientes |
+| 2 | UC015 | Consultar perfil público | UC014 y proyección pública compartida | Arquitectura refactorizada — privacidad y verificación pendientes |

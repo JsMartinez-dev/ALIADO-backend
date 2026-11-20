@@ -1,6 +1,18 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.descubrimiento.application.exception.PerfilPublicoNoDisponibleException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.PerfilNoEncontradoException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.ConflictoVersionPerfilException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.DatosPerfilInvalidosException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.DatosUbicacionInvalidosException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.VisibilidadInvalidaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.PerfilNoDisponibleException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.EliminacionPendienteException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.SolicitudExpiradaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.SinSolicitudPendienteException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.ServicioBloqueaEliminacionException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.ConflictoEliminacionException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CorreoYaRegistradoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CredencialesInvalidasException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
@@ -24,6 +36,65 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(PerfilPublicoNoDisponibleException.class)
+    public ResponseEntity<ApiError> perfilPublicoPrestadorNoDisponible(PerfilPublicoNoDisponibleException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "PERFIL_NO_DISPONIBLE", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(EliminacionPendienteException.class)
+    public ResponseEntity<ApiError> eliminacionPendiente(EliminacionPendienteException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "ELIMINACION_PENDIENTE", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(SolicitudExpiradaException.class)
+    public ResponseEntity<ApiError> solicitudExpirada(SolicitudExpiradaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.GONE, "SOLICITUD_EXPIRADA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(SinSolicitudPendienteException.class)
+    public ResponseEntity<ApiError> sinSolicitudPendiente(SinSolicitudPendienteException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "SIN_SOLICITUD_PENDIENTE", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ServicioBloqueaEliminacionException.class)
+    public ResponseEntity<ApiError> servicioBloqueaEliminacion(ServicioBloqueaEliminacionException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "SERVICIO_EN_EJECUCION", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ConflictoEliminacionException.class)
+    public ResponseEntity<ApiError> conflictoEliminacion(ConflictoEliminacionException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "CONFLICTO_CONCURRENCIA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PerfilNoDisponibleException.class)
+    public ResponseEntity<ApiError> perfilNoDisponible(PerfilNoDisponibleException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "PERFIL_NO_DISPONIBLE", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(VisibilidadInvalidaException.class)
+    public ResponseEntity<ApiError> visibilidadInvalida(VisibilidadInvalidaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, "VISIBILIDAD_INVALIDA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(DatosUbicacionInvalidosException.class)
+    public ResponseEntity<ApiError> datosUbicacionInvalidos(DatosUbicacionInvalidosException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ConflictoVersionPerfilException.class)
+    public ResponseEntity<ApiError> conflictoVersionPerfil(ConflictoVersionPerfilException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "CONFLICTO_VERSION", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(DatosPerfilInvalidosException.class)
+    public ResponseEntity<ApiError> datosPerfilInvalidos(DatosPerfilInvalidosException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PerfilNoEncontradoException.class)
+    public ResponseEntity<ApiError> perfilNoEncontrado(PerfilNoEncontradoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "PERFIL_NO_ENCONTRADO", ex.getMessage(), req);
+    }
 
     @ExceptionHandler(CredencialesInvalidasException.class)
     public ResponseEntity<ApiError> credencialesInvalidas(CredencialesInvalidasException ex, HttpServletRequest req) {
