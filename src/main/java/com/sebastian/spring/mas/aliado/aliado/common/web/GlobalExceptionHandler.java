@@ -1,5 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.exception.OportunidadNoDisponibleException;
+
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.ServicioPortafolioNoEncontradoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.PortafolioInvalidoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.DatosPerfilProfesionalInvalidosException;
@@ -50,6 +52,10 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(OportunidadNoDisponibleException.class)
+    public ResponseEntity<ApiError> oportunidadNoDisponible(OportunidadNoDisponibleException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "OPORTUNIDAD_NO_ENCONTRADA", ex.getMessage(), req);
+    }
     @ExceptionHandler(DatosPerfilProfesionalInvalidosException.class)
     public ResponseEntity<ApiError> datosPerfilProfesionalInvalidos(DatosPerfilProfesionalInvalidosException ex, HttpServletRequest req) {
         return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);

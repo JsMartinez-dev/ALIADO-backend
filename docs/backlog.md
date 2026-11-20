@@ -53,7 +53,7 @@ Refactorización **finalizada por validación del usuario**. Permanece pendiente
 
 ## SPEC-05 — Creación y gestión del perfil profesional
 
-Estado basado en auditoría estática; no acredita pruebas de aceptación.
+Refactorización **finalizada por decisión del usuario**. Persisten pendientes de privacidad, concurrencia, temporalidad, igualdad de vista previa y aceptación; no se acredita compilación Maven ni pruebas automatizadas.
 
 | ID | Caso de uso | Estado de implementación verificable |
 |---|---|---|
@@ -67,3 +67,15 @@ Estado basado en auditoría estática; no acredita pruebas de aceptación.
 | UC031 | Configurar disponibilidad | Refactorizado; reglas temporales y aceptación pendientes |
 | UC032 | Gestionar agenda | Refactorizado; reglas temporales, concurrencia y aceptación pendientes |
 | UC033 | Consultar vista previa | Parcial — diferencias de respuesta y aceptación pendientes |
+
+## SPEC-06 — Compatibilidad y oportunidades
+
+Refactorización **finalizada por decisión del usuario**. Continúan pendientes la regla temporal, la entrega real de notificaciones y las verificaciones de aceptación; no se acredita compilación Maven ni pruebas automatizadas.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC034 | Calcular compatibilidad | Refactorizado; regla temporal y aceptación pendientes |
+| UC035 | Consultar tablero | Refactorizado; aceptación pendiente |
+| UC036 | Filtrar tablero | Refactorizado; aceptación pendiente |
+| UC037 | Consultar detalle de oportunidad | Refactorizado; acceso a fotos y aceptación pendientes |
+| UC038 | Notificar nueva oportunidad | Parcial — entrega real, idempotencia y aceptación pendientes |

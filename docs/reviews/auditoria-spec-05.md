@@ -1,5 +1,7 @@
 # Auditoría estática SPEC-05 — Creación y gestión del perfil profesional
 
+**Estado de seguimiento:** el usuario solicitó marcar la refactorización como finalizada. Permanecen los pendientes funcionales y de verificación descritos a continuación; este estado no acredita su cumplimiento.
+
 **Avance posterior:** se extrajeron UC024–UC033 a contratos UseCase, servicios y mapeos; las matrices siguientes conservan el diagnóstico inicial. El usuario decidió mantener evidencia opcional y campos públicos actuales, y devolver 404 en vista previa cuando el cliente no pueda ver el perfil. La vista previa usa la consulta de descubrimiento, pero conserva un identificador adicional de disponibilidad: SC-003 no está acreditado. Persisten riesgos de privacidad de valores anidados, concurrencia del agregado, reglas temporales D-03 y limpieza de archivos ante caída abrupta. Se compiló parcialmente dominio y aplicación con javac; Maven completo falló antes de iniciar. No se ejecutaron pruebas ni migraciones.
 
 Alcance: UC024–UC033. Los diez CU tienen implementación **Parcial** y auditoría estática completa (**Revisado**); esto no acredita refactorización, pruebas ni aceptación.

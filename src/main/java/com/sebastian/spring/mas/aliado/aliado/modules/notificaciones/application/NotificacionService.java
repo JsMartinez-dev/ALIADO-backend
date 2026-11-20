@@ -77,6 +77,12 @@ public class NotificacionService implements NotificacionPort, NotificacionConsul
     @Transactional
     public void entregarPendientes() {
         for (Notificacion pendiente : notificaciones.pendientesParaEntrega()) {
+            // UC038: sin proveedor real la oportunidad continúa pendiente. No se
+            // registra un intento fallido ni se repite un log cada ronda del scheduler.
+            if (pendiente.tipo() == TipoNotificacion.NUEVA_OPORTUNIDAD
+                    && !canal.disponibleParaEntrega(pendiente)) {
+                continue;
+            }
             // La preferencia pudo cambiar desde el registro: si ya no está habilitada,
             // se salta la ronda sin gastar un intento; queda PENDIENTE por si se re-habilita.
             if (!preferencias.avisoHabilitado(pendiente.destinatarioId(), pendiente.tipo().name(),

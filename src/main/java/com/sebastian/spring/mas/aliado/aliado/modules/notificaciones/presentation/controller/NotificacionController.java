@@ -3,6 +3,8 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentati
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionConsultaPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarNotificacionesOportunidadesUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentation.mapper.NotificacionPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentation.dto.NotificacionDtos;
 import java.util.List;
@@ -17,9 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/notificaciones")
 public class NotificacionController {
     private final NotificacionConsultaPort notificaciones;
+    private final ConsultarNotificacionesOportunidadesUseCase oportunidadesUseCase;
 
-    public NotificacionController(NotificacionConsultaPort notificaciones) {
+    public NotificacionController(NotificacionConsultaPort notificaciones,
+                                  ConsultarNotificacionesOportunidadesUseCase oportunidadesUseCase) {
         this.notificaciones = notificaciones;
+        this.oportunidadesUseCase = oportunidadesUseCase;
     }
 
     private NotificacionDtos.NotificacionResponse aRespuesta(NotificacionConsultaPort.NotificacionConsulta n) {
@@ -47,8 +52,7 @@ public class NotificacionController {
     @GetMapping("/oportunidades")
     public ResponseEntity<List<NotificacionDtos.NotificacionResponse>> notificacionesOportunidades() {
         SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(notificaciones
-                .listarPorTipo(SecurityUtils.actual().id(), TipoNotificacion.NUEVA_OPORTUNIDAD).stream()
-                .map(this::aRespuesta).toList());
+        return ResponseEntity.ok(oportunidadesUseCase.ejecutar(SecurityUtils.actual().id()).stream()
+                .map(NotificacionPresentationMapper::aResponse).toList());
     }
 }

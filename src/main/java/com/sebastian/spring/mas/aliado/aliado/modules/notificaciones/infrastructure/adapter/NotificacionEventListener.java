@@ -4,7 +4,7 @@ import com.sebastian.spring.mas.aliado.aliado.common.events.Eventos;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
-import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.CompatibilidadPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.DetectarNuevaOportunidadUseCase;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -15,19 +15,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotificacionEventListener {
     private final NotificacionPort notificaciones;
-    private final CompatibilidadPort compatibilidad;
+    private final DetectarNuevaOportunidadUseCase detectarNuevaOportunidad;
 
-    public NotificacionEventListener(NotificacionPort notificaciones, CompatibilidadPort compatibilidad) {
+    public NotificacionEventListener(NotificacionPort notificaciones, DetectarNuevaOportunidadUseCase detectarNuevaOportunidad) {
         this.notificaciones = notificaciones;
-        this.compatibilidad = compatibilidad;
+        this.detectarNuevaOportunidad = detectarNuevaOportunidad;
     }
 
     @EventListener
     public void alPublicarSolicitud(Eventos.SolicitudPublicada evento) {
-        for (var prestadorId : compatibilidad.prestadoresCompatibles(evento.solicitudId())) {
-            notificaciones.registrar(TipoNotificacion.NUEVA_OPORTUNIDAD, evento.solicitudId(), prestadorId, 1,
-                    "Nueva oportunidad compatible con tu perfil.", Canal.PUSH);
-        }
+        detectarNuevaOportunidad.ejecutar(evento.solicitudId());
     }
 
     @EventListener

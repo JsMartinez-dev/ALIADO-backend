@@ -54,7 +54,7 @@ Refactorización **finalizada por validación del usuario**. La idempotencia com
 
 ## SPEC-05 — Creación y gestión del perfil profesional
 
-Auditoría estática completa; revisado no significa refactorizado ni probado. Ver [diagnóstico](reviews/auditoria-spec-05.md).
+Refactorización **finalizada por decisión del usuario**. Se conservan los pendientes funcionales y de verificación detallados en el [diagnóstico](reviews/auditoria-spec-05.md); no se acredita compilación Maven ni pruebas automatizadas.
 
 | Orden | ID | Caso de uso | Dependencias | Estado de revisión |
 |---|---|---|---|---|
@@ -68,3 +68,15 @@ Auditoría estática completa; revisado no significa refactorizado ni probado. V
 | 8 | UC031 | Disponibilidad | UC024, agenda | Refactorizado — temporalidad y aceptación pendientes |
 | 9 | UC032 | Agenda | UC024, disponibilidad | Refactorizado — temporalidad y aceptación pendientes |
 | 10 | UC033 | Vista previa | Perfil, portafolio, disponibilidad, SPEC-03 | Parcial — diferencias de respuesta y aceptación pendientes |
+
+## SPEC-06 — Compatibilidad y oportunidades
+
+Refactorización **finalizada por decisión del usuario**. Permanecen pendientes temporalidad, entrega real y verificaciones. Detalle en [diagnóstico](reviews/auditoria-spec-06.md).
+
+| Orden | ID | Caso de uso | Dependencias | Estado de revisión |
+|---|---|---|---|---|
+| 1 | UC034 | Calcular compatibilidad | Solicitudes, perfiles y decisión D-03 | Refactorizado — temporalidad y aceptación pendientes |
+| 2 | UC035 | Consultar tablero | UC034 | Refactorizado — aceptación pendiente |
+| 3 | UC036 | Filtrar tablero | UC035 | Refactorizado — aceptación pendiente |
+| 4 | UC037 | Consultar detalle | UC034, UC035 y fotos de SPEC-04 | Refactorizado — fotos y aceptación pendientes |
+| 5 | UC038 | Notificar oportunidad | UC034, notificaciones SPEC-09 y preferencias | Parcial — entrega real y aceptación pendientes |
