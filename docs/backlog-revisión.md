@@ -83,7 +83,7 @@ Refactorización **finalizada por decisión del usuario**. Permanecen pendientes
 
 ## SPEC-07 — Creación y gestión de propuestas
 
-Auditoría estática completa; revisado no implica refactorizado ni probado. Detalle en [diagnóstico](reviews/auditoria-spec-07.md).
+Refactorización **completada por decisión del usuario**. Persisten pendientes de idempotencia, concurrencia, entrega real y aceptación integral; pasaron 24 pruebas unitarias. Detalle en [diagnóstico](reviews/auditoria-spec-07.md).
 
 | Orden | ID | Caso de uso | Dependencias | Estado de revisión |
 |---|---|---|---|---|
@@ -93,3 +93,22 @@ Auditoría estática completa; revisado no implica refactorizado ni probado. Det
 | 4 | UC044 | Notificar propuesta | UC039 y notificaciones | Parcial — entrega real y aceptación integral pendientes |
 | 5 | UC042 | Editar propuesta | UC039 | Refactorizado — aceptación integral pendiente |
 | 6 | UC043 | Retirar propuesta | UC039 | Refactorizado — aceptación integral pendiente |
+
+## SPEC-08 — Contratación y ciclo de vida del servicio
+
+Auditoría estática completa; revisado no implica refactorizado ni probado. Detalle en [diagnóstico](reviews/auditoria-spec-08.md).
+
+| Orden | ID | Caso de uso | Dependencias | Estado de revisión |
+|---|---|---|---|---|
+| 1 | UC045 | Consultar propuestas recibidas | Solicitudes y propuestas | Refactorizado — aceptación integral pendiente |
+| 2 | UC046 | Aceptar propuesta | UC045 y UC047–UC049 | Parcial — idempotencia y concurrencia pendientes |
+| 3 | UC047 | Cerrar propuestas no seleccionadas | UC046 y propuestas | Refactorizado — atomicidad pendiente de verificar |
+| 4 | UC048 | Registrar servicio contratado | UC046 | Refactorizado — atomicidad pendiente de verificar |
+| 5 | UC049 | Habilitar comunicación | UC046 y UC048 | Refactorizado — D-10 pendiente |
+| 6 | UC050 | Consultar detalle | UC048 | Refactorizado — aceptación integral pendiente |
+| 7 | UC051 | Marcar en ejecución | UC048 | Parcial — idempotencia y concurrencia pendientes |
+| 8 | UC052 | Marcar terminado | UC051 | Parcial — idempotencia y concurrencia pendientes |
+| 9 | UC053 | Confirmar finalización | UC052 | Parcial — idempotencia y concurrencia pendientes |
+| 10 | UC054 | Cancelar servicio | Servicio no finalizado | Parcial — idempotencia y concurrencia pendientes |
+| 11 | UC055 | Consultar historial | UC048 y transiciones | Refactorizado — concurrencia pendiente de verificar |
+| 12 | UC056 | Usar canal de comunicación | UC049; política D-10 | Parcial — idempotencia y D-10 pendientes |

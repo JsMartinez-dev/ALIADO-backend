@@ -1,5 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
+import com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.exception.TransicionServicioInvalidaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.exception.OportunidadNoDisponibleException;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.exception.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.exception.PropuestaNoActivaException;
@@ -54,6 +56,14 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(ServicioOperacionException.class)
+    public ResponseEntity<ApiError> servicioOperacion(ServicioOperacionException ex,HttpServletRequest req){
+        HttpStatus status=switch(ex.tipo()) {case INVALIDO -> HttpStatus.BAD_REQUEST;case NO_ENCONTRADO -> HttpStatus.NOT_FOUND;case NO_AUTORIZADO -> HttpStatus.FORBIDDEN;case CONFLICTO -> HttpStatus.CONFLICT;};
+        return respuesta(status,ex.codigo(),ex.getMessage(),req);
+    }
+    @ExceptionHandler(TransicionServicioInvalidaException.class)
+    public ResponseEntity<ApiError> transicionServicio(TransicionServicioInvalidaException ex,HttpServletRequest req){return respuesta(HttpStatus.CONFLICT,"TRANSICION_INVALIDA",ex.getMessage(),req);}
+
     @ExceptionHandler(DatosPropuestaInvalidosException.class)
     public ResponseEntity<ApiError> datosPropuesta(DatosPropuestaInvalidosException ex, HttpServletRequest req) {
         return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);

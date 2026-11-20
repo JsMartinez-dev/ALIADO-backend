@@ -1,5 +1,7 @@
 # Auditoría estática SPEC-07 — Creación y gestión de propuestas
 
+**Estado de seguimiento:** el usuario solicitó marcar la refactorización como completada. Los pendientes de idempotencia compartida, concurrencia, entrega real y aceptación integral continúan abiertos; este estado no acredita su cumplimiento.
+
 **Avance posterior:** se extrajeron UC039–UC044 a UseCases, servicios y mapeos; las tablas siguientes conservan el diagnóstico inicial. La disponibilidad se valida contra el límite existente, la edición exige estado activo en dominio y la detección de avisos comprueba el estado de la propuesta. Se ejecutaron 24 pruebas unitarias con JUnit local y pasaron; la compilación Maven completa y la integración permanecen pendientes. Idempotencia compartida, carrera con cierre de solicitud, política D-09 y entrega real de avisos siguen pendientes. No se modificaron ni ejecutaron migraciones.
 
 Alcance: UC039–UC044. Los seis CU tienen implementación **Parcial** y auditoría estática completa (**Revisado**); no se acreditan refactorización ni aceptación. No se ejecutaron pruebas, compilación, migraciones ni peticiones de escritura. La consulta GET del OpenAPI local agotó el timeout; su contrato en ejecución no pudo cotejarse.

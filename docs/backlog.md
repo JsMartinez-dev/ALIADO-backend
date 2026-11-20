@@ -82,7 +82,7 @@ Refactorización **finalizada por decisión del usuario**. Continúan pendientes
 
 ## SPEC-07 — Creación y gestión de propuestas
 
-Estado basado en auditoría estática; no acredita pruebas de aceptación.
+Refactorización **completada por decisión del usuario**. Persisten pendientes de idempotencia compartida, concurrencia con el cierre de solicitudes, entrega real y aceptación integral; pasaron 24 pruebas unitarias, sin compilación Maven completa.
 
 | ID | Caso de uso | Estado de implementación verificable |
 |---|---|---|
@@ -92,3 +92,22 @@ Estado basado en auditoría estática; no acredita pruebas de aceptación.
 | UC042 | Editar propuesta | Refactorizado — concurrencia y aceptación integral pendientes |
 | UC043 | Retirar propuesta | Refactorizado — reintentos y aceptación integral pendientes |
 | UC044 | Notificar propuesta recibida | Parcial — entrega real y aceptación integral pendientes |
+
+## SPEC-08 — Contratación y ciclo de vida del servicio
+
+Estado basado en auditoría estática; no acredita pruebas de aceptación.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC045 | Consultar propuestas recibidas | Refactorizado — aceptación integral pendiente |
+| UC046 | Aceptar propuesta | Parcial — idempotencia y concurrencia pendientes |
+| UC047 | Cerrar propuestas no seleccionadas | Refactorizado — atomicidad pendiente de verificar |
+| UC048 | Registrar servicio contratado | Refactorizado — atomicidad pendiente de verificar |
+| UC049 | Habilitar comunicación | Refactorizado — política D-10 pendiente |
+| UC050 | Consultar detalle de servicio | Refactorizado — aceptación integral pendiente |
+| UC051 | Marcar en ejecución | Parcial — idempotencia y concurrencia pendientes |
+| UC052 | Marcar terminado | Parcial — idempotencia y concurrencia pendientes |
+| UC053 | Confirmar finalización | Parcial — idempotencia y concurrencia pendientes |
+| UC054 | Cancelar servicio | Parcial — idempotencia y concurrencia pendientes |
+| UC055 | Consultar historial | Refactorizado — concurrencia pendiente de verificar |
+| UC056 | Usar canal de comunicación | Parcial — idempotencia y política D-10 pendientes |

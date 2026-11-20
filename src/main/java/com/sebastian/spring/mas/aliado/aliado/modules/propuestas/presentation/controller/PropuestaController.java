@@ -3,7 +3,8 @@ package com.sebastian.spring.mas.aliado.aliado.modules.propuestas.presentation.c
 import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPort;
 import com.sebastian.spring.mas.aliado.aliado.common.web.BaseController;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
-import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.PropuestaService;
+import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usecase.ListarPropuestasRecibidasUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.dto.ListadoPropuestasQuery;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.usecase.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.presentation.mapper.PropuestaPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.model.Propuesta;
@@ -26,24 +27,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 public class PropuestaController extends BaseController {
-    private final PropuestaService service;
+    private final ListarPropuestasRecibidasUseCase listarPropuestas;
     private final CrearPropuestaUseCase crearPropuesta;
     private final EditarPropuestaUseCase editarPropuesta;
     private final RetirarPropuestaUseCase retirarPropuesta;
 
-    public PropuestaController(PropuestaService service, CrearPropuestaUseCase crearPropuesta,
+    public PropuestaController(ListarPropuestasRecibidasUseCase listarPropuestas, CrearPropuestaUseCase crearPropuesta,
                                EditarPropuestaUseCase editarPropuesta, RetirarPropuestaUseCase retirarPropuesta, ObjectMapper objectMapper,
                                IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
-        this.service = service;
+        this.listarPropuestas = listarPropuestas;
         this.crearPropuesta = crearPropuesta;
         this.editarPropuesta = editarPropuesta;
         this.retirarPropuesta = retirarPropuesta;
-    }
-
-    private PropuestaDtos.PropuestaResponse aRespuesta(Propuesta p) {
-        return new PropuestaDtos.PropuestaResponse(p.id(), p.solicitudId(), p.prestadorId(),
-                p.disponibilidad(), p.mensaje(), p.estado().name());
     }
 
     @PostMapping("/propuestas")
@@ -76,7 +72,7 @@ public class PropuestaController extends BaseController {
     public ResponseEntity<List<PropuestaDtos.PropuestaResponse>> propuestasDeSolicitud(
             @PathVariable UUID solicitudId) {
         SecurityUtils.exigirRol("CLIENTE");
-        return ResponseEntity.ok(service.propuestasDeSolicitud(solicitudId, SecurityUtils.actual().id()).stream()
-                .map(this::aRespuesta).toList());
+        return ResponseEntity.ok(listarPropuestas.ejecutar(new ListadoPropuestasQuery(solicitudId, SecurityUtils.actual().id())).stream()
+                .map(PropuestaPresentationMapper::aResponse).toList());
     }
 }
