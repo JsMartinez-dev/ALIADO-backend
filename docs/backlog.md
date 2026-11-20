@@ -29,9 +29,24 @@ Estado de seguimiento: **Refactorizado por decisión del usuario**. UC012 conser
 
 ## SPEC-03 — Descubrimiento de prestadores
 
-Estado basado en auditoría estática; no acredita pruebas de aceptación.
+Estado de seguimiento: **Refactorizado por decisión del usuario**. Permanecen pendientes decisiones funcionales sobre búsqueda y privacidad, compilación y pruebas de aceptación; este estado no acredita verificación funcional completa.
 
 | ID | Caso de uso | Estado de implementación verificable |
 |---|---|---|
 | UC014 | Buscar prestadores | Refactorización arquitectónica implementada; decisiones funcionales y verificación pendientes |
 | UC015 | Consultar perfil público del prestador | Refactorización arquitectónica implementada; privacidad y verificación pendientes |
+
+## SPEC-04 — Gestión de solicitudes de servicio
+
+Estado basado en auditoría estática; no acredita pruebas de aceptación.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC016 | Adjuntar fotos opcionales | Refactorizado; consistencia y aceptación pendientes de verificar |
+| UC017 | Definir zona y urgencia | Refactorizado; aceptación pendiente de verificar |
+| UC018 | Publicar solicitud | Parcial — idempotencia crítica y aceptación pendientes |
+| UC019 | Guardar borrador | Parcial — idempotencia crítica y aceptación pendientes |
+| UC020 | Editar solicitud abierta | Refactorizado; aceptación pendiente de verificar |
+| UC021 | Cancelar solicitud abierta | Refactorizado; deuda de excepciones y aceptación pendientes |
+| UC022 | Listar solicitudes propias | Refactorizado; aceptación pendiente de verificar |
+| UC023 | Consultar detalle de solicitud propia | Refactorizado; aceptación pendiente de verificar |

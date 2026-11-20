@@ -5,8 +5,18 @@ import com.sebastian.spring.mas.aliado.aliado.common.storage.ArchivoValidacion;
 import com.sebastian.spring.mas.aliado.aliado.common.web.BaseController;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
 import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.SolicitudService;
-import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.Solicitud;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.ConsultarSolicitudPropiaUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.ListarSolicitudesPropiasUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.CancelarSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.EditarSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.AgregarFotoSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.ReemplazarFotoSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.EliminarFotoSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.DescargarFotoSolicitudUseCase;
+
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.CrearSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.PublicarSolicitudUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.presentation.mapper.SolicitudPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.presentation.dto.SolicitudDtos;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -28,23 +38,44 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/** Gestión de solicitudes de servicio (SPEC-04). Todas las rutas exigen rol CLIENTE. */
+/* Todas las rutas exigen rol CLIENTE. */
 @RestController
 @RequestMapping("/api/v1/solicitudes")
 public class SolicitudController extends BaseController {
-    private final SolicitudService solicitudService;
+    private final ConsultarSolicitudPropiaUseCase consultarSolicitudPropiaUseCase;
+    private final ListarSolicitudesPropiasUseCase listarSolicitudesPropiasUseCase;
+    private final CancelarSolicitudUseCase cancelarSolicitudUseCase;
+    private final EditarSolicitudUseCase editarSolicitudUseCase;
+    private final AgregarFotoSolicitudUseCase agregarFotoSolicitudUseCase;
+    private final ReemplazarFotoSolicitudUseCase reemplazarFotoSolicitudUseCase;
+    private final EliminarFotoSolicitudUseCase eliminarFotoSolicitudUseCase;
+    private final DescargarFotoSolicitudUseCase descargarFotoSolicitudUseCase;
 
-    public SolicitudController(SolicitudService solicitudService,
+    private final CrearSolicitudUseCase crearSolicitudUseCase;
+    private final PublicarSolicitudUseCase publicarSolicitudUseCase;
+
+    public SolicitudController(ConsultarSolicitudPropiaUseCase consultarSolicitudPropiaUseCase, CrearSolicitudUseCase crearSolicitudUseCase,
+                               PublicarSolicitudUseCase publicarSolicitudUseCase,
+                               AgregarFotoSolicitudUseCase agregarFotoSolicitudUseCase,
+                               ReemplazarFotoSolicitudUseCase reemplazarFotoSolicitudUseCase,
+                               EliminarFotoSolicitudUseCase eliminarFotoSolicitudUseCase,
+                               DescargarFotoSolicitudUseCase descargarFotoSolicitudUseCase,
+                               EditarSolicitudUseCase editarSolicitudUseCase,
+                               CancelarSolicitudUseCase cancelarSolicitudUseCase,
+                               ListarSolicitudesPropiasUseCase listarSolicitudesPropiasUseCase,
                                ObjectMapper objectMapper, IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
-        this.solicitudService = solicitudService;
-    }
+        this.consultarSolicitudPropiaUseCase = consultarSolicitudPropiaUseCase;
+        this.listarSolicitudesPropiasUseCase = listarSolicitudesPropiasUseCase;
+        this.cancelarSolicitudUseCase = cancelarSolicitudUseCase;
+        this.editarSolicitudUseCase = editarSolicitudUseCase;
+        this.agregarFotoSolicitudUseCase = agregarFotoSolicitudUseCase;
+        this.reemplazarFotoSolicitudUseCase = reemplazarFotoSolicitudUseCase;
+        this.eliminarFotoSolicitudUseCase = eliminarFotoSolicitudUseCase;
+        this.descargarFotoSolicitudUseCase = descargarFotoSolicitudUseCase;
 
-    private SolicitudDtos.SolicitudResponse aRespuesta(Solicitud s) {
-        return new SolicitudDtos.SolicitudResponse(s.id(), s.clienteId(), s.categoriaId(), s.zonaId(),
-                s.descripcion(), s.urgencia() == null ? null : s.urgencia().name(), s.estado().name(),
-                s.fechaCreacion(), s.fechaActualizacion(),
-                s.fotos().stream().map(f -> f.archivoKey()).toList());
+        this.crearSolicitudUseCase = crearSolicitudUseCase;
+        this.publicarSolicitudUseCase = publicarSolicitudUseCase;
     }
 
     @PostMapping
@@ -53,9 +84,8 @@ public class SolicitudController extends BaseController {
         SecurityUtils.exigirRol("CLIENTE");
         UUID clienteId = SecurityUtils.actual().id();
         return ejecutarIdempotente(claveHeader, "solicitudes.crear", cuerpo -> clienteId, 201, () -> {
-            Solicitud creada = solicitudService.crear(clienteId, req.categoriaId(), req.descripcion(),
-                    req.zonaId(), req.urgencia(), req.estadoDeseado());
-            return aRespuesta(creada);
+            return SolicitudPresentationMapper.aResponse(crearSolicitudUseCase.ejecutar(
+                    SolicitudPresentationMapper.aCommand(clienteId, req)));
         });
     }
 
@@ -63,50 +93,52 @@ public class SolicitudController extends BaseController {
     public ResponseEntity<SolicitudDtos.SolicitudResponse> editar(@PathVariable UUID id,
             @Valid @RequestBody SolicitudDtos.EditarRequest req) {
         SecurityUtils.exigirRol("CLIENTE");
-        Solicitud editada = solicitudService.editar(id, SecurityUtils.actual().id(), req.categoriaId(),
-                req.descripcion(), req.zonaId(), req.urgencia());
-        return ResponseEntity.ok(aRespuesta(editada));
+        return ResponseEntity.ok(SolicitudPresentationMapper.aResponse(editarSolicitudUseCase.ejecutar(
+                SolicitudPresentationMapper.aCommand(id, SecurityUtils.actual().id(), req))));
     }
 
     @PostMapping("/{id}/publicar")
     public ResponseEntity<SolicitudDtos.SolicitudResponse> publicar(@PathVariable UUID id) {
         SecurityUtils.exigirRol("CLIENTE");
-        return ResponseEntity.ok(aRespuesta(solicitudService.publicar(id, SecurityUtils.actual().id())));
+        return ResponseEntity.ok(SolicitudPresentationMapper.aResponse(publicarSolicitudUseCase.ejecutar(
+                SolicitudPresentationMapper.aPublicarCommand(id, SecurityUtils.actual().id()))));
     }
 
     @PostMapping("/{id}/cancelar")
     public ResponseEntity<SolicitudDtos.IdEstadoResponse> cancelar(@PathVariable UUID id) {
         SecurityUtils.exigirRol("CLIENTE");
-        Solicitud cancelada = solicitudService.cancelar(id, SecurityUtils.actual().id());
-        return ResponseEntity.ok(new SolicitudDtos.IdEstadoResponse(cancelada.id(), cancelada.estado().name()));
+        return ResponseEntity.ok(SolicitudPresentationMapper.aEstadoResponse(cancelarSolicitudUseCase.ejecutar(
+                SolicitudPresentationMapper.aCancelarCommand(id, SecurityUtils.actual().id()))));
     }
 
     @GetMapping("/mias")
     public ResponseEntity<List<SolicitudDtos.SolicitudResponse>> mias() {
         SecurityUtils.exigirRol("CLIENTE");
-        return ResponseEntity.ok(solicitudService.listarMias(SecurityUtils.actual().id()).stream()
-                .map(this::aRespuesta).toList());
+        return ResponseEntity.ok(listarSolicitudesPropiasUseCase.ejecutar(SecurityUtils.actual().id()).stream()
+                .map(SolicitudPresentationMapper::aResponse).toList());
     }
 
     @GetMapping("/mias/{id}")
     public ResponseEntity<SolicitudDtos.SolicitudResponse> detalle(@PathVariable UUID id) {
         SecurityUtils.exigirRol("CLIENTE");
-        return ResponseEntity.ok(aRespuesta(solicitudService.detalleMio(id, SecurityUtils.actual().id())));
+        return ResponseEntity.ok(SolicitudPresentationMapper.aResponse(consultarSolicitudPropiaUseCase.ejecutar(
+                SolicitudPresentationMapper.aConsultaPropia(id, SecurityUtils.actual().id()))));
     }
 
     @PostMapping(value = "/{id}/fotos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SolicitudDtos.FotoResponse> agregarFoto(@PathVariable UUID id,
             @RequestPart("archivo") MultipartFile archivo) {
         SecurityUtils.exigirRol("CLIENTE");
-        var foto = solicitudService.agregarFoto(id, SecurityUtils.actual().id(),
-                archivo.getOriginalFilename(), archivo.getContentType(), leerBytes(archivo));
+        var foto = agregarFotoSolicitudUseCase.ejecutar(SolicitudPresentationMapper.aFotoCommand(
+                id, SecurityUtils.actual().id(), null, archivo.getOriginalFilename(), archivo.getContentType(), leerBytes(archivo)));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new SolicitudDtos.FotoResponse(foto.id(), foto.archivoKey(), foto.orden()));
+                .body(SolicitudPresentationMapper.aResponse(foto));
     }
 
     @GetMapping("/{id}/fotos/{fotoId}")
     public ResponseEntity<byte[]> descargarFoto(@PathVariable UUID id, @PathVariable UUID fotoId) {
-        byte[] contenido = solicitudService.descargarFoto(id, fotoId, SecurityUtils.actual().id());
+        byte[] contenido = descargarFotoSolicitudUseCase.ejecutar(SolicitudPresentationMapper.aConsultarFotoCommand(
+                id, SecurityUtils.actual().id(), fotoId)).contenido();
         String tipo = ArchivoValidacion.detectarTipo(contenido);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(
@@ -118,15 +150,16 @@ public class SolicitudController extends BaseController {
     public ResponseEntity<SolicitudDtos.FotoResponse> reemplazarFoto(@PathVariable UUID id,
             @PathVariable UUID fotoId, @RequestPart("archivo") MultipartFile archivo) {
         SecurityUtils.exigirRol("CLIENTE");
-        var foto = solicitudService.reemplazarFoto(id, fotoId, SecurityUtils.actual().id(),
-                archivo.getOriginalFilename(), archivo.getContentType(), leerBytes(archivo));
-        return ResponseEntity.ok(new SolicitudDtos.FotoResponse(foto.id(), foto.archivoKey(), foto.orden()));
+        var foto = reemplazarFotoSolicitudUseCase.ejecutar(SolicitudPresentationMapper.aFotoCommand(
+                id, SecurityUtils.actual().id(), fotoId, archivo.getOriginalFilename(), archivo.getContentType(), leerBytes(archivo)));
+        return ResponseEntity.ok(SolicitudPresentationMapper.aResponse(foto));
     }
 
     @DeleteMapping("/{id}/fotos/{fotoId}")
     public ResponseEntity<Void> eliminarFoto(@PathVariable UUID id, @PathVariable UUID fotoId) {
         SecurityUtils.exigirRol("CLIENTE");
-        solicitudService.eliminarFoto(id, fotoId, SecurityUtils.actual().id());
+        eliminarFotoSolicitudUseCase.ejecutar(SolicitudPresentationMapper.aConsultarFotoCommand(
+                id, SecurityUtils.actual().id(), fotoId));
         return ResponseEntity.noContent().build();
     }
 

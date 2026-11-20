@@ -1,6 +1,11 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.ZonaUrgenciaInvalidasException;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.FotoNoEncontradaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.DatosSolicitudInvalidosException;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.SolicitudNoEncontradaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.SolicitudNoModificableException;
 import com.sebastian.spring.mas.aliado.aliado.modules.descubrimiento.application.exception.PerfilPublicoNoDisponibleException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.PerfilNoEncontradoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.ConflictoVersionPerfilException;
@@ -36,6 +41,31 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(FotoNoEncontradaException.class)
+    public ResponseEntity<ApiError> fotoNoEncontrada(FotoNoEncontradaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "FOTO_NO_ENCONTRADA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(DatosSolicitudInvalidosException.class)
+    public ResponseEntity<ApiError> datosSolicitudInvalidos(DatosSolicitudInvalidosException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(SolicitudNoEncontradaException.class)
+    public ResponseEntity<ApiError> solicitudNoEncontrada(SolicitudNoEncontradaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "SOLICITUD_NO_ENCONTRADA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(SolicitudNoModificableException.class)
+    public ResponseEntity<ApiError> solicitudNoModificable(SolicitudNoModificableException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, ex.codigo(), ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ZonaUrgenciaInvalidasException.class)
+    public ResponseEntity<ApiError> zonaUrgenciaInvalidas(ZonaUrgenciaInvalidasException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+
     @ExceptionHandler(PerfilPublicoNoDisponibleException.class)
     public ResponseEntity<ApiError> perfilPublicoPrestadorNoDisponible(PerfilPublicoNoDisponibleException ex, HttpServletRequest req) {
         return respuesta(HttpStatus.NOT_FOUND, "PERFIL_NO_DISPONIBLE", ex.getMessage(), req);

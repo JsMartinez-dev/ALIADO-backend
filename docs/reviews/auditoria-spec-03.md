@@ -4,7 +4,7 @@ Alcance: UC014 y UC015. Fuentes: AGENTS.md, SPEC-03 y su plan, secciones pertine
 
 Abreviaturas: B = `src/main/java/com/sebastian/spring/mas/aliado/aliado/`, D = `B/modules/descubrimiento/`, P = `B/modules/perfiles/`.
 
-**Avance posterior:** se extrajeron las operaciones de UC014 y UC015 a UseCase, Service, DTO y mapper, con proyección pública compartida. Las matrices siguientes conservan el diagnóstico inicial. Se preservaron las reglas existentes de búsqueda, disponibilidad y datos generales mientras se definen los cambios funcionales. La compilación no se acreditó: el wrapper falló antes de iniciar Maven. No se ejecutaron pruebas ni migraciones. Ambos CU siguen pendientes de verificaciones y de decisiones sobre catálogo, sugerencias, coherencia de disponibilidad y privacidad de datos anidados.
+**Avance posterior:** SPEC-03 figura como refactorizado por decisión del usuario. Se extrajeron las operaciones de UC014 y UC015 a UseCase, Service, DTO y mapper, con proyección pública compartida. Las matrices siguientes conservan el diagnóstico inicial. Se preservaron las reglas existentes de búsqueda, disponibilidad y datos generales mientras se definen los cambios funcionales. La compilación no se acreditó: el wrapper falló antes de iniciar Maven. No se ejecutaron pruebas ni migraciones. Ambos CU siguen pendientes de verificaciones y de decisiones sobre catálogo, sugerencias, coherencia de disponibilidad y privacidad de datos anidados; el estado de seguimiento no acredita cumplimiento funcional completo.
 
 ## UC014 — Buscar prestadores
 
