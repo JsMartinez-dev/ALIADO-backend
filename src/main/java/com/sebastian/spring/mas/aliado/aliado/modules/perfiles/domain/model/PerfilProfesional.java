@@ -36,7 +36,7 @@ public record PerfilProfesional(UUID id, UUID prestadorId, Map<String, Object> d
                 filtrados.put(clave, valor);
             }
         });
-        return Map.copyOf(filtrados);
+        return java.util.Collections.unmodifiableMap(filtrados);
     }
 
     public PerfilProfesional conExposicion(EstadoExposicion nueva) {

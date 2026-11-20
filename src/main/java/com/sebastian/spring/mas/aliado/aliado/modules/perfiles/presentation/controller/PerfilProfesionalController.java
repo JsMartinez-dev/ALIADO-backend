@@ -1,13 +1,21 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.controller;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ListarCompromisosAgendaUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.EliminarServicioPortafolioUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.CrearCompromisoAgendaUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConsultarVistaPreviaPerfilUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConfigurarDisponibilidadUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.AgregarServicioPortafolioUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ActualizarCompromisoAgendaUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.RegistrarExperienciaProfesionalUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.EditarPerfilProfesionalUseCase;
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
-import com.sebastian.spring.mas.aliado.aliado.modules.catalogo.application.port.CatalogoConsultaPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.port.ConfianzaConsultaPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.AgendaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.PerfilProfesionalService;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.DisponibilidadDatos;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.ExperienciaDatos;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.CrearPerfilProfesionalUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ActualizarCategoriasProfesionalesUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ActualizarZonasAtencionUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.mapper.PerfilProfesionalPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.EstadoExposicion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.PerfilProfesional;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.PerfilProfesionalDtos;
@@ -34,16 +42,45 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/perfiles")
 public class PerfilProfesionalController {
     private final PerfilProfesionalService service;
-    private final AgendaService agenda;
-    private final ConfianzaConsultaPort confianza;
-    private final CatalogoConsultaPort catalogo;
+    private final ConsultarVistaPreviaPerfilUseCase vistaPreviaUseCase;
+    private final ListarCompromisosAgendaUseCase listarAgendaUseCase;
+    private final ActualizarCompromisoAgendaUseCase actualizarCompromisoUseCase;
+    private final CrearCompromisoAgendaUseCase crearCompromisoUseCase;
+    private final ConfigurarDisponibilidadUseCase configurarDisponibilidadUseCase;
+    private final CrearPerfilProfesionalUseCase crearPerfilProfesionalUseCase;
+    private final ActualizarCategoriasProfesionalesUseCase actualizarCategoriasUseCase;
+    private final ActualizarZonasAtencionUseCase actualizarZonasUseCase;
+    private final EditarPerfilProfesionalUseCase editarPerfilUseCase;
+    private final AgregarServicioPortafolioUseCase agregarPortafolioUseCase;
+    private final EliminarServicioPortafolioUseCase eliminarPortafolioUseCase;
+    private final RegistrarExperienciaProfesionalUseCase registrarExperienciaUseCase;
 
-    public PerfilProfesionalController(PerfilProfesionalService service, AgendaService agenda,
-                                       ConfianzaConsultaPort confianza, CatalogoConsultaPort catalogo) {
+    public PerfilProfesionalController(PerfilProfesionalService service,
+                                       CrearPerfilProfesionalUseCase crearPerfilProfesionalUseCase,
+                                       ActualizarCategoriasProfesionalesUseCase actualizarCategoriasUseCase,
+                                       ActualizarZonasAtencionUseCase actualizarZonasUseCase,
+                                       RegistrarExperienciaProfesionalUseCase registrarExperienciaUseCase,
+                                       EditarPerfilProfesionalUseCase editarPerfilUseCase,
+                                       AgregarServicioPortafolioUseCase agregarPortafolioUseCase,
+                                       EliminarServicioPortafolioUseCase eliminarPortafolioUseCase,
+                                       ConfigurarDisponibilidadUseCase configurarDisponibilidadUseCase,
+                                       CrearCompromisoAgendaUseCase crearCompromisoUseCase,
+                                       ActualizarCompromisoAgendaUseCase actualizarCompromisoUseCase,
+                                       ListarCompromisosAgendaUseCase listarAgendaUseCase,
+                                       ConsultarVistaPreviaPerfilUseCase vistaPreviaUseCase) {
         this.service = service;
-        this.agenda = agenda;
-        this.confianza = confianza;
-        this.catalogo = catalogo;
+        this.crearPerfilProfesionalUseCase = crearPerfilProfesionalUseCase;
+        this.actualizarCategoriasUseCase = actualizarCategoriasUseCase;
+        this.actualizarZonasUseCase = actualizarZonasUseCase;
+        this.editarPerfilUseCase = editarPerfilUseCase;
+        this.agregarPortafolioUseCase = agregarPortafolioUseCase;
+        this.eliminarPortafolioUseCase = eliminarPortafolioUseCase;
+        this.vistaPreviaUseCase = vistaPreviaUseCase;
+        this.listarAgendaUseCase = listarAgendaUseCase;
+        this.actualizarCompromisoUseCase = actualizarCompromisoUseCase;
+        this.crearCompromisoUseCase = crearCompromisoUseCase;
+        this.configurarDisponibilidadUseCase = configurarDisponibilidadUseCase;
+        this.registrarExperienciaUseCase = registrarExperienciaUseCase;
     }
 
     private PerfilProfesionalDtos.PerfilResponse aRespuesta(PerfilProfesional p) {
@@ -63,43 +100,42 @@ public class PerfilProfesionalController {
     public ResponseEntity<PerfilProfesionalDtos.PerfilResponse> crear(
             @Valid @RequestBody PerfilProfesionalDtos.CrearRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        List<ExperienciaDatos> experiencias = req.experiencia() == null ? List.of()
-                : req.experiencia().stream().map(e -> new ExperienciaDatos(
-                        e.descripcion(), e.fechaInicio(), e.fechaFin())).toList();
-        PerfilProfesional creado = service.crear(SecurityUtils.actual().id(), req.datosGenerales(),
-                req.categoriaIds(), req.zonaIds(), experiencias);
-        return ResponseEntity.status(HttpStatus.CREATED).body(aRespuesta(creado));
+        var resultado = crearPerfilProfesionalUseCase.ejecutar(
+                PerfilProfesionalPresentationMapper.aCommand(SecurityUtils.actual().id(), req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PerfilProfesionalPresentationMapper.aResponse(resultado));
     }
 
     @PutMapping("/mio")
     public ResponseEntity<PerfilProfesionalDtos.PerfilResponse> actualizar(
             @Valid @RequestBody PerfilProfesionalDtos.ActualizarDatosRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(aRespuesta(service.actualizarDatos(SecurityUtils.actual().id(), req.datosGenerales())));
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aResponse(editarPerfilUseCase.ejecutar(
+                PerfilProfesionalPresentationMapper.aEditarCommand(SecurityUtils.actual().id(), req))));
     }
 
     @PutMapping("/mio/categorias")
     public ResponseEntity<PerfilProfesionalDtos.PerfilResponse> categorias(
             @Valid @RequestBody PerfilProfesionalDtos.IdsRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(aRespuesta(service.actualizarCategorias(SecurityUtils.actual().id(), req.ids())));
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aResponse(actualizarCategoriasUseCase.ejecutar(
+                PerfilProfesionalPresentationMapper.aCategoriasCommand(SecurityUtils.actual().id(), req))));
     }
 
     @PutMapping("/mio/zonas")
     public ResponseEntity<PerfilProfesionalDtos.PerfilResponse> zonas(
             @Valid @RequestBody PerfilProfesionalDtos.IdsRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(aRespuesta(service.actualizarZonas(SecurityUtils.actual().id(), req.ids())));
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aResponse(actualizarZonasUseCase.ejecutar(
+                PerfilProfesionalPresentationMapper.aZonasCommand(SecurityUtils.actual().id(), req))));
     }
 
     @PostMapping("/mio/experiencia")
     public ResponseEntity<PerfilProfesionalDtos.ExperienciaResponse> experiencia(
             @Valid @RequestBody PerfilProfesionalDtos.ExperienciaRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        var e = service.agregarExperiencia(SecurityUtils.actual().id(), req.descripcion(),
-                req.fechaInicio(), req.fechaFin());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                new PerfilProfesionalDtos.ExperienciaResponse(e.id(), e.descripcion(), e.fechaInicio(), e.fechaFin()));
+        var resultado = registrarExperienciaUseCase.ejecutar(
+                PerfilProfesionalPresentationMapper.aExperienciaCommand(SecurityUtils.actual().id(), req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PerfilProfesionalPresentationMapper.aExperienciaResponse(resultado));
     }
 
     @PostMapping(value = "/mio/portafolio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -116,17 +152,17 @@ public class PerfilProfesionalController {
                         "No se pudo leer el archivo enviado.");
             }
         }
-        var s = service.agregarPortafolio(SecurityUtils.actual().id(), descripcion,
+        var resultado = agregarPortafolioUseCase.ejecutar(PerfilProfesionalPresentationMapper.aPortafolioCommand(
+                SecurityUtils.actual().id(), descripcion,
                 archivo == null ? null : archivo.getOriginalFilename(),
-                archivo == null ? null : archivo.getContentType(), contenido);
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                new PerfilProfesionalDtos.PortafolioResponse(s.id(), s.descripcion(), s.evidenciaKey(), s.fechaCreacion()));
+                archivo == null ? null : archivo.getContentType(), contenido));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PerfilProfesionalPresentationMapper.aPortafolioResponse(resultado));
     }
 
     @DeleteMapping("/mio/portafolio/{id}")
     public ResponseEntity<Void> eliminarPortafolio(@PathVariable UUID id) {
         SecurityUtils.exigirRol("PRESTADOR");
-        service.eliminarPortafolio(SecurityUtils.actual().id(), id);
+        eliminarPortafolioUseCase.ejecutar(PerfilProfesionalPresentationMapper.aEliminarPortafolioCommand(SecurityUtils.actual().id(), id));
         return ResponseEntity.noContent().build();
     }
 
@@ -134,65 +170,38 @@ public class PerfilProfesionalController {
     public ResponseEntity<PerfilProfesionalDtos.PerfilResponse> disponibilidad(
             @Valid @RequestBody PerfilProfesionalDtos.DisponibilidadRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        List<DisponibilidadDatos> bloques = req.bloques().stream()
-                .map(b -> new DisponibilidadDatos(b.diaSemana(), b.horaInicio(), b.horaFin())).toList();
-        return ResponseEntity.ok(aRespuesta(service.actualizarDisponibilidad(SecurityUtils.actual().id(), bloques)));
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aResponse(configurarDisponibilidadUseCase.ejecutar(
+                PerfilProfesionalPresentationMapper.aDisponibilidadCommand(SecurityUtils.actual().id(), req))));
     }
 
     @PostMapping("/mio/agenda")
     public ResponseEntity<PerfilProfesionalDtos.CompromisoResponse> crearCompromiso(
             @Valid @RequestBody PerfilProfesionalDtos.CompromisoRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        var c = agenda.crearCompromiso(SecurityUtils.actual().id(), req.fechaHoraInicio(), req.fechaHoraFin());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                new PerfilProfesionalDtos.CompromisoResponse(c.id(), c.fechaHoraInicio(), c.fechaHoraFin(), c.origen().name()));
+        var resultado = crearCompromisoUseCase.ejecutar(PerfilProfesionalPresentationMapper.aCompromisoCommand(SecurityUtils.actual().id(), req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PerfilProfesionalPresentationMapper.aCompromisoResponse(resultado));
     }
 
     @PutMapping("/mio/agenda")
     public ResponseEntity<PerfilProfesionalDtos.CompromisoResponse> actualizarCompromiso(
             @Valid @RequestBody PerfilProfesionalDtos.CompromisoRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        var c = agenda.actualizarCompromiso(SecurityUtils.actual().id(), req.id(),
-                req.fechaHoraInicio(), req.fechaHoraFin());
-        return ResponseEntity.ok(
-                new PerfilProfesionalDtos.CompromisoResponse(c.id(), c.fechaHoraInicio(), c.fechaHoraFin(), c.origen().name()));
+        var resultado = actualizarCompromisoUseCase.ejecutar(PerfilProfesionalPresentationMapper.aCompromisoCommand(SecurityUtils.actual().id(), req));
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aCompromisoResponse(resultado));
     }
 
     @GetMapping("/mio/agenda")
     public ResponseEntity<List<PerfilProfesionalDtos.CompromisoResponse>> agenda() {
         SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(agenda.listarAgenda(SecurityUtils.actual().id()).stream()
-                .map(c -> new PerfilProfesionalDtos.CompromisoResponse(c.id(), c.fechaHoraInicio(),
-                        c.fechaHoraFin(), c.origen().name())).toList());
+        return ResponseEntity.ok(listarAgendaUseCase.ejecutar(SecurityUtils.actual().id()).stream()
+                .map(PerfilProfesionalPresentationMapper::aCompromisoResponse).toList());
     }
 
     @GetMapping("/mio/vista-previa")
     public ResponseEntity<PerfilProfesionalDtos.VistaPreviaResponse> vistaPrevia() {
         SecurityUtils.exigirRol("PRESTADOR");
-        // Vista previa (SPEC-05): exactamente lo que vería un tercero. Sin compromisos,
-        // portafolio ni experiencias; CON reputación, nivel de verificación, reseñas
-        // visibles y datos generales filtrados por la lista blanca (SPEC-03).
-        // Se compone aquí y no en el servicio: el servicio de perfiles no puede
-        // depender de confianza sin cerrar un ciclo entre módulos.
-        UUID prestadorId = SecurityUtils.actual().id();
-        PerfilProfesional perfil = service.mio(prestadorId);
-        var confianzaInfo = confianza.confianzaDe(prestadorId);
-        return ResponseEntity.ok(new PerfilProfesionalDtos.VistaPreviaResponse(prestadorId,
-                perfil.categoriaIds().stream()
-                        .map(id -> catalogo.categoriaPorId(id).map(c -> c.nombre()).orElse(id.toString()))
-                        .toList(),
-                perfil.zonaIds().stream()
-                        .map(id -> catalogo.zonaPorId(id).map(z -> z.nombre()).orElse(id.toString()))
-                        .toList(),
-                confianzaInfo.reputacion().valor(), confianzaInfo.reputacion().cantidad(),
-                confianzaInfo.nivelVerificacion().name(),
-                perfil.disponibilidades().stream().map(d -> new PerfilProfesionalDtos.DisponibilidadResponse(
-                        d.id(), d.diaSemana(), d.horaInicio(), d.horaFin())).toList(),
-                PerfilProfesional.datosPublicos(perfil.datosGenerales()),
-                confianza.resenasVisiblesDe(prestadorId).stream()
-                        .map(r -> new PerfilProfesionalDtos.ResenaPublicaResponse(
-                                r.id(), r.valor(), r.texto(), r.fechaCreacion()))
-                        .toList()));
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aVistaPreviaResponse(
+                vistaPreviaUseCase.ejecutar(SecurityUtils.actual().id())));
     }
 
     @PutMapping("/mio/exposicion")

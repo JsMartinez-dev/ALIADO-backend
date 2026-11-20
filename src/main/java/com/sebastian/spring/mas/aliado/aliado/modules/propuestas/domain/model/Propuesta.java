@@ -1,6 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.model;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.exception.PropuestaNoActivaException;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -10,6 +10,7 @@ public record Propuesta(UUID id, UUID solicitudId, UUID prestadorId, String disp
                         int version) {
 
     public Propuesta editada(String disponibilidad, String mensaje, OffsetDateTime ahora) {
+        exigirActiva();
         return new Propuesta(id, solicitudId, prestadorId,
                 disponibilidad == null ? this.disponibilidad : disponibilidad.trim(),
                 mensaje == null ? this.mensaje : mensaje, EstadoPropuesta.ACTIVA,
@@ -36,8 +37,7 @@ public record Propuesta(UUID id, UUID solicitudId, UUID prestadorId, String disp
 
     private void exigirActiva() {
         if (estado != EstadoPropuesta.ACTIVA) {
-            throw new BusinessException.Conflict("PROPUESTA_NO_ACTIVA",
-                    "La propuesta ya no está activa (estado " + estado + ").");
+            throw new PropuestaNoActivaException(estado.name());
         }
     }
 }

@@ -10,8 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Lectura de preferencias de notificación (SPEC-14, plan F14-T004).
  * Servicio dedicado y sin dependencias de otros servicios: rompería el ciclo
- * NotificacionService → PreferenciasService → NotificacionService si lo
- * implementara PreferenciasService (que lee la bandeja para la actividad reciente).
+ * el procesamiento de avisos y la consulta de actividad reciente, que lee la bandeja.
  */
 @Service
 public class ConsultaPreferenciasService implements ConsultaPreferenciasPort {

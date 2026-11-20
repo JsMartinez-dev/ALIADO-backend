@@ -1,6 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.model;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.exception.TransicionServicioInvalidaException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ public record ServicioContratado(UUID id, UUID solicitudId, UUID propuestaId, UU
             case FINALIZADO, CANCELADO -> false;
         };
         if (!permitido) {
-            throw new BusinessException.Conflict("TRANSICION_INVALIDA",
+            throw new TransicionServicioInvalidaException(
                     "No se puede pasar de " + estado + " a " + nuevo + ".");
         }
         var nuevoHistorial = new ArrayList<>(historial);

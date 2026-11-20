@@ -1,9 +1,16 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.preferencias.presentation.controller;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
-import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.PreferenciasService;
-import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.TipoAviso;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.ListarPreferenciasUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.ActualizarPreferenciaUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.ConsultarHistorialUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.ExportarHistorialUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.DescargarHistorialUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.ConsultarIndicadoresPrestadorUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.usecase.ConsultarActividadRecienteUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.dto.HistorialQuery;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.dto.DescargarHistorialQuery;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.presentation.mapper.PreferenciasPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.presentation.dto.PreferenciasDtos;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -25,57 +32,60 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 public class PreferenciasController {
-    private final PreferenciasService service;
+    private final ListarPreferenciasUseCase listarPreferencias;
+    private final ActualizarPreferenciaUseCase actualizarPreferencia;
+    private final ConsultarHistorialUseCase historial;
+    private final ExportarHistorialUseCase exportarHistorial;
+    private final DescargarHistorialUseCase descargarExportacion;
+    private final ConsultarIndicadoresPrestadorUseCase misIndicadores;
+    private final ConsultarActividadRecienteUseCase actividadReciente;
 
-    public PreferenciasController(PreferenciasService service) {
-        this.service = service;
+    public PreferenciasController(
+            ListarPreferenciasUseCase listarPreferencias,
+            ActualizarPreferenciaUseCase actualizarPreferencia,
+            ConsultarHistorialUseCase historial,
+            ExportarHistorialUseCase exportarHistorial,
+            DescargarHistorialUseCase descargarExportacion,
+            ConsultarIndicadoresPrestadorUseCase misIndicadores,
+            ConsultarActividadRecienteUseCase actividadReciente) {
+        this.listarPreferencias = listarPreferencias;
+        this.actualizarPreferencia = actualizarPreferencia;
+        this.historial = historial;
+        this.exportarHistorial = exportarHistorial;
+        this.descargarExportacion = descargarExportacion;
+        this.misIndicadores = misIndicadores;
+        this.actividadReciente = actividadReciente;
     }
 
     @GetMapping("/preferencias/notificaciones")
     public ResponseEntity<List<PreferenciasDtos.PreferenciaResponse>> listar() {
-        return ResponseEntity.ok(service.listarPreferencias(SecurityUtils.actual().id()).stream()
-                .map(p -> new PreferenciasDtos.PreferenciaResponse(p.tipoAviso().name(), p.canal(),
-                        p.habilitada(), p.configurable()))
-                .toList());
+        return ResponseEntity.ok(listarPreferencias.ejecutar(SecurityUtils.actual().id()).stream()
+                .map(PreferenciasPresentationMapper::aResponse).toList());
     }
 
     @PutMapping("/preferencias/notificaciones")
     public ResponseEntity<PreferenciasDtos.PreferenciaResponse> actualizar(
             @Valid @RequestBody PreferenciasDtos.ActualizarPreferenciaRequest req) {
-        TipoAviso tipo;
-        try {
-            tipo = TipoAviso.valueOf(req.tipoAviso());
-        } catch (IllegalArgumentException ex) {
-            throw new BusinessException.BadRequest("TIPO_AVISO_INVALIDO", "Tipo de aviso no reconocido.");
-        }
-        var p = service.actualizarPreferencia(SecurityUtils.actual().id(), tipo, req.canal(), req.habilitada());
-        return ResponseEntity.ok(new PreferenciasDtos.PreferenciaResponse(p.tipoAviso().name(), p.canal(),
-                p.habilitada(), p.configurable()));
+        return ResponseEntity.ok(PreferenciasPresentationMapper.aResponse(actualizarPreferencia.ejecutar(
+                PreferenciasPresentationMapper.aCommand(SecurityUtils.actual().id(), req))));
     }
 
     @GetMapping("/historial")
     public ResponseEntity<List<PreferenciasDtos.ServicioResumen>> historial(
             @RequestParam(defaultValue = "0") int pagina, @RequestParam(defaultValue = "20") int tamano) {
-        // Tope superior (SPEC-14): sin tope, tamano=100000 pedía todo el historial de una vez.
-        if (pagina < 0 || tamano < 1 || tamano > 100) {
-            throw new BusinessException.BadRequest("PAGINACION_INVALIDA",
-                    "pagina debe ser >= 0 y tamano debe estar entre 1 y 100.");
-        }
-        return ResponseEntity.ok(service.historial(SecurityUtils.actual().id(), pagina, tamano).stream()
-                .map(s -> new PreferenciasDtos.ServicioResumen(s.id(), s.estado().name(), s.fechaContratacion()))
-                .toList());
+        return ResponseEntity.ok(historial.ejecutar(new HistorialQuery(SecurityUtils.actual().id(), pagina, tamano))
+                .stream().map(PreferenciasPresentationMapper::aResponse).toList());
     }
 
     @PostMapping("/historial/exportaciones")
     public ResponseEntity<PreferenciasDtos.DescargaResponse> exportar() {
-        var d = service.exportarHistorial(SecurityUtils.actual().id());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new PreferenciasDtos.DescargaResponse(d.id(), d.archivoKey(), d.estado()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PreferenciasPresentationMapper.aResponse(
+                exportarHistorial.ejecutar(SecurityUtils.actual().id())));
     }
 
     @GetMapping("/historial/exportaciones/{id}")
     public ResponseEntity<byte[]> descargarExportacion(@PathVariable UUID id) {
-        byte[] contenido = service.descargarExportacion(SecurityUtils.actual().id(), id);
+        byte[] contenido = descargarExportacion.ejecutar(new DescargarHistorialQuery(SecurityUtils.actual().id(), id));
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"historial.csv\"")
@@ -84,15 +94,13 @@ public class PreferenciasController {
 
     @GetMapping("/prestadores/mis-indicadores")
     public ResponseEntity<PreferenciasDtos.IndicadoresResponse> misIndicadores() {
-        var i = service.misIndicadores(SecurityUtils.actual().id());
-        return ResponseEntity.ok(new PreferenciasDtos.IndicadoresResponse(i.totalServicios(), i.enCurso(),
-                i.finalizados(), i.reputacion(), i.cantidadCalificaciones()));
+        return ResponseEntity.ok(PreferenciasPresentationMapper.aResponse(
+                misIndicadores.ejecutar(SecurityUtils.actual().id())));
     }
 
     @GetMapping("/actividad-reciente")
     public ResponseEntity<List<PreferenciasDtos.ActividadResponse>> actividadReciente() {
-        return ResponseEntity.ok(service.actividadReciente(SecurityUtils.actual().id()).stream()
-                .map(a -> new PreferenciasDtos.ActividadResponse(a.tipo(), a.resumen(), a.fecha()))
-                .toList());
+        return ResponseEntity.ok(actividadReciente.ejecutar(SecurityUtils.actual().id()).stream()
+                .map(PreferenciasPresentationMapper::aResponse).toList());
     }
 }
