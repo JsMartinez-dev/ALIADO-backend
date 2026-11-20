@@ -39,7 +39,7 @@ Estado de seguimiento: **Refactorizado por decisión del usuario**. Permanecen p
 
 ## SPEC-04 — Gestión de solicitudes de servicio
 
-Auditoría estática completa; revisado no significa refactorizado ni probado. Detalle en [diagnóstico](reviews/auditoria-spec-04.md).
+Refactorización **finalizada por validación del usuario**. La idempotencia compartida permanece pendiente; no se acredita compilación Maven ni pruebas automatizadas. Detalle en [diagnóstico](reviews/auditoria-spec-04.md).
 
 | Orden recomendado | ID | Caso de uso | Dependencias | Estado de revisión |
 |---|---|---|---|---|
@@ -51,3 +51,20 @@ Auditoría estática completa; revisado no significa refactorizado ni probado. D
 | 6 | UC021 | Cancelar solicitud abierta | Creación e historial | Refactorizado — deuda de excepciones y aceptación pendientes |
 | 7 | UC022 | Listar solicitudes propias | Creación, repositorio | Refactorizado — aceptación pendiente |
 | 8 | UC023 | Consultar detalle propio | Creación, repositorio | Refactorizado — aceptación pendiente |
+
+## SPEC-05 — Creación y gestión del perfil profesional
+
+Auditoría estática completa; revisado no significa refactorizado ni probado. Ver [diagnóstico](reviews/auditoria-spec-05.md).
+
+| Orden | ID | Caso de uso | Dependencias | Estado de revisión |
+|---|---|---|---|---|
+| 1 | UC024 | Crear perfil profesional | Autenticación, catálogo; incluye UC026/027/028 | Refactorizado — aceptación pendiente |
+| 2 | UC026 | Categorías | UC024, catálogo | Refactorizado — concurrencia y aceptación pendientes |
+| 3 | UC027 | Zonas de atención | UC024, catálogo | Refactorizado — concurrencia y aceptación pendientes |
+| 4 | UC028 | Experiencia | UC024 | Refactorizado — aceptación pendiente |
+| 5 | UC025 | Datos generales | UC024 | Refactorizado — privacidad y aceptación pendientes |
+| 6 | UC029 | Agregar portafolio | UC024, storage | Refactorizado — consistencia y aceptación pendientes |
+| 7 | UC030 | Eliminar portafolio | UC029, storage | Refactorizado — consistencia y aceptación pendientes |
+| 8 | UC031 | Disponibilidad | UC024, agenda | Refactorizado — temporalidad y aceptación pendientes |
+| 9 | UC032 | Agenda | UC024, disponibilidad | Refactorizado — temporalidad y aceptación pendientes |
+| 10 | UC033 | Vista previa | Perfil, portafolio, disponibilidad, SPEC-03 | Parcial — diferencias de respuesta y aceptación pendientes |

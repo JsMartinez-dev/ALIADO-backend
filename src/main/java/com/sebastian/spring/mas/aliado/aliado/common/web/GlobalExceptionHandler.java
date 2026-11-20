@@ -1,6 +1,15 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.ServicioPortafolioNoEncontradoException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.PortafolioInvalidoException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.DatosPerfilProfesionalInvalidosException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.ConflictoAgendaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.CompromisoNoEncontradoException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.exception.ExperienciaProfesionalInvalidaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.PerfilProfesionalNoEncontradoException;
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.CatalogoPerfilInvalidoException;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.PerfilProfesionalYaExisteException;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.ZonaUrgenciaInvalidasException;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.FotoNoEncontradaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.DatosSolicitudInvalidosException;
@@ -41,6 +50,48 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(DatosPerfilProfesionalInvalidosException.class)
+    public ResponseEntity<ApiError> datosPerfilProfesionalInvalidos(DatosPerfilProfesionalInvalidosException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+    @ExceptionHandler(ConflictoAgendaException.class)
+    public ResponseEntity<ApiError> conflictoAgenda(ConflictoAgendaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "CONFLICTO_AGENDA", ex.getMessage(), req);
+    }
+    @ExceptionHandler(CompromisoNoEncontradoException.class)
+    public ResponseEntity<ApiError> compromisoNoEncontrado(CompromisoNoEncontradoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "COMPROMISO_NO_ENCONTRADO", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PortafolioInvalidoException.class)
+    public ResponseEntity<ApiError> portafolioInvalido(PortafolioInvalidoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, "PORTAFOLIO_INVALIDO", ex.getMessage(), req);
+    }
+    @ExceptionHandler(ServicioPortafolioNoEncontradoException.class)
+    public ResponseEntity<ApiError> servicioPortafolioNoEncontrado(ServicioPortafolioNoEncontradoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "PORTAFOLIO_NO_ENCONTRADO", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PerfilProfesionalNoEncontradoException.class)
+    public ResponseEntity<ApiError> perfilProfesionalNoEncontrado(PerfilProfesionalNoEncontradoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, "PERFIL_NO_ENCONTRADO", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ExperienciaProfesionalInvalidaException.class)
+    public ResponseEntity<ApiError> experienciaProfesionalInvalida(ExperienciaProfesionalInvalidaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, "EXPERIENCIA_INVALIDA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(CatalogoPerfilInvalidoException.class)
+    public ResponseEntity<ApiError> catalogoPerfilInvalido(CatalogoPerfilInvalidoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PerfilProfesionalYaExisteException.class)
+    public ResponseEntity<ApiError> perfilProfesionalYaExiste(PerfilProfesionalYaExisteException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "PERFIL_YA_EXISTE", ex.getMessage(), req);
+    }
+
     @ExceptionHandler(FotoNoEncontradaException.class)
     public ResponseEntity<ApiError> fotoNoEncontrada(FotoNoEncontradaException ex, HttpServletRequest req) {
         return respuesta(HttpStatus.NOT_FOUND, "FOTO_NO_ENCONTRADA", ex.getMessage(), req);

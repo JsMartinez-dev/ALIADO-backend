@@ -1,32 +1,14 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
-import com.sebastian.spring.mas.aliado.aliado.common.storage.ArchivoStorageService;
-import com.sebastian.spring.mas.aliado.aliado.common.storage.ArchivoValidacion;
-import com.sebastian.spring.mas.aliado.aliado.modules.catalogo.application.port.CatalogoConsultaPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.catalogo.domain.model.EstadoCatalogo;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.DisponibilidadDatos;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.ExperienciaDatos;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.PerfilProfesionalConsultaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.PerfilProfesionalModeracionPort;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.CompromisoAgenda;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.Disponibilidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.EstadoExposicion;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.ExperienciaProfesional;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.PerfilProfesional;
-import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.ServicioPortafolio;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.repository.PerfilProfesionalRepository;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,150 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class PerfilProfesionalService
         implements PerfilProfesionalConsultaPort, PerfilProfesionalModeracionPort {
     private final PerfilProfesionalRepository perfiles;
-    private final CatalogoConsultaPort catalogo;
-    private final ArchivoStorageService storage;
 
-    public PerfilProfesionalService(PerfilProfesionalRepository perfiles, CatalogoConsultaPort catalogo,
-                                    ArchivoStorageService storage) {
+    public PerfilProfesionalService(PerfilProfesionalRepository perfiles) {
         this.perfiles = perfiles;
-        this.catalogo = catalogo;
-        this.storage = storage;
-    }
-
-    @Transactional
-    public PerfilProfesional crear(UUID prestadorId, Map<String, Object> datosGenerales,
-                                   List<UUID> categoriaIds, List<UUID> zonaIds,
-                                   List<ExperienciaDatos> experiencias) {
-        if (perfiles.porPrestadorId(prestadorId).isPresent()) {
-            throw new BusinessException.Conflict("PERFIL_YA_EXISTE",
-                    "El prestador ya tiene un perfil profesional; edítalo en lugar de crear otro.");
-        }
-        Set<UUID> categorias = validarCategorias(categoriaIds);
-        Set<UUID> zonas = validarZonas(zonaIds);
-        List<ExperienciaDatos> experienciasValidas = experiencias == null ? List.of() : experiencias;
-        experienciasValidas.forEach(d -> validarExperiencia(d.descripcion(), d.fechaInicio(), d.fechaFin()));
-        List<ExperienciaProfesional> experienciasDominio = experienciasValidas.stream()
-                .map(d -> new ExperienciaProfesional(UUID.randomUUID(), null, d.descripcion(),
-                        d.fechaInicio(), d.fechaFin()))
-                .toList();
-        OffsetDateTime ahora = OffsetDateTime.now();
-        PerfilProfesional perfil = new PerfilProfesional(UUID.randomUUID(), prestadorId,
-                datosGenerales == null ? Map.of() : datosGenerales, EstadoExposicion.PUBLICO, ahora, ahora,
-                categorias, zonas, experienciasDominio,
-                List.of(), List.of(), List.of());
-        return perfiles.guardar(perfil);
-    }
-
-    /** Misma validación que al agregar una experiencia suelta: en crear no se tragaba el 500. La invariante vive en el record; aquí solo se dispara su validación. */
-    private static void validarExperiencia(String descripcion, LocalDate fechaInicio, LocalDate fechaFin) {
-        new ExperienciaProfesional(null, null, descripcion, fechaInicio, fechaFin);
-    }
-
-    @Transactional
-    public PerfilProfesional actualizarDatos(UUID prestadorId, Map<String, Object> datosGenerales) {
-        PerfilProfesional actual = propio(prestadorId);
-        return perfiles.guardar(actual.conDatos(datosGenerales == null ? Map.of() : datosGenerales));
-    }
-
-    @Transactional
-    public PerfilProfesional actualizarCategorias(UUID prestadorId, List<UUID> categoriaIds) {
-        PerfilProfesional actual = propio(prestadorId);
-        return perfiles.guardar(actual.conCategorias(validarCategorias(categoriaIds)));
-    }
-
-    @Transactional
-    public PerfilProfesional actualizarZonas(UUID prestadorId, List<UUID> zonaIds) {
-        PerfilProfesional actual = propio(prestadorId);
-        return perfiles.guardar(actual.conZonas(validarZonas(zonaIds)));
-    }
-
-    @Transactional
-    public ExperienciaProfesional agregarExperiencia(UUID prestadorId, String descripcion,
-                                                     LocalDate fechaInicio, LocalDate fechaFin) {
-        PerfilProfesional actual = propio(prestadorId);
-        validarExperiencia(descripcion, fechaInicio, fechaFin);
-        ExperienciaProfesional experiencia = new ExperienciaProfesional(UUID.randomUUID(), actual.id(),
-                descripcion.trim(), fechaInicio, fechaFin);
-        var lista = new ArrayList<>(actual.experiencias());
-        lista.add(experiencia);
-        perfiles.guardar(actual.conExperiencias(List.copyOf(lista)));
-        return experiencia;
-    }
-
-    @Transactional
-    public ServicioPortafolio agregarPortafolio(UUID prestadorId, String descripcion,
-                                                String nombreArchivo, String tipoContenido, byte[] contenido) {
-        PerfilProfesional actual = propio(prestadorId);
-        if (descripcion == null || descripcion.isBlank()) {
-            throw new BusinessException.BadRequest("PORTAFOLIO_INVALIDO", "La descripción es obligatoria.");
-        }
-        String evidenciaKey = null;
-        if (contenido != null && contenido.length > 0) {
-            // README: el portafolio admite PDF además de imágenes.
-            ArchivoValidacion.validar(nombreArchivo, tipoContenido, contenido, ArchivoValidacion.DOCUMENTOS);
-            evidenciaKey = storage.guardar(nombreArchivo, tipoContenido, contenido);
-        }
-        ServicioPortafolio servicio = new ServicioPortafolio(UUID.randomUUID(), actual.id(),
-                descripcion.trim(), evidenciaKey, OffsetDateTime.now());
-        var lista = new ArrayList<>(actual.portafolio());
-        lista.add(servicio);
-        perfiles.guardar(actual.conPortafolio(List.copyOf(lista)));
-        return servicio;
-    }
-
-    @Transactional
-    public void eliminarPortafolio(UUID prestadorId, UUID servicioId) {
-        PerfilProfesional actual = propio(prestadorId);
-        ServicioPortafolio item = actual.portafolio().stream()
-                .filter(s -> s.id().equals(servicioId))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException.NotFound("PORTAFOLIO_NO_ENCONTRADO",
-                        "El servicio de portafolio no existe o no te pertenece."));
-        perfiles.guardar(actual.sinPortafolio(servicioId));
-        if (item.evidenciaKey() != null) {
-            storage.eliminar(item.evidenciaKey());
-        }
-    }
-
-    @Transactional
-    public PerfilProfesional actualizarDisponibilidad(UUID prestadorId, List<DisponibilidadDatos> bloques) {
-        PerfilProfesional actual = propio(prestadorId);
-        for (DisponibilidadDatos bloque : bloques) {
-            if (bloque.horaInicio() == null || bloque.horaFin() == null
-                    || !bloque.horaFin().isAfter(bloque.horaInicio())) {
-                throw new BusinessException.BadRequest("DISPONIBILIDAD_INVALIDA",
-                        "Cada bloque requiere hora de fin posterior a la de inicio.");
-            }
-            if (bloque.diaSemana() != null && (bloque.diaSemana() < 1 || bloque.diaSemana() > 7)) {
-                throw new BusinessException.BadRequest("DISPONIBILIDAD_INVALIDA",
-                        "diaSemana debe estar entre 1 y 7.");
-            }
-            for (CompromisoAgenda compromiso : actual.compromisos()) {
-                if (chocaConCompromiso(bloque, compromiso)) {
-                    throw new BusinessException.Conflict("CONFLICTO_AGENDA",
-                            "La disponibilidad entra en conflicto con un compromiso ya registrado.");
-                }
-            }
-        }
-        List<Disponibilidad> conIds = bloques.stream()
-                .map(b -> new Disponibilidad(UUID.randomUUID(), actual.id(),
-                        b.diaSemana(), b.horaInicio(), b.horaFin())).toList();
-        return perfiles.guardar(actual.conDisponibilidades(conIds));
-    }
-
-    private boolean chocaConCompromiso(DisponibilidadDatos bloque, CompromisoAgenda compromiso) {
-        int diaCompromiso = compromiso.fechaHoraInicio().getDayOfWeek().getValue();
-        if (bloque.diaSemana() != null && bloque.diaSemana() != diaCompromiso) {
-            return false;
-        }
-        LocalTime inicio = compromiso.fechaHoraInicio().toLocalTime();
-        LocalTime fin = compromiso.fechaHoraFin().toLocalTime();
-        return bloque.horaInicio().isBefore(fin) && inicio.isBefore(bloque.horaFin());
-    }
-
-    @Transactional(readOnly = true)
-    public PerfilProfesional mio(UUID prestadorId) {
-        return propio(prestadorId);
     }
 
     /** Cambia el estado de exposición (SPEC-03): PUBLICO u OCULTO. */
@@ -207,32 +48,6 @@ public class PerfilProfesionalService
         return perfiles.porPrestadorId(prestadorId)
                 .orElseThrow(() -> new BusinessException.NotFound("PERFIL_NO_ENCONTRADO",
                         "Primero debes crear tu perfil profesional."));
-    }
-
-    private Set<UUID> validarCategorias(List<UUID> ids) {
-        return validarExistentesActivos(ids, "categoría",
-                id -> catalogo.categoriaPorId(id).map(c -> c.estado() == EstadoCatalogo.ACTIVO).orElse(false));
-    }
-
-    private Set<UUID> validarZonas(List<UUID> ids) {
-        return validarExistentesActivos(ids, "zona de atención",
-                id -> catalogo.zonaPorId(id).map(z -> z.estado() == EstadoCatalogo.ACTIVO).orElse(false));
-    }
-
-    private Set<UUID> validarExistentesActivos(List<UUID> ids, String que, Predicate<UUID> activo) {
-        if (ids == null || ids.isEmpty()) {
-            throw new BusinessException.BadRequest("CATALOGO_REQUERIDO",
-                    "El perfil requiere al menos una " + que + ".");
-        }
-        Set<UUID> validos = new HashSet<>();
-        for (UUID id : ids) {
-            if (!activo.test(id)) {
-                throw new BusinessException.BadRequest("CATALOGO_INVALIDO",
-                        "Un elemento del catálogo no existe o no está activo: " + id);
-            }
-            validos.add(id);
-        }
-        return validos;
     }
 
     @Override

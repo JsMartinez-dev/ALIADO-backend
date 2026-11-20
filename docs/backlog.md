@@ -38,7 +38,7 @@ Estado de seguimiento: **Refactorizado por decisión del usuario**. Permanecen p
 
 ## SPEC-04 — Gestión de solicitudes de servicio
 
-Estado basado en auditoría estática; no acredita pruebas de aceptación.
+Refactorización **finalizada por validación del usuario**. Permanece pendiente el hallazgo crítico de idempotencia compartida y su verificación transversal; no se acredita compilación Maven ni ejecución de pruebas automatizadas.
 
 | ID | Caso de uso | Estado de implementación verificable |
 |---|---|---|
@@ -50,3 +50,20 @@ Estado basado en auditoría estática; no acredita pruebas de aceptación.
 | UC021 | Cancelar solicitud abierta | Refactorizado; deuda de excepciones y aceptación pendientes |
 | UC022 | Listar solicitudes propias | Refactorizado; aceptación pendiente de verificar |
 | UC023 | Consultar detalle de solicitud propia | Refactorizado; aceptación pendiente de verificar |
+
+## SPEC-05 — Creación y gestión del perfil profesional
+
+Estado basado en auditoría estática; no acredita pruebas de aceptación.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC024 | Crear perfil profesional | Refactorizado; aceptación pendiente |
+| UC025 | Editar datos generales | Refactorizado; privacidad, concurrencia y aceptación pendientes |
+| UC026 | Seleccionar y actualizar categorías | Refactorizado; concurrencia y aceptación pendientes |
+| UC027 | Configurar zonas de atención | Refactorizado; concurrencia y aceptación pendientes |
+| UC028 | Registrar experiencia profesional | Refactorizado; concurrencia y aceptación pendientes |
+| UC029 | Agregar servicio al portafolio | Refactorizado; consistencia y aceptación pendientes de verificar |
+| UC030 | Eliminar servicio del portafolio | Refactorizado; consistencia y aceptación pendientes de verificar |
+| UC031 | Configurar disponibilidad | Refactorizado; reglas temporales y aceptación pendientes |
+| UC032 | Gestionar agenda | Refactorizado; reglas temporales, concurrencia y aceptación pendientes |
+| UC033 | Consultar vista previa | Parcial — diferencias de respuesta y aceptación pendientes |

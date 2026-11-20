@@ -1,5 +1,7 @@
 # Auditoría estática SPEC-04 — Gestión de solicitudes de servicio
 
+**Estado de seguimiento:** el usuario informó que validó su funcionamiento y solicitó dar por finalizada la refactorización. La idempotencia compartida permanece pendiente bajo su condición de no afectar otras funcionalidades; no se afirma que se hayan ejecutado pruebas automatizadas ni compilación Maven completa.
+
 **Avance posterior:** se extrajeron las operaciones UC016–UC023 a contratos UseCase y servicios. Se implementó el manejo transaccional de fotos y la validación de descripción de solicitudes publicadas, pendientes de verificación ejecutable. El usuario aprobó el flujo borrador → fotos → publicar. La corrección de idempotencia compartida quedó pendiente: su autorización exige no afectar otros módulos, condición que no puede acreditarse sin compilación y verificaciones adicionales. No se ejecutaron pruebas ni migraciones. El wrapper Maven falló antes de iniciar; se compiló parcialmente con javac el dominio y aplicación nuevos. Las tablas siguientes reflejan la auditoría inicial.
 
 Alcance: UC016–UC023. Auditoría estática integral completada; los ocho CU tienen implementación Parcial y pueden marcarse Revisado, sin considerarlos finalizados ni probados. No se modificó código ni se ejecutaron pruebas, compilación, aplicación o migraciones.
