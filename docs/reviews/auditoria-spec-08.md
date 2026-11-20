@@ -1,5 +1,7 @@
 # Auditoría estática SPEC-08 — Contratación y ciclo de vida del servicio
 
+**Estado de seguimiento:** el usuario solicitó marcar la refactorización como finalizada. Permanecen pendientes la idempotencia compartida, concurrencia, D-10 y aceptación integral; este estado no acredita dichas verificaciones.
+
 **Avance posterior:** se extrajeron las operaciones UC045–UC056 a UseCases y servicios; las matrices siguientes conservan el diagnóstico inicial. Se ejecutaron 29 pruebas unitarias con JUnit local, todas exitosas, y se compiló de forma enfocada producción con javac. Maven wrapper falló antes de iniciar; no se acreditó compilación completa, arranque Spring, integración PostgreSQL ni concurrencia. Idempotencia compartida y D-10 siguen pendientes; no se ejecutaron migraciones.
 
 Alcance: UC045–UC056. Los doce CU tienen implementación **Parcial** y auditoría estática completa (**Revisado**); esto no acredita refactorización ni aceptación. No se ejecutaron pruebas, compilación, migraciones o peticiones de escritura. La consulta de lectura al OpenAPI local agotó el tiempo de espera de 5 segundos: no se verificó el contrato en ejecución.

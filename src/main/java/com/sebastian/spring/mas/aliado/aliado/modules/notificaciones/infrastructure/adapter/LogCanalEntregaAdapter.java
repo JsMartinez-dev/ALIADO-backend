@@ -17,8 +17,10 @@ public class LogCanalEntregaAdapter implements CanalEntregaNotificacion {
 
     @Override
     public boolean disponibleParaEntrega(Notificacion notificacion) {
-        // Se preserva la conducta de otros tipos hasta la revisión de SPEC-09.
-        return notificacion.tipo() != TipoNotificacion.NUEVA_OPORTUNIDAD;
+        // Los avisos auditados esperan un proveedor que acredite entrega.
+        return notificacion.tipo() != TipoNotificacion.NUEVA_OPORTUNIDAD
+                && notificacion.tipo() != TipoNotificacion.ACEPTACION_PROPUESTA
+                && notificacion.tipo() != TipoNotificacion.CAMBIO_ESTADO_SERVICIO;
     }
 
     @Override

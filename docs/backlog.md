@@ -95,7 +95,7 @@ Refactorización **completada por decisión del usuario**. Persisten pendientes 
 
 ## SPEC-08 — Contratación y ciclo de vida del servicio
 
-Estado basado en auditoría estática; no acredita pruebas de aceptación.
+Refactorización **finalizada por decisión del usuario**. Persisten pendientes de idempotencia compartida, concurrencia y política D-10; pasaron 29 pruebas unitarias, sin compilación Maven completa.
 
 | ID | Caso de uso | Estado de implementación verificable |
 |---|---|---|
@@ -111,3 +111,75 @@ Estado basado en auditoría estática; no acredita pruebas de aceptación.
 | UC054 | Cancelar servicio | Parcial — idempotencia y concurrencia pendientes |
 | UC055 | Consultar historial | Refactorizado — concurrencia pendiente de verificar |
 | UC056 | Usar canal de comunicación | Parcial — idempotencia y política D-10 pendientes |
+
+
+## SPEC-09 — Notificaciones de propuestas y servicios
+
+Refactorización implementada. Compilación Maven y suite unitaria aprobadas. La aceptación integral sigue pendiente.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC057 | Notificar aceptación de propuesta | Refactorizado — proveedor de entrega y concurrencia pendientes |
+| UC058 | Notificar cambio de estado | Refactorizado — proveedor de entrega y concurrencia pendientes |
+
+## SPEC-10 — Calificaciones, reseñas y verificación
+
+Refactorización implementada. Compilación Maven y suite unitaria aprobadas. La aceptación integral sigue pendiente.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC059 | Calificar servicio finalizado | Refactorizado; aceptación integral pendiente |
+| UC060 | Agregar reseña textual | Refactorizado; aceptación integral pendiente |
+| UC061 | Recalcular reputación | Refactorizado — concurrencia de reputación pendiente |
+| UC062 | Mostrar confianza y verificación | Refactorizado; aceptación integral pendiente |
+| UC063 | Solicitar verificación documental | Refactorizado — política documental e integración de almacenamiento pendientes |
+| UC064 | Reportar reseña | Refactorizado; aceptación integral pendiente |
+
+## SPEC-11 — Reportes y evidencias
+
+Refactorización implementada. Compilación Maven y suite unitaria aprobadas. La aceptación integral sigue pendiente.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC065 | Reportar usuario | Refactorizado — consolidación concurrente pendiente |
+| UC066 | Reportar servicio | Refactorizado — consolidación concurrente pendiente |
+| UC067 | Adjuntar evidencia y consultar reporte propio | Refactorizado — bloqueo y rollback pendientes de verificar en PostgreSQL |
+
+## SPEC-12 — Administración, moderación y riesgos
+
+Refactorización implementada. Compilación Maven y suite unitaria aprobadas. La aceptación integral sigue pendiente.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC068 | Administrar categorías | Refactorizado; aceptación integral pendiente |
+| UC069 | Administrar zonas | Refactorizado; aceptación integral pendiente |
+| UC070 | Consultar cola de reportes | Refactorizado; aceptación integral pendiente |
+| UC071 | Revisar detalle del reporte | Refactorizado; aceptación integral pendiente |
+| UC072 | Resolver reporte | Refactorizado — concurrencia y política D-12 pendientes |
+| UC073 | Bloquear preventivamente cuenta | Refactorizado — protección secuencial implementada, carrera con confirmación pendiente |
+| UC074 | Moderar contenido | Refactorizado — granularidad de moderación pendiente |
+| UC075 | Buscar cuentas y perfiles | Refactorizado — paginación pendiente |
+| UC076 | Marcar servicio de alto riesgo | Refactorizado — criterios D-12 pendientes |
+
+## SPEC-13 — Ruta de formalización
+
+Refactorización implementada. Compilación Maven y suite unitaria aprobadas. La aceptación integral sigue pendiente.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC077 | Consultar ruta orientativa | Refactorizado; aceptación integral pendiente |
+| UC078 | Consultar enlaces oficiales | Refactorizado; aceptación integral pendiente |
+| UC079 | Progreso orientativo | Refactorizado — fórmula D-13 pendiente |
+| UC080 | Vinculación institucional futura | Refactorizado — Future deshabilitado |
+
+## SPEC-14 — Preferencias, historial e indicadores
+
+Refactorización implementada. Compilación Maven y suite unitaria aprobadas. La aceptación integral sigue pendiente.
+
+| ID | Caso de uso | Estado de implementación verificable |
+|---|---|---|
+| UC081 | Configurar preferencias de notificación | Refactorizado; aceptación integral pendiente |
+| UC082 | Consultar historial propio | Refactorizado; aceptación integral pendiente |
+| UC083 | Exportar historial | Refactorizado — tamaño final del CSV e integración pendientes |
+| UC084 | Consultar indicadores propios | Refactorizado — regla acordada implementada, resto de D-15 pendiente |
+| UC085 | Consultar actividad reciente | Refactorizado; aceptación integral pendiente |

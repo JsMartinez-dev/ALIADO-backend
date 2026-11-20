@@ -11,10 +11,10 @@ import org.springframework.data.jpa.repository.Query;
 public interface ServicioJpaRepository extends JpaRepository<ServicioEntity, UUID> {
     Optional<ServicioEntity> findBySolicitudId(UUID solicitudId);
 
-    @Query("select s from ServicioEntity s where s.clienteId = :usuarioId or s.prestadorId = :usuarioId order by s.fechaContratacion desc")
+    @Query("select s from ServicioEntity s where s.clienteId = :usuarioId or s.prestadorId = :usuarioId order by s.fechaContratacion desc, s.id asc")
     List<ServicioEntity> findByUsuario(UUID usuarioId);
 
-    @Query("select s from ServicioEntity s where s.clienteId = :usuarioId or s.prestadorId = :usuarioId order by s.fechaContratacion desc")
+    @Query("select s from ServicioEntity s where s.clienteId = :usuarioId or s.prestadorId = :usuarioId order by s.fechaContratacion desc, s.id asc")
     List<ServicioEntity> findByUsuario(UUID usuarioId, Pageable pageable);
 
     @Query("select s from ServicioEntity s where (s.clienteId = :usuarioId or s.prestadorId = :usuarioId)"

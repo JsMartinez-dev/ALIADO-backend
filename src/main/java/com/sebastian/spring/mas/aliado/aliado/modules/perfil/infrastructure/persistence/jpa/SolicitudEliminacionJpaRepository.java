@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 
 public interface SolicitudEliminacionJpaRepository extends JpaRepository<SolicitudEliminacionEntity, UUID> {
+    boolean existsByUsuarioIdAndEstado(UUID usuarioId, String estado);
     Optional<SolicitudEliminacionEntity> findByUsuarioIdAndEstado(UUID usuarioId, String estado);
     Optional<SolicitudEliminacionEntity> findFirstByUsuarioIdOrderByFechaSolicitudDesc(UUID usuarioId);
 

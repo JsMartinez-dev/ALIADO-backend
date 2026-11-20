@@ -1,5 +1,9 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.administracion.application.exception.AdministracionOperacionException;
+import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.exception.FormalizacionOperacionException;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.exception.PreferenciasOperacionException;
+
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.domain.exception.TransicionServicioInvalidaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.exception.OportunidadNoDisponibleException;
@@ -56,6 +60,41 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(AdministracionOperacionException.class)
+    public ResponseEntity<ApiError> errorAdministracion(AdministracionOperacionException ex, HttpServletRequest req) {
+        HttpStatus status = switch (ex.tipo()) {
+            case DATOS_INVALIDOS -> HttpStatus.BAD_REQUEST;
+            case NO_ENCONTRADO -> HttpStatus.NOT_FOUND;
+            case CONFLICTO -> HttpStatus.CONFLICT;
+            case NO_IMPLEMENTADO -> HttpStatus.NOT_IMPLEMENTED;
+        };
+        return respuesta(status, ex.codigo(), ex.getMessage(), req);
+    }
+
+
+    @ExceptionHandler(FormalizacionOperacionException.class)
+    public ResponseEntity<ApiError> errorFormalizacion(FormalizacionOperacionException ex, HttpServletRequest req) {
+        HttpStatus status = switch (ex.tipo()) {
+            case DATOS_INVALIDOS -> HttpStatus.BAD_REQUEST;
+            case NO_ENCONTRADO -> HttpStatus.NOT_FOUND;
+            case CONFLICTO -> HttpStatus.CONFLICT;
+            case NO_IMPLEMENTADO -> HttpStatus.NOT_IMPLEMENTED;
+        };
+        return respuesta(status, ex.codigo(), ex.getMessage(), req);
+    }
+
+
+    @ExceptionHandler(PreferenciasOperacionException.class)
+    public ResponseEntity<ApiError> errorPreferencias(PreferenciasOperacionException ex, HttpServletRequest req) {
+        HttpStatus status = switch (ex.tipo()) {
+            case DATOS_INVALIDOS -> HttpStatus.BAD_REQUEST;
+            case PROHIBIDO -> HttpStatus.FORBIDDEN;
+            case NO_ENCONTRADO -> HttpStatus.NOT_FOUND;
+            case CONFLICTO -> HttpStatus.CONFLICT;
+        };
+        return respuesta(status, ex.codigo(), ex.getMessage(), req);
+    }
+
     @ExceptionHandler(ServicioOperacionException.class)
     public ResponseEntity<ApiError> servicioOperacion(ServicioOperacionException ex,HttpServletRequest req){
         HttpStatus status=switch(ex.tipo()) {case INVALIDO -> HttpStatus.BAD_REQUEST;case NO_ENCONTRADO -> HttpStatus.NOT_FOUND;case NO_AUTORIZADO -> HttpStatus.FORBIDDEN;case CONFLICTO -> HttpStatus.CONFLICT;};

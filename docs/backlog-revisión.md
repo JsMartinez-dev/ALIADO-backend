@@ -96,7 +96,7 @@ Refactorización **completada por decisión del usuario**. Persisten pendientes 
 
 ## SPEC-08 — Contratación y ciclo de vida del servicio
 
-Auditoría estática completa; revisado no implica refactorizado ni probado. Detalle en [diagnóstico](reviews/auditoria-spec-08.md).
+Refactorización **finalizada por decisión del usuario**. Persisten pendientes de idempotencia, concurrencia y D-10; pasaron 29 pruebas unitarias. Detalle en [diagnóstico](reviews/auditoria-spec-08.md).
 
 | Orden | ID | Caso de uso | Dependencias | Estado de revisión |
 |---|---|---|---|---|
@@ -112,3 +112,75 @@ Auditoría estática completa; revisado no implica refactorizado ni probado. Det
 | 10 | UC054 | Cancelar servicio | Servicio no finalizado | Parcial — idempotencia y concurrencia pendientes |
 | 11 | UC055 | Consultar historial | UC048 y transiciones | Refactorizado — concurrencia pendiente de verificar |
 | 12 | UC056 | Usar canal de comunicación | UC049; política D-10 | Parcial — idempotencia y D-10 pendientes |
+
+
+## SPEC-09 — Notificaciones de propuestas y servicios
+
+Refactorización implementada y suite unitaria aprobada. Ver [diagnóstico](reviews/auditoria-spec-09.md).
+
+| ID | Caso de uso | Estado de revisión |
+|---|---|---|
+| UC057 | Notificar aceptación de propuesta | Refactorizado — proveedor de entrega y concurrencia pendientes |
+| UC058 | Notificar cambio de estado | Refactorizado — proveedor de entrega y concurrencia pendientes |
+
+## SPEC-10 — Calificaciones, reseñas y verificación
+
+Refactorización implementada y suite unitaria aprobada. Ver [diagnóstico](reviews/auditoria-spec-10.md).
+
+| ID | Caso de uso | Estado de revisión |
+|---|---|---|
+| UC059 | Calificar servicio finalizado | Refactorizado; aceptación integral pendiente |
+| UC060 | Agregar reseña textual | Refactorizado; aceptación integral pendiente |
+| UC061 | Recalcular reputación | Refactorizado — concurrencia de reputación pendiente |
+| UC062 | Mostrar confianza y verificación | Refactorizado; aceptación integral pendiente |
+| UC063 | Solicitar verificación documental | Refactorizado — política documental e integración de almacenamiento pendientes |
+| UC064 | Reportar reseña | Refactorizado; aceptación integral pendiente |
+
+## SPEC-11 — Reportes y evidencias
+
+Refactorización implementada y suite unitaria aprobada. Ver [diagnóstico](reviews/auditoria-spec-11.md).
+
+| ID | Caso de uso | Estado de revisión |
+|---|---|---|
+| UC065 | Reportar usuario | Refactorizado — consolidación concurrente pendiente |
+| UC066 | Reportar servicio | Refactorizado — consolidación concurrente pendiente |
+| UC067 | Adjuntar evidencia y consultar reporte propio | Refactorizado — bloqueo y rollback pendientes de verificar en PostgreSQL |
+
+## SPEC-12 — Administración, moderación y riesgos
+
+Refactorización implementada y suite unitaria aprobada. Ver [diagnóstico](reviews/auditoria-spec-12.md).
+
+| ID | Caso de uso | Estado de revisión |
+|---|---|---|
+| UC068 | Administrar categorías | Refactorizado; aceptación integral pendiente |
+| UC069 | Administrar zonas | Refactorizado; aceptación integral pendiente |
+| UC070 | Consultar cola de reportes | Refactorizado; aceptación integral pendiente |
+| UC071 | Revisar detalle del reporte | Refactorizado; aceptación integral pendiente |
+| UC072 | Resolver reporte | Refactorizado — concurrencia y política D-12 pendientes |
+| UC073 | Bloquear preventivamente cuenta | Refactorizado — protección secuencial implementada, carrera con confirmación pendiente |
+| UC074 | Moderar contenido | Refactorizado — granularidad de moderación pendiente |
+| UC075 | Buscar cuentas y perfiles | Refactorizado — paginación pendiente |
+| UC076 | Marcar servicio de alto riesgo | Refactorizado — criterios D-12 pendientes |
+
+## SPEC-13 — Ruta de formalización
+
+Refactorización implementada y suite unitaria aprobada. Ver [diagnóstico](reviews/auditoria-spec-13.md).
+
+| ID | Caso de uso | Estado de revisión |
+|---|---|---|
+| UC077 | Consultar ruta orientativa | Refactorizado; aceptación integral pendiente |
+| UC078 | Consultar enlaces oficiales | Refactorizado; aceptación integral pendiente |
+| UC079 | Progreso orientativo | Refactorizado — fórmula D-13 pendiente |
+| UC080 | Vinculación institucional futura | Refactorizado — Future deshabilitado |
+
+## SPEC-14 — Preferencias, historial e indicadores
+
+Refactorización implementada y suite unitaria aprobada. Ver [diagnóstico](reviews/auditoria-spec-14.md).
+
+| ID | Caso de uso | Estado de revisión |
+|---|---|---|
+| UC081 | Configurar preferencias de notificación | Refactorizado; aceptación integral pendiente |
+| UC082 | Consultar historial propio | Refactorizado; aceptación integral pendiente |
+| UC083 | Exportar historial | Refactorizado — tamaño final del CSV e integración pendientes |
+| UC084 | Consultar indicadores propios | Refactorizado — regla acordada implementada, resto de D-15 pendiente |
+| UC085 | Consultar actividad reciente | Refactorizado; aceptación integral pendiente |

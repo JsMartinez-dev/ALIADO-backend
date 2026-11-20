@@ -15,4 +15,16 @@ public class NotificacionUseCaseConfig {
   transaction.setReadOnly(true);
   return prestadorId->transaction.execute(status->service.ejecutar(prestadorId));
  }
+
+ @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarAceptacionPropuestaUseCase notificarAceptacionPropuesta(com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort port) { return new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarAceptacionPropuestaService(port); }
+
+ @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarCambioEstadoServicioUseCase notificarCambioEstadoServicio(com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort port) { return new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarCambioEstadoServicioService(port); }
+
+ @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarNotificacionesUseCase consultarNotificacionesUseCase(
+   com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionConsultaPort consultas, PlatformTransactionManager manager) {
+  var service = new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesService(consultas);
+  var transaction = new TransactionTemplate(manager);
+  transaction.setReadOnly(true);
+  return command -> transaction.execute(status -> service.ejecutar(command));
+ }
 }
