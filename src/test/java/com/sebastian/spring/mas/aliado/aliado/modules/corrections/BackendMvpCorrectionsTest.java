@@ -5,6 +5,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPort;
+import com.sebastian.spring.mas.aliado.aliado.common.web.BaseController;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.MediaType;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.GeneradorTokenSesion;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HasheadorPassword;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HuellaToken;
@@ -60,8 +64,22 @@ class BackendMvpCorrectionsTest {
     @Mock ResenaRepository resenas;
     @Mock ServicioLecturaPort serviciosLectura;
     @Mock OperacionesReportes operaciones;
+    @Mock IdempotenciaPort idempotencia;
 
     private static OffsetDateTime ahora() { return OffsetDateTime.now(ZoneOffset.UTC); }
+
+    @Test
+    void replayIdempotenteDevuelveJsonPlanoYNoElPojoDeJsonNode() throws Exception {
+        var clave = UUID.randomUUID();
+        when(idempotencia.buscar(clave, "test.replay"))
+                .thenReturn(Optional.of(new IdempotenciaPort.Respuesta(201,
+                        new ObjectMapper().readTree("{\"id\":\"abc\"}"))));
+        var controller = new ReplayController(new ObjectMapper(), idempotencia);
+        var respuesta = controller.replay(clave);
+        assertEquals(201, respuesta.getStatusCode().value());
+        assertEquals(MediaType.APPLICATION_JSON, respuesta.getHeaders().getContentType());
+        assertEquals("{\"id\":\"abc\"}", respuesta.getBody());
+    }
 
     @Test
     void solicitudExponeFotosComoClavesYComoDetalle() {
@@ -232,6 +250,13 @@ class BackendMvpCorrectionsTest {
     private ServicioContratado servicio(UUID cliente, UUID prestador, EstadoServicio estado) {
         return new ServicioContratado(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), cliente, prestador,
                 estado, true, ahora(), 0, List.of(), List.of());
+    }
+
+    private static final class ReplayController extends BaseController {
+        ReplayController(ObjectMapper mapper, IdempotenciaPort port) { super(mapper, port); }
+        org.springframework.http.ResponseEntity<String> replay(UUID clave) {
+            return respuestaGuardada(clave, "test.replay").orElseThrow();
+        }
     }
 
     private Calificacion calificacion(UUID cliente) {

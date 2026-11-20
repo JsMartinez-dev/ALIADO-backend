@@ -62,6 +62,7 @@ public class SecurityConfig {
                                       HttpStatus status, String code, String message) throws IOException {
         res.setStatus(status.value());
         res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
         ApiError error = new ApiError(OffsetDateTime.now(), status.value(), code, message,
                 req.getRequestURI(), UUID.randomUUID().toString());
         res.getWriter().write(objectMapper.writeValueAsString(error));

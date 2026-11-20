@@ -65,6 +65,7 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         ApiError error = new ApiError(OffsetDateTime.now(), HttpServletResponse.SC_FORBIDDEN, code, message,
                 request.getRequestURI(), UUID.randomUUID().toString());
         response.getWriter().write(objectMapper.writeValueAsString(error));
