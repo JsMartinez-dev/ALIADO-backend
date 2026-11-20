@@ -36,6 +36,12 @@ public class CalificacionPersistenceAdapter implements CalificacionRepository {
     }
 
     @Override
+    public List<Calificacion> porClienteId(UUID clienteId) {
+        return calificaciones.findByClienteIdOrderByFechaDesc(clienteId).stream()
+                .map(ConfianzaPersistenceMapper::aDominio).toList();
+    }
+
+    @Override
     public Calificacion guardar(Calificacion calificacion) {
         return ConfianzaPersistenceMapper.aDominio(calificaciones.save(ConfianzaPersistenceMapper.aEntidad(calificacion)));
     }

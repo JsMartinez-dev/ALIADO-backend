@@ -5,6 +5,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.usecase.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.dto.FormalizacionDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.mapper.FormalizacionPresentationMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.*;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/formalizacion")
+@Tag(name = "Formalización", description = "SPEC-13. Todas las operaciones requieren rol PRESTADOR.")
 public class FormalizacionController {
   private final ConsultarRutaFormalizacionUseCase rutas;
   private final ConsultarEnlaceInstitucionalUseCase enlaces;
@@ -33,6 +38,8 @@ public class FormalizacionController {
   }
 
   @GetMapping("/ruta")
+  @Operation(summary = "Consultar ruta de formalización",
+      description = "Requiere rol PRESTADOR. Devuelve un arreglo de rutas con pasos y enlaces.")
   public ResponseEntity<List<FormalizacionDtos.RutaResponse>> ruta() {
     SecurityUtils.exigirRol("PRESTADOR");
     return ResponseEntity.ok(
@@ -40,6 +47,10 @@ public class FormalizacionController {
   }
 
   @GetMapping("/enlaces/{id}")
+  @Operation(summary = "Consultar enlace institucional",
+      description = "Requiere rol PRESTADOR. El estado puede ser DISPONIBLE o NO_DISPONIBLE.")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "Enlace encontrado"),
+      @ApiResponse(responseCode = "404", description = "Enlace no encontrado")})
   public ResponseEntity<FormalizacionDtos.EnlaceResponse> enlace(@PathVariable UUID id) {
     SecurityUtils.exigirRol("PRESTADOR");
     return ResponseEntity.ok(
@@ -48,6 +59,10 @@ public class FormalizacionController {
   }
 
   @GetMapping("/progreso")
+  @Operation(summary = "Consultar progreso de formalización",
+      description = "Requiere rol PRESTADOR. Devuelve un arreglo con avisoLegal.")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "Progreso del prestador"),
+      @ApiResponse(responseCode = "404", description = "SIN_PROGRESO: el prestador no tiene progreso registrado")})
   public ResponseEntity<List<FormalizacionDtos.ProgresoResponse>> progreso() {
     SecurityUtils.exigirRol("PRESTADOR");
     return ResponseEntity.ok(
@@ -59,6 +74,8 @@ public class FormalizacionController {
   }
 
   @PutMapping("/progreso")
+  @Operation(summary = "Actualizar progreso orientativo",
+      description = "Requiere rol PRESTADOR. rutaId y valor son obligatorios; valor admite 0..100.")
   public ResponseEntity<FormalizacionDtos.ProgresoResponse> actualizarProgreso(
       @Valid @RequestBody FormalizacionDtos.ActualizarProgresoRequest req) {
     SecurityUtils.exigirRol("PRESTADOR");
@@ -70,6 +87,8 @@ public class FormalizacionController {
   }
 
   @GetMapping("/vinculacion")
+  @Operation(summary = "Consultar vinculación institucional",
+      description = "Requiere rol PRESTADOR. Responde 204 sin contenido.")
   public ResponseEntity<Void> vinculacion() {
     SecurityUtils.exigirRol("PRESTADOR");
     vinculacion.ejecutar();

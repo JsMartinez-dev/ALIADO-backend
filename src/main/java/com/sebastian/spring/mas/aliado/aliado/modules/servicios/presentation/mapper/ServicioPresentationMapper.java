@@ -9,6 +9,7 @@ public final class ServicioPresentationMapper {
  public static AccionServicioCommand aCommand(UUID id,UUID actor){return new AccionServicioCommand(id,actor);}
  public static AceptarPropuestaCommand aAceptarCommand(UUID id,UUID actor){return new AceptarPropuestaCommand(id,actor);}
  public static EnviarMensajeServicioCommand aMensajeCommand(UUID id,UUID actor,ServicioDtos.MensajeRequest r){return new EnviarMensajeServicioCommand(id,actor,r.contenido());}
+ public static ServicioDtos.ServicioResumenResponse aResumenResponse(ServiciosPropiosResult.Item r){return new ServicioDtos.ServicioResumenResponse(r.id(),r.solicitudId(),r.propuestaId(),r.estado(),r.fechaContratacion());}
  public static ServicioDtos.AceptarResponse aAceptarResponse(ServicioResult r){return new ServicioDtos.AceptarResponse(r.id(),r.estado());}
  public static ServicioDtos.IdEstadoResponse aEstadoResponse(ServicioResult r){return new ServicioDtos.IdEstadoResponse(r.id(),r.estado());}
  public static ServicioDtos.ServicioResponse aResponse(ServicioResult r){

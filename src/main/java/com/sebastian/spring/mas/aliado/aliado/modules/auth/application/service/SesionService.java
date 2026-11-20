@@ -5,6 +5,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.EstadoSe
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Sesion;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Usuario;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.SesionRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.UsuarioRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -44,7 +45,7 @@ public class SesionService implements SesionPort {
             return Optional.empty();
         }
         OffsetDateTime ahora = OffsetDateTime.now();
-        return sesiones.porTokenHash(hashToken(token))
+        var usuario = sesiones.porTokenHash(hashToken(token))
                 .flatMap(sesion -> {
                     if (!sesion.vigente(ahora)) {
                         if (sesion.estado() == EstadoSesion.ACTIVA) {
@@ -54,8 +55,14 @@ public class SesionService implements SesionPort {
                     }
                     return Optional.of(sesion);
                 })
-                .flatMap(sesion -> usuarios.porId(sesion.usuarioId()))
-                .filter(usuario -> !usuario.bloqueado());
+                .flatMap(sesion -> usuarios.porId(sesion.usuarioId()));
+        if (usuario.isEmpty()) {
+            return Optional.empty();
+        }
+        if (usuario.get().bloqueado()) {
+            throw new CuentaBloqueadaException();
+        }
+        return usuario;
     }
 
     @Override

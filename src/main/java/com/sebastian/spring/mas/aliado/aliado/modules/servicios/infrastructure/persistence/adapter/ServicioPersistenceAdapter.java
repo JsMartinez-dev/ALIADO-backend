@@ -40,6 +40,11 @@ public class ServicioPersistenceAdapter implements ServicioRepository {
     }
 
     @Override
+    public long contarPorUsuario(UUID usuarioId) {
+        return jpa.countByUsuario(usuarioId);
+    }
+
+    @Override
     public List<ServicioContratado> activosDeUsuario(UUID usuarioId) {
         return jpa.findActivosDeUsuario(usuarioId).stream().map(ServicioPersistenceMapper::aDominio).toList();
     }

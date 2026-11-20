@@ -16,6 +16,9 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.mapper.A
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -57,8 +60,15 @@ public class AuthController extends BaseController {
 
     @PostMapping("/login")
     @SecurityRequirements
-    public ResponseEntity<AuthDtos.LoginResponse> login(@Valid @RequestBody AuthDtos.LoginRequest req) {
-        ResultadoLogin resultado = iniciarSesionUseCase.ejecutar(AuthPresentationMapper.aCommand(req));
+    @Operation(summary = "Iniciar sesión",
+            description = "X-ALIADO-Client: MOBILE rechaza ADMINISTRADOR antes de cerrar sesiones previas.")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Sesión creada"),
+            @ApiResponse(responseCode = "403", description = "ADMINISTRADOR_NO_DISPONIBLE_EN_MOVIL")})
+    public ResponseEntity<AuthDtos.LoginResponse> login(@Valid @RequestBody AuthDtos.LoginRequest req,
+            @RequestHeader(value = "X-ALIADO-Client", required = false) String cliente) {
+        boolean clienteMovil = "MOBILE".equalsIgnoreCase(cliente == null ? null : cliente.trim());
+        ResultadoLogin resultado = iniciarSesionUseCase.ejecutar(
+                AuthPresentationMapper.aCommand(req, clienteMovil));
         return ResponseEntity.ok(AuthPresentationMapper.aResponse(resultado));
     }
 

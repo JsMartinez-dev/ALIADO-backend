@@ -1,13 +1,18 @@
 package com.sebastian.spring.mas.aliado.aliado.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sebastian.spring.mas.aliado.aliado.common.web.ApiError;
 import com.sebastian.spring.mas.aliado.aliado.common.web.CurrentUser;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,9 +25,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class SessionAuthFilter extends OncePerRequestFilter {
     private final SesionPort sesionService;
+    private final ObjectMapper objectMapper;
 
-    public SessionAuthFilter(SesionPort sesionService) {
+    public SessionAuthFilter(SesionPort sesionService, ObjectMapper objectMapper) {
         this.sesionService = sesionService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -39,13 +46,27 @@ public class SessionAuthFilter extends OncePerRequestFilter {
         String auth = request.getHeader("Authorization");
         if (auth != null && auth.startsWith("Bearer ")) {
             String token = auth.substring("Bearer ".length()).trim();
-            sesionService.validar(token).ifPresent(usuario -> {
-                CurrentUser principal = new CurrentUser(usuario.id(), usuario.email(), usuario.rol().name());
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + usuario.rol())));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            });
+            try {
+                sesionService.validar(token).ifPresent(usuario -> {
+                    CurrentUser principal = new CurrentUser(usuario.id(), usuario.email(), usuario.rol().name());
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + usuario.rol())));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                });
+            } catch (CuentaBloqueadaException ex) {
+                escribirError(request, response, "CUENTA_BLOQUEADA", ex.getMessage());
+                return;
+            }
         }
         chain.doFilter(request, response);
+    }
+
+    private void escribirError(HttpServletRequest request, HttpServletResponse response, String code, String message)
+            throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json");
+        ApiError error = new ApiError(OffsetDateTime.now(), HttpServletResponse.SC_FORBIDDEN, code, message,
+                request.getRequestURI(), UUID.randomUUID().toString());
+        response.getWriter().write(objectMapper.writeValueAsString(error));
     }
 }

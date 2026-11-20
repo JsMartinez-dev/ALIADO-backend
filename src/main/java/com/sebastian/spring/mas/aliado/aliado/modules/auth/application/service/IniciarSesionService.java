@@ -6,6 +6,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.Gene
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HasheadorPassword;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.HuellaToken;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.usecase.IniciarSesionUseCase;
+import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Rol;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CredencialesInvalidasException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.EstadoSesion;
@@ -55,6 +57,10 @@ public class IniciarSesionService implements IniciarSesionUseCase {
 
         if (usuario.bloqueado()) {
             throw new CuentaBloqueadaException();
+        }
+        if (loginCommand.clienteMovil() && usuario.rol() == Rol.ADMINISTRADOR) {
+            throw new BusinessException.Forbidden("ADMINISTRADOR_NO_DISPONIBLE_EN_MOVIL",
+                    "El panel administrativo no está disponible en la aplicación móvil.");
         }
 
         OffsetDateTime fechaActual = OffsetDateTime.now(clock);

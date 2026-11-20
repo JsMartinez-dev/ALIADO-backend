@@ -20,5 +20,5 @@ public final class FormalizacionDtos {
 
   public record ProgresoResponse(UUID rutaId, int valorOrientativo, String avisoLegal) {}
 
-  public record ActualizarProgresoRequest(@NotNull UUID rutaId, @Min(0) @Max(100) int valor) {}
+  public record ActualizarProgresoRequest(@NotNull UUID rutaId, @NotNull @Min(0) @Max(100) Integer valor) {}
 }

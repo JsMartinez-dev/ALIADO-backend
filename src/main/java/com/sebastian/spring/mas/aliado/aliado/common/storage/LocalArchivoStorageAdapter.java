@@ -18,7 +18,7 @@ public class LocalArchivoStorageAdapter implements ArchivoStorageService {
     private final Path raiz;
 
     public LocalArchivoStorageAdapter(@Value("${aliado.storage.dir:${user.home}/.aliado/uploads}") String directorio) {
-        this.raiz = Path.of(directorio);
+        this.raiz = Path.of(directorio).toAbsolutePath().normalize();
         try {
             Files.createDirectories(raiz);
         } catch (IOException ex) {

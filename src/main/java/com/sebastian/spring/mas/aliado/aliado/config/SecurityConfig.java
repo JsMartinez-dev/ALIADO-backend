@@ -29,8 +29,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SessionAuthFilter sessionAuthFilter(SesionPort sesionService) {
-        return new SessionAuthFilter(sesionService);
+    public SessionAuthFilter sessionAuthFilter(SesionPort sesionService, ObjectMapper objectMapper) {
+        return new SessionAuthFilter(sesionService, objectMapper);
     }
 
     @Bean

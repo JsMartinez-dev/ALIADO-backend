@@ -2,6 +2,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.servicios.presentation.dt
 
 import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /** Contratos HTTP de contratación y servicio (SPEC-08). */
@@ -17,6 +18,12 @@ public final class ServicioDtos {
 
     public record PropuestaResumen(UUID id, UUID prestadorId, String disponibilidad, String mensaje, String estado,
                                    OffsetDateTime fechaCreacion) {}
+
+    public record ServicioResumenResponse(UUID id, UUID solicitudId, UUID propuestaId, String estado,
+                                          OffsetDateTime fechaContratacion) {}
+
+    public record ServiciosPropiosPage(List<ServicioResumenResponse> items, int pagina, int tamano,
+                                       long totalElementos, int totalPaginas) {}
 
     public record AceptarResponse(UUID servicioId, String estado) {}
 

@@ -45,6 +45,25 @@ public class ConfianzaUseCaseConfig {
         return command -> transaction.execute(status -> service.ejecutar(command));
     }
     @Bean
+    public ConsultarCalificacionPropiaUseCase consultarCalificacionPropiaUseCase(
+            CalificacionRepository calificaciones, ResenaRepository resenas, ServicioLecturaPort servicios,
+            PlatformTransactionManager manager) {
+        var service = new ConsultarCalificacionPropiaService(calificaciones, resenas, servicios);
+        var transaction = new TransactionTemplate(manager);
+        transaction.setReadOnly(true);
+        return command -> transaction.execute(status -> service.ejecutar(command));
+    }
+
+    @Bean
+    public ConsultarCalificacionesPropiasUseCase consultarCalificacionesPropiasUseCase(
+            CalificacionRepository calificaciones, ResenaRepository resenas, PlatformTransactionManager manager) {
+        var service = new ConsultarCalificacionesPropiasService(calificaciones, resenas);
+        var transaction = new TransactionTemplate(manager);
+        transaction.setReadOnly(true);
+        return (clienteId, pagina, tamano) -> transaction.execute(status -> service.ejecutar(clienteId, pagina, tamano));
+    }
+
+    @Bean
     public AgregarResenaUseCase agregarResenaUseCase(@Qualifier("operacionesConfianza") OperacionesConfianza operaciones, PlatformTransactionManager manager) {
         var service = new AgregarResenaService(operaciones);
         var transaction = new TransactionTemplate(manager);

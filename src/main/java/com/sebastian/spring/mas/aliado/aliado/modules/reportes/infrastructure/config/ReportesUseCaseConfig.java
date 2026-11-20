@@ -51,6 +51,13 @@ public class ReportesUseCaseConfig {
         return command -> transaction.execute(status -> service.ejecutar(command));
     }
     @Bean
+    public ConsultarReportesPropiosUseCase consultarReportesPropiosUseCase(@Qualifier("operacionesReportes") OperacionesReportes operaciones, PlatformTransactionManager manager) {
+        var service = new ConsultarReportesPropiosService(operaciones);
+        var transaction = new TransactionTemplate(manager);
+        transaction.setReadOnly(true);
+        return (reportanteId, pagina, tamano) -> transaction.execute(status -> service.ejecutar(reportanteId, pagina, tamano));
+    }
+    @Bean
     public DescargarEvidenciaPropiaUseCase descargarEvidenciaPropiaUseCase(@Qualifier("operacionesReportes") OperacionesReportes operaciones, PlatformTransactionManager manager) {
         var service = new DescargarEvidenciaPropiaService(operaciones);
         var transaction = new TransactionTemplate(manager);

@@ -10,6 +10,7 @@ public interface ServicioRepository {
     Optional<ServicioContratado> porSolicitudId(UUID solicitudId);
     List<ServicioContratado> porUsuario(UUID usuarioId);
     List<ServicioContratado> porUsuario(UUID usuarioId, int pagina, int tamano);
+    long contarPorUsuario(UUID usuarioId);
     List<ServicioContratado> activosDeUsuario(UUID usuarioId);
     ServicioContratado guardar(ServicioContratado servicio);
 }
