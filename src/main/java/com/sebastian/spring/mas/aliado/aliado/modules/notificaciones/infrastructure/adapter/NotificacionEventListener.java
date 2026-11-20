@@ -5,6 +5,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.DetectarNuevaOportunidadUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.usecase.NotificarPropuestaRecibidaUseCase;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -15,10 +16,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotificacionEventListener {
     private final NotificacionPort notificaciones;
+    private final NotificarPropuestaRecibidaUseCase notificarPropuesta;
     private final DetectarNuevaOportunidadUseCase detectarNuevaOportunidad;
 
-    public NotificacionEventListener(NotificacionPort notificaciones, DetectarNuevaOportunidadUseCase detectarNuevaOportunidad) {
+    public NotificacionEventListener(NotificacionPort notificaciones, DetectarNuevaOportunidadUseCase detectarNuevaOportunidad, NotificarPropuestaRecibidaUseCase notificarPropuesta) {
         this.notificaciones = notificaciones;
+        this.notificarPropuesta = notificarPropuesta;
         this.detectarNuevaOportunidad = detectarNuevaOportunidad;
     }
 
@@ -29,8 +32,7 @@ public class NotificacionEventListener {
 
     @EventListener
     public void alCrearPropuesta(Eventos.PropuestaCreada evento) {
-        notificaciones.registrar(TipoNotificacion.PROPUESTA_RECIBIDA, evento.propuestaId(), evento.clienteId(), 1,
-                "Recibiste una nueva propuesta para tu solicitud.", Canal.PUSH);
+        notificarPropuesta.ejecutar(evento.propuestaId());
     }
 
     @EventListener

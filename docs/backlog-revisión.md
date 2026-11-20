@@ -80,3 +80,16 @@ Refactorización **finalizada por decisión del usuario**. Permanecen pendientes
 | 3 | UC036 | Filtrar tablero | UC035 | Refactorizado — aceptación pendiente |
 | 4 | UC037 | Consultar detalle | UC034, UC035 y fotos de SPEC-04 | Refactorizado — fotos y aceptación pendientes |
 | 5 | UC038 | Notificar oportunidad | UC034, notificaciones SPEC-09 y preferencias | Parcial — entrega real y aceptación pendientes |
+
+## SPEC-07 — Creación y gestión de propuestas
+
+Auditoría estática completa; revisado no implica refactorizado ni probado. Detalle en [diagnóstico](reviews/auditoria-spec-07.md).
+
+| Orden | ID | Caso de uso | Dependencias | Estado de revisión |
+|---|---|---|---|---|
+| 1 | UC039 | Crear propuesta | Solicitudes, compatibilidad, UC040/041/044 | Parcial — refactorizado; idempotencia y concurrencia pendientes |
+| 2 | UC040 | Definir disponibilidad | UC039 | Refactorizado — aceptación integral pendiente |
+| 3 | UC041 | Mensaje opcional | UC039 | Refactorizado — aceptación integral pendiente |
+| 4 | UC044 | Notificar propuesta | UC039 y notificaciones | Parcial — entrega real y aceptación integral pendientes |
+| 5 | UC042 | Editar propuesta | UC039 | Refactorizado — aceptación integral pendiente |
+| 6 | UC043 | Retirar propuesta | UC039 | Refactorizado — aceptación integral pendiente |

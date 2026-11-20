@@ -4,6 +4,8 @@ import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotenciaPo
 import com.sebastian.spring.mas.aliado.aliado.common.web.BaseController;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.PropuestaService;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.usecase.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.presentation.mapper.PropuestaPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.model.Propuesta;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.presentation.dto.PropuestaDtos;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,11 +27,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class PropuestaController extends BaseController {
     private final PropuestaService service;
+    private final CrearPropuestaUseCase crearPropuesta;
+    private final EditarPropuestaUseCase editarPropuesta;
+    private final RetirarPropuestaUseCase retirarPropuesta;
 
-    public PropuestaController(PropuestaService service, ObjectMapper objectMapper,
+    public PropuestaController(PropuestaService service, CrearPropuestaUseCase crearPropuesta,
+                               EditarPropuestaUseCase editarPropuesta, RetirarPropuestaUseCase retirarPropuesta, ObjectMapper objectMapper,
                                IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
         this.service = service;
+        this.crearPropuesta = crearPropuesta;
+        this.editarPropuesta = editarPropuesta;
+        this.retirarPropuesta = retirarPropuesta;
     }
 
     private PropuestaDtos.PropuestaResponse aRespuesta(Propuesta p) {
@@ -43,8 +52,8 @@ public class PropuestaController extends BaseController {
         SecurityUtils.exigirRol("PRESTADOR");
         UUID prestadorId = SecurityUtils.actual().id();
         return ejecutarIdempotente(claveHeader, "propuestas.crear", cuerpo -> prestadorId, 201, () -> {
-            Propuesta creada = service.crear(prestadorId, req.solicitudId(), req.disponibilidad(), req.mensaje());
-            return aRespuesta(creada);
+            var creada = crearPropuesta.ejecutar(PropuestaPresentationMapper.aCommand(prestadorId, req));
+            return PropuestaPresentationMapper.aResponse(creada);
         });
     }
 
@@ -52,15 +61,15 @@ public class PropuestaController extends BaseController {
     public ResponseEntity<PropuestaDtos.PropuestaResponse> editar(@PathVariable UUID id,
             @Valid @RequestBody PropuestaDtos.EditarRequest req) {
         SecurityUtils.exigirRol("PRESTADOR");
-        return ResponseEntity.ok(aRespuesta(service.editar(id, SecurityUtils.actual().id(),
-                req.disponibilidad(), req.mensaje())));
+        return ResponseEntity.ok(PropuestaPresentationMapper.aResponse(editarPropuesta.ejecutar(
+                PropuestaPresentationMapper.aEditarCommand(id, SecurityUtils.actual().id(), req))));
     }
 
     @PostMapping("/propuestas/{id}/retirar")
     public ResponseEntity<PropuestaDtos.IdEstadoResponse> retirar(@PathVariable UUID id) {
         SecurityUtils.exigirRol("PRESTADOR");
-        Propuesta retirada = service.retirar(id, SecurityUtils.actual().id());
-        return ResponseEntity.ok(new PropuestaDtos.IdEstadoResponse(retirada.id(), retirada.estado().name()));
+        var retirada = retirarPropuesta.ejecutar(PropuestaPresentationMapper.aRetirarCommand(id, SecurityUtils.actual().id()));
+        return ResponseEntity.ok(PropuestaPresentationMapper.aEstadoResponse(retirada));
     }
 
     @GetMapping("/solicitudes/{solicitudId}/propuestas")

@@ -1,6 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.domain;
 
-import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.exception.PropuestaNoActivaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.model.EstadoPropuesta;
 import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.model.Propuesta;
 import java.time.OffsetDateTime;
@@ -38,13 +38,13 @@ class PropuestaEstadoTest {
 
     @Test
     void retirarPropuestaRetiradaEsInvalido() {
-        assertThrows(BusinessException.Conflict.class,
+        assertThrows(PropuestaNoActivaException.class,
                 () -> propuesta(EstadoPropuesta.RETIRADA).retirar(OffsetDateTime.now()));
     }
 
     @Test
     void editarNoCambiaEstado() {
         var propuesta = propuesta(EstadoPropuesta.ACTIVA);
-        assertEquals(EstadoPropuesta.ACTIVA, propuesta.estado());
+        assertEquals(EstadoPropuesta.ACTIVA, propuesta.editada("Martes", null, OffsetDateTime.now()).estado());
     }
 }

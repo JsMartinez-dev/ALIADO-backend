@@ -1,6 +1,8 @@
 package com.sebastian.spring.mas.aliado.aliado.common.web;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.exception.OportunidadNoDisponibleException;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.exception.*;
+import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.exception.PropuestaNoActivaException;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.ServicioPortafolioNoEncontradoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.PortafolioInvalidoException;
@@ -52,6 +54,23 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(DatosPropuestaInvalidosException.class)
+    public ResponseEntity<ApiError> datosPropuesta(DatosPropuestaInvalidosException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.codigo(), ex.getMessage(), req);
+    }
+    @ExceptionHandler(RecursoPropuestaNoEncontradoException.class)
+    public ResponseEntity<ApiError> recursoPropuesta(RecursoPropuestaNoEncontradoException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.NOT_FOUND, ex.codigo(), ex.getMessage(), req);
+    }
+    @ExceptionHandler(ConflictoPropuestaException.class)
+    public ResponseEntity<ApiError> conflictoPropuesta(ConflictoPropuestaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, ex.codigo(), ex.getMessage(), req);
+    }
+    @ExceptionHandler(PropuestaNoActivaException.class)
+    public ResponseEntity<ApiError> propuestaNoActiva(PropuestaNoActivaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.CONFLICT, "PROPUESTA_NO_ACTIVA", ex.getMessage(), req);
+    }
+
     @ExceptionHandler(OportunidadNoDisponibleException.class)
     public ResponseEntity<ApiError> oportunidadNoDisponible(OportunidadNoDisponibleException ex, HttpServletRequest req) {
         return respuesta(HttpStatus.NOT_FOUND, "OPORTUNIDAD_NO_ENCONTRADA", ex.getMessage(), req);
