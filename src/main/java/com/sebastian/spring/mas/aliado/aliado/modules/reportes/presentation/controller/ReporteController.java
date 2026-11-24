@@ -9,7 +9,12 @@ import com.sebastian.spring.mas.aliado.aliado.modules.reportes.application.useca
 import com.sebastian.spring.mas.aliado.aliado.modules.reportes.application.dto.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.reportes.presentation.mapper.ReportePresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.reportes.presentation.dto.ReporteDtos;
+import com.sebastian.spring.mas.aliado.aliado.common.web.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -35,11 +40,11 @@ public class ReporteController extends BaseController {
 
     private final ReportarUsuarioUseCase usuarioUseCase;
     private final ReportarServicioUseCase servicioUseCase;
-    private final AdjuntarEvidenciaReporteUseCase evidenciaUseCase;
+    private final AdjuntarEvidenciaReporteIdempotenteUseCase evidenciaUseCase;
     private final ConsultarReportePropioUseCase consultaUseCase;
     private final DescargarEvidenciaPropiaUseCase descargaUseCase;
     private final ConsultarReportesPropiosUseCase reportesPropiosUseCase;
-    public ReporteController(ReportarUsuarioUseCase usuarioUseCase, ReportarServicioUseCase servicioUseCase, AdjuntarEvidenciaReporteUseCase evidenciaUseCase, ConsultarReportePropioUseCase consultaUseCase, DescargarEvidenciaPropiaUseCase descargaUseCase, ConsultarReportesPropiosUseCase reportesPropiosUseCase, ObjectMapper objectMapper, IdempotenciaPort idempotencyService) {
+    public ReporteController(ReportarUsuarioUseCase usuarioUseCase, ReportarServicioUseCase servicioUseCase, AdjuntarEvidenciaReporteIdempotenteUseCase evidenciaUseCase, ConsultarReportePropioUseCase consultaUseCase, DescargarEvidenciaPropiaUseCase descargaUseCase, ConsultarReportesPropiosUseCase reportesPropiosUseCase, ObjectMapper objectMapper, IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
         this.usuarioUseCase = usuarioUseCase;
         this.servicioUseCase = servicioUseCase;
@@ -65,25 +70,35 @@ public class ReporteController extends BaseController {
 
     @PostMapping(value = "/reportes/{id}/evidencias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Adjuntar evidencia a un reporte propio abierto",
-            description = "Acepta Idempotency-Key opcional para reintentos sin duplicar la evidencia.")
+            description = "Acepta Idempotency-Key opcional. La misma clave y contenido reproducen la "
+                    + "evidencia original; la misma clave con contenido distinto responde 409.")
+    @ApiResponses({@ApiResponse(responseCode = "201", description = "Evidencia creada o reproducida"),
+            @ApiResponse(responseCode = "409", description = "Idempotency-Key reutilizada con contenido distinto",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "403", description = "Reporte ajeno o no autorizado",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "404", description = "Reporte no encontrado",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))})
     public ResponseEntity<?> agregarEvidencia(@PathVariable UUID id,
             @RequestPart("archivo") MultipartFile archivo,
             @RequestHeader(value = "Idempotency-Key", required = false) String claveHeader) {
-        return ejecutarIdempotente(claveHeader, "reportes.evidencia:" + id, r -> SecurityUtils.actual().id(),
-                HttpStatus.CREATED.value(), () -> {
-                    byte[] contenido;
-                    try {
-                        contenido = archivo.getBytes();
-                    } catch (IOException ex) {
-                        throw new BusinessException.BadRequest("ARCHIVO_INVALIDO",
-                                "No se pudo leer el archivo enviado.");
-                    }
-                    var evidencia = evidenciaUseCase.ejecutar(new AdjuntarEvidenciaReporteCommand(
-                            id, SecurityUtils.actual().id(), archivo.getOriginalFilename(),
-                            archivo.getContentType(), contenido));
-                    return new ReporteDtos.EvidenciaResponse(evidencia.id(), evidencia.archivoKey(),
-                            evidencia.tipoContenido());
-                });
+        byte[] contenido;
+        try {
+            contenido = archivo.getBytes();
+        } catch (IOException ex) {
+            throw new BusinessException.BadRequest("ARCHIVO_INVALIDO",
+                    "No se pudo leer el archivo enviado.");
+        }
+        var resultado = evidenciaUseCase.ejecutar(new AdjuntarEvidenciaIdempotenteCommand(
+                id, SecurityUtils.actual().id(), archivo.getOriginalFilename(),
+                archivo.getContentType(), contenido, claveIdempotencia(claveHeader)));
+        var evidencia = resultado.evidencia();
+        return ResponseEntity.status(resultado.statusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ReporteDtos.EvidenciaResponse(evidencia.id(), evidencia.archivoKey(),
+                        evidencia.tipoContenido()));
     }
 
     @GetMapping("/reportes/{id}/evidencias/{evidenciaId}")

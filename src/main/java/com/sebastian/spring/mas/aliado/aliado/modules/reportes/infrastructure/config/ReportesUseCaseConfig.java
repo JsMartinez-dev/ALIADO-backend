@@ -7,6 +7,8 @@ import org.springframework.context.annotation.*;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.sebastian.spring.mas.aliado.aliado.common.storage.ArchivoStorageService;
+import com.sebastian.spring.mas.aliado.aliado.common.idempotencia.IdempotencyRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.UsuarioConsultaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.port.ResenaConsultaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.reportes.domain.repository.EvidenciaReporteRepository;
@@ -39,6 +41,16 @@ public class ReportesUseCaseConfig {
     @Bean
     public AdjuntarEvidenciaReporteUseCase adjuntarEvidenciaReporteUseCase(@Qualifier("operacionesReportes") OperacionesReportes operaciones, PlatformTransactionManager manager) {
         var service = new AdjuntarEvidenciaReporteService(operaciones);
+        var transaction = new TransactionTemplate(manager);
+        transaction.setReadOnly(false);
+        return command -> transaction.execute(status -> service.ejecutar(command));
+    }
+    @Bean
+    public AdjuntarEvidenciaReporteIdempotenteUseCase adjuntarEvidenciaReporteIdempotenteUseCase(
+            @Qualifier("operacionesReportes") OperacionesReportes operaciones,
+            IdempotencyRepository idempotencia, ObjectMapper objectMapper,
+            PlatformTransactionManager manager) {
+        var service = new AdjuntarEvidenciaReporteIdempotenteService(operaciones, idempotencia, objectMapper);
         var transaction = new TransactionTemplate(manager);
         transaction.setReadOnly(false);
         return command -> transaction.execute(status -> service.ejecutar(command));

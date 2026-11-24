@@ -1,11 +1,14 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.controller;
 
+import com.sebastian.spring.mas.aliado.aliado.common.web.ApiError;
 import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.dto.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.application.usecase.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.dto.FormalizacionDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.formalizacion.presentation.mapper.FormalizacionPresentationMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,7 +53,12 @@ public class FormalizacionController {
   @Operation(summary = "Consultar enlace institucional",
       description = "Requiere rol PRESTADOR. El estado puede ser DISPONIBLE o NO_DISPONIBLE.")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "Enlace encontrado"),
-      @ApiResponse(responseCode = "404", description = "Enlace no encontrado")})
+      @ApiResponse(responseCode = "401", description = "No autenticado",
+          content = @Content(schema = @Schema(implementation = ApiError.class))),
+      @ApiResponse(responseCode = "403", description = "Rol distinto de PRESTADOR",
+          content = @Content(schema = @Schema(implementation = ApiError.class))),
+      @ApiResponse(responseCode = "404", description = "Enlace no encontrado",
+          content = @Content(schema = @Schema(implementation = ApiError.class)))})
   public ResponseEntity<FormalizacionDtos.EnlaceResponse> enlace(@PathVariable UUID id) {
     SecurityUtils.exigirRol("PRESTADOR");
     return ResponseEntity.ok(
@@ -62,7 +70,12 @@ public class FormalizacionController {
   @Operation(summary = "Consultar progreso de formalización",
       description = "Requiere rol PRESTADOR. Devuelve un arreglo con avisoLegal.")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "Progreso del prestador"),
-      @ApiResponse(responseCode = "404", description = "SIN_PROGRESO: el prestador no tiene progreso registrado")})
+      @ApiResponse(responseCode = "401", description = "No autenticado",
+          content = @Content(schema = @Schema(implementation = ApiError.class))),
+      @ApiResponse(responseCode = "403", description = "Rol distinto de PRESTADOR",
+          content = @Content(schema = @Schema(implementation = ApiError.class))),
+      @ApiResponse(responseCode = "404", description = "SIN_PROGRESO: el prestador no tiene progreso registrado",
+          content = @Content(schema = @Schema(implementation = ApiError.class)))})
   public ResponseEntity<List<FormalizacionDtos.ProgresoResponse>> progreso() {
     SecurityUtils.exigirRol("PRESTADOR");
     return ResponseEntity.ok(

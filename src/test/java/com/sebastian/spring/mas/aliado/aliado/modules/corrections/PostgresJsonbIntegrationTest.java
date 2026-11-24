@@ -78,5 +78,16 @@ class PostgresJsonbIntegrationTest {
                 "select pg_typeof(respuesta)::text from idempotency_keys where clave = ? and operacion = ?",
                 String.class, clave, "test.jsonb"));
         assertEquals("{\"ok\":true}", idempotencia.buscar(clave, "test.jsonb").orElseThrow().cuerpoJson());
+
+        UUID claveHuella = UUID.randomUUID();
+        idempotencia.guardarConHuella(claveHuella, "test.huella", usuario.id(), 201,
+                "{\"huella\":true}", "fingerprint-123");
+        entityManager.flush();
+
+        assertEquals("fingerprint-123", idempotencia.buscarConHuella(claveHuella, "test.huella")
+                .orElseThrow().huella());
+        assertEquals("fingerprint-123", jdbc.queryForObject(
+                "select huella from idempotency_keys where clave = ? and operacion = ?",
+                String.class, claveHuella, "test.huella"));
     }
 }

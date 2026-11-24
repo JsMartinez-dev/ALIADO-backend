@@ -21,6 +21,8 @@ public class IdempotencyKeyEntity {
     @Column(nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
     private String respuesta;
+    @Column(name = "huella", length = 64)
+    private String huella;
     @Column(name = "fecha_creacion", nullable = false)
     private OffsetDateTime fechaCreacion;
     @Column(name = "fecha_expiracion", nullable = false)
@@ -34,6 +36,8 @@ public class IdempotencyKeyEntity {
     public void setStatusCode(int statusCode) { this.statusCode = statusCode; }
     public String getRespuesta() { return respuesta; }
     public void setRespuesta(String respuesta) { this.respuesta = respuesta; }
+    public String getHuella() { return huella; }
+    public void setHuella(String huella) { this.huella = huella; }
     public OffsetDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(OffsetDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
     public OffsetDateTime getFechaExpiracion() { return fechaExpiracion; }
