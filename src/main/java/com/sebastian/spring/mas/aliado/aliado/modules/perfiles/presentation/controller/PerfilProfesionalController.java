@@ -19,6 +19,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.useca
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.mapper.PerfilProfesionalPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.EstadoExposicion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.PerfilProfesional;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.DatosGeneralesDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.PerfilProfesionalDtos;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -92,7 +93,8 @@ public class PerfilProfesionalController {
     }
 
     private PerfilProfesionalDtos.PerfilResponse aRespuesta(PerfilProfesional p) {
-        return new PerfilProfesionalDtos.PerfilResponse(p.id(), p.prestadorId(), p.datosGenerales(),
+        return new PerfilProfesionalDtos.PerfilResponse(p.id(), p.prestadorId(),
+                DatosGeneralesDtos.DatosGeneralesResponse.desde(p.datosGenerales()),
                 p.estadoExposicion().name(), List.copyOf(p.categoriaIds()), List.copyOf(p.zonaIds()),
                 p.experiencias().stream().map(e -> new PerfilProfesionalDtos.ExperienciaResponse(
                         e.id(), e.descripcion(), e.fechaInicio(), e.fechaFin())).toList(),

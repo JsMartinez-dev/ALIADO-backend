@@ -6,13 +6,13 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.P
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.exception.PerfilProfesionalYaExisteException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.ConsultaCatalogoPerfilPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.CrearPerfilProfesionalUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.DatosGeneralesProfesional;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.EstadoExposicion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.ExperienciaProfesional;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.PerfilProfesional;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.repository.PerfilProfesionalRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,7 +40,7 @@ public class CrearPerfilProfesionalService implements CrearPerfilProfesionalUseC
                 UUID.randomUUID(), null, e.descripcion(), e.fechaInicio(), e.fechaFin())).toList();
         OffsetDateTime ahora = OffsetDateTime.now();
         PerfilProfesional perfil = new PerfilProfesional(UUID.randomUUID(), command.prestadorId(),
-                command.datosGenerales() == null ? Map.of() : command.datosGenerales(),
+                DatosGeneralesProfesional.paraCreacion(command.descripcion()),
                 EstadoExposicion.PUBLICO, ahora, ahora, categorias, zonas, experienciasDominio,
                 List.of(), List.of(), List.of());
         return PerfilProfesionalResult.desde(perfiles.guardar(perfil));

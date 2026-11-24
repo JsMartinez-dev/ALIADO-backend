@@ -15,25 +15,20 @@ public record PerfilProfesional(UUID id, UUID prestadorId, Map<String, Object> d
                                 List<Disponibilidad> disponibilidades, List<CompromisoAgenda> compromisos) {
 
     /**
-     * Claves de datosGenerales que pueden exponerse en vistas públicas (SPEC-03).
-     * El SPEC no define los campos de datosGenerales ("a definir por UI"): solo se
-     * permiten claves de presentación. Teléfono, dirección, correo o documento nunca
-     * salen del perfil propio, aunque el prestador los guarde en datosGenerales.
+     * BE-05: el contrato MVP de datos generales solo publica la presentación libre.
+     * Teléfono, correo, dirección exacta, documentos y claves heredadas no salen en la vista pública.
      */
-    public static final Set<String> DATOS_PUBLICOS = Set.of(
-            "descripcion", "resumen", "experiencia", "anosExperiencia", "aniosExperiencia",
-            "especialidades", "servicios", "habilidades", "formacion", "educacion",
-            "certificaciones", "idiomas", "sitioWeb");
+    public static final Set<String> DATOS_PUBLICOS = Set.of("descripcion");
 
-    /** Filtra datosGenerales a las claves públicas; lo demás nunca se expone. */
+    /** Filtra datosGenerales a la presentación pública aprobada; lo demás nunca se expone. */
     public static Map<String, Object> datosPublicos(Map<String, Object> datos) {
         if (datos == null) {
             return Map.of();
         }
         Map<String, Object> filtrados = new java.util.LinkedHashMap<>();
         datos.forEach((clave, valor) -> {
-            if (DATOS_PUBLICOS.contains(clave)) {
-                filtrados.put(clave, valor);
+            if (DATOS_PUBLICOS.contains(clave) && valor instanceof String texto && !texto.isBlank()) {
+                filtrados.put(clave, texto);
             }
         });
         return java.util.Collections.unmodifiableMap(filtrados);

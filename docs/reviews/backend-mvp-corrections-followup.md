@@ -34,7 +34,7 @@ Límites:
 ## Estado de otras brechas
 
 - **BE-01:** funciona por la corrección JSONB heredada de `develop`; no es un cambio de esta rama.
-- **BE-05:** bloqueada por definición de producto; no se inventaron campos ni validaciones.
+- **BE-05:** resuelta con el contrato mínimo `descripcion`; ver `be-05-datos-generales.md`.
 - **BE-06:** sigue parcial. OpenAPI de formalización mejora el `404` y los errores de autenticación/rol, pero no se declara un esquema de autorización por rol por operación.
 - **BE-09/D-07:** el endpoint genérico de evidencia funciona; la política de archivos sigue pendiente de producto.
 - **BE-17:** sin metadatos ni filtros nuevos; contrato actual sin total/cursor.
