@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Gestión de perfil y privacidad (SPEC-02). */
 @RestController
 @RequestMapping("/api/v1/perfil")
 public class PerfilController {

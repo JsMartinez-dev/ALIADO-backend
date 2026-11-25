@@ -48,6 +48,7 @@ public class IniciarSesionService implements IniciarSesionUseCase {
 
         boolean passwordValida = hasheadorPassword.verificar(loginCommand.password(),
                 usuarioEncontrado.map(Usuario::passwordHash).orElse(null));
+
         if (usuarioEncontrado.isEmpty() || !passwordValida) {
             throw new CredencialesInvalidasException();
         }

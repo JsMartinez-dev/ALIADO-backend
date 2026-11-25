@@ -7,25 +7,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Perfil profesional del Prestador (SPEC-05). datosGenerales se guarda como JSON hasta cerrarlo (V3). */
 public record PerfilProfesional(UUID id, UUID prestadorId, Map<String, Object> datosGenerales,
                                 EstadoExposicion estadoExposicion, OffsetDateTime fechaCreacion,
                                 OffsetDateTime fechaActualizacion, Set<UUID> categoriaIds, Set<UUID> zonaIds,
                                 List<ExperienciaProfesional> experiencias, List<ServicioPortafolio> portafolio,
                                 List<Disponibilidad> disponibilidades, List<CompromisoAgenda> compromisos) {
 
-    /**
-     * Claves de datosGenerales que pueden exponerse en vistas públicas (SPEC-03).
-     * El SPEC no define los campos de datosGenerales ("a definir por UI"): solo se
-     * permiten claves de presentación. Teléfono, dirección, correo o documento nunca
-     * salen del perfil propio, aunque el prestador los guarde en datosGenerales.
-     */
     public static final Set<String> DATOS_PUBLICOS = Set.of(
             "descripcion", "resumen", "experiencia", "anosExperiencia", "aniosExperiencia",
             "especialidades", "servicios", "habilidades", "formacion", "educacion",
             "certificaciones", "idiomas", "sitioWeb");
 
-    /** Filtra datosGenerales a las claves públicas; lo demás nunca se expone. */
     public static Map<String, Object> datosPublicos(Map<String, Object> datos) {
         if (datos == null) {
             return Map.of();

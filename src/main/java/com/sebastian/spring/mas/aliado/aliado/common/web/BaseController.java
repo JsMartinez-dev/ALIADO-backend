@@ -9,12 +9,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.springframework.http.ResponseEntity;
 
-/**
- * Utilidades compartidas por los controladores de escritura.
- * La idempotencia (plan general, sección 14) se apoya en la cabecera
- * Idempotency-Key: si la clave ya fue procesada para la operación,
- * se devuelve la respuesta guardada sin ejecutar de nuevo el comando.
- */
+
 public abstract class BaseController {
     protected final ObjectMapper objectMapper;
     protected final IdempotenciaPort idempotencyService;
@@ -49,12 +44,7 @@ public abstract class BaseController {
         }
     }
 
-    /**
-     * Plantilla de comando idempotente: busca la respuesta guardada para la clave,
-     * ejecuta la acción solo si no existe y guarda el resultado. El usuario dueño
-     * de la respuesta se extrae del cuerpo, porque en algunos comandos (registro)
-     * solo se conoce después de ejecutar.
-     */
+
     protected <T> ResponseEntity<?> ejecutarIdempotente(String claveHeader, String operacion,
                                                         Function<T, UUID> usuarioDe, int statusExito,
                                                         Supplier<T> accion) {

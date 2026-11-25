@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Vista pública de un Prestador (SPEC-03): nunca incluye dirección exacta ni contacto directo. */
 public record PrestadorPublico(UUID id, List<String> categorias, List<String> zonas,
                                BigDecimal reputacionAgregada, int cantidadCalificaciones,
                                String nivelVerificacion, List<Bloque> disponibilidad,

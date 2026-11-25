@@ -12,32 +12,31 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Conserva los puertos de perfil consumidos por autenticación, búsqueda y moderación. */
 @Service
 public class PerfilService implements PerfilBasePort, PerfilModeracionPort, PerfilBusquedaPort {
-    private final PerfilRepository perfiles;
+    private final PerfilRepository perfilesRepository;
 
-    public PerfilService(PerfilRepository perfiles) {
-        this.perfiles = perfiles;
+    public PerfilService(PerfilRepository perfilesRepository) {
+        this.perfilesRepository = perfilesRepository;
     }
 
     @Override
     @Transactional
     public void crearPerfilBase(UUID usuarioId) {
-        perfiles.guardar(new Perfil(usuarioId, null, null, Visibilidad.SOLO_ZONA, 0));
+        perfilesRepository.guardar(new Perfil(usuarioId, null, null, Visibilidad.SOLO_ZONA, 0));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Perfil> buscarPorNombre(String texto) {
-        return perfiles.buscarPorNombre(texto);
+        return perfilesRepository.buscarPorNombre(texto);
     }
 
     @Override
     @Transactional
     public void ocultarPerfil(UUID usuarioId) {
-        Perfil actual = perfiles.porUsuarioId(usuarioId)
+        Perfil actual = perfilesRepository.porUsuarioId(usuarioId)
                 .orElseThrow(() -> new BusinessException.NotFound("PERFIL_NO_ENCONTRADO", "Perfil no encontrado."));
-        perfiles.guardar(new Perfil(usuarioId, actual.nombre(), actual.telefono(), Visibilidad.PRIVADO, actual.version()));
+        perfilesRepository.guardar(new Perfil(usuarioId, actual.nombre(), actual.telefono(), Visibilidad.PRIVADO, actual.version()));
     }
 }

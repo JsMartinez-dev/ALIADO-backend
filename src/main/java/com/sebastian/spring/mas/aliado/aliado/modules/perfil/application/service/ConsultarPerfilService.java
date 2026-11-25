@@ -9,21 +9,21 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.P
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.UbicacionRepository;
 import java.util.UUID;
 
-/** UC011: consulta del perfil propio a través de los puertos del dominio. */
 public class ConsultarPerfilService implements ConsultarPerfilUseCase {
-    private final PerfilRepository perfiles;
-    private final UbicacionRepository ubicaciones;
+    private final PerfilRepository perfilesRepository;
+    private final UbicacionRepository ubicacionesRepository;
 
-    public ConsultarPerfilService(PerfilRepository perfiles, UbicacionRepository ubicaciones) {
-        this.perfiles = perfiles;
-        this.ubicaciones = ubicaciones;
+    public ConsultarPerfilService(PerfilRepository perfilesRepository,
+            UbicacionRepository ubicacionesRepository) {
+        this.perfilesRepository = perfilesRepository;
+        this.ubicacionesRepository = ubicacionesRepository;
     }
 
     @Override
     public PerfilResult ejecutar(UUID usuarioId) {
-        Perfil perfil = perfiles.porUsuarioId(usuarioId)
+        Perfil perfil = perfilesRepository.porUsuarioId(usuarioId)
                 .orElseThrow(PerfilNoEncontradoException::new);
-        Ubicacion ubicacion = ubicaciones.porUsuarioId(usuarioId).orElse(null);
+        Ubicacion ubicacion = ubicacionesRepository.porUsuarioId(usuarioId).orElse(null);
         return new PerfilResult(usuarioId, perfil.nombre(), perfil.telefono(),
                 perfil.preferenciaVisibilidad().name(),
                 ubicacion == null ? null : ubicacion.zonaAproximada(),

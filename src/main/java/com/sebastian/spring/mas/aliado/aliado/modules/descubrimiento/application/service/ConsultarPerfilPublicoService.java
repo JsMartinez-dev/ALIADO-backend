@@ -9,24 +9,24 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.Esta
 import java.util.UUID;
 
 public class ConsultarPerfilPublicoService implements ConsultarPerfilPublicoUseCase {
-    private final ConsultaDescubrimientoPort consultas;
-    private final ProyeccionPrestadorPublico proyeccion;
+    private final ConsultaDescubrimientoPort consultaDescubrimientoPort;
+    private final ProyeccionPrestadorPublico proyeccionPrestadorPublico;
 
-    public ConsultarPerfilPublicoService(ConsultaDescubrimientoPort consultas, ProyeccionPrestadorPublico proyeccion) {
-        this.consultas = consultas;
-        this.proyeccion = proyeccion;
+    public ConsultarPerfilPublicoService(ConsultaDescubrimientoPort consultaDescubrimientoPort,
+            ProyeccionPrestadorPublico proyeccionPrestadorPublico) {
+        this.consultaDescubrimientoPort = consultaDescubrimientoPort;
+        this.proyeccionPrestadorPublico = proyeccionPrestadorPublico;
     }
 
     @Override
     public PrestadorPublicoResult ejecutar(UUID prestadorId) {
-        if (consultas.preferenciaDe(prestadorId) == Visibilidad.PRIVADO) {
+        if (consultaDescubrimientoPort.preferenciaDe(prestadorId) == Visibilidad.PRIVADO) {
             throw new PerfilPublicoNoDisponibleException();
         }
-        var perfil = consultas.porPrestadorId(prestadorId)
-                .filter(p -> p.estadoExposicion() == EstadoExposicion.PUBLICO)
-                .filter(p -> !p.disponibilidades().isEmpty())
+        var perfilProfesional = consultaDescubrimientoPort.porPrestadorId(prestadorId)
+                .filter(perfil -> perfil.estadoExposicion() == EstadoExposicion.PUBLICO)
+                .filter(perfil -> !perfil.disponibilidades().isEmpty())
                 .orElseThrow(PerfilPublicoNoDisponibleException::new);
-        return proyeccion.resultado(perfil);
+        return proyeccionPrestadorPublico.resultado(perfilProfesional);
     }
 }
-

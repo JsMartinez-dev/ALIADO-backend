@@ -15,52 +15,60 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public class ConfirmarEliminacionCuentaService implements ConfirmarEliminacionCuentaUseCase {
-    private final SolicitudEliminacionRepository eliminaciones;
-    private final ConsultaServiciosActivosPort servicios;
-    private final PublicadorEventos eventos;
+    private final SolicitudEliminacionRepository solicitudesEliminacionRepository;
+    private final ConsultaServiciosActivosPort consultaServiciosActivosPort;
+    private final PublicadorEventos publicadorEventos;
 
-    public ConfirmarEliminacionCuentaService(SolicitudEliminacionRepository eliminaciones,
-                                            ConsultaServiciosActivosPort servicios, PublicadorEventos eventos) {
-        this.eliminaciones = eliminaciones;
-        this.servicios = servicios;
-        this.eventos = eventos;
+    public ConfirmarEliminacionCuentaService(
+            SolicitudEliminacionRepository solicitudesEliminacionRepository,
+            ConsultaServiciosActivosPort consultaServiciosActivosPort,
+            PublicadorEventos publicadorEventos) {
+        this.solicitudesEliminacionRepository = solicitudesEliminacionRepository;
+        this.consultaServiciosActivosPort = consultaServiciosActivosPort;
+        this.publicadorEventos = publicadorEventos;
     }
 
     @Override
     public EliminacionResult ejecutar(UUID usuarioId) {
-        SolicitudEliminacion solicitud = eliminaciones.ultimaDeUsuario(usuarioId)
+        SolicitudEliminacion solicitudEliminacion = solicitudesEliminacionRepository.ultimaDeUsuario(usuarioId)
                 .orElseThrow(SinSolicitudPendienteException::new);
-        if (solicitud.estado() == EstadoEliminacion.EXPIRADA) {
-            return new EliminacionResult(EstadoEliminacion.EXPIRADA.name(), solicitud.fechaExpiracion());
+        if (solicitudEliminacion.estado() == EstadoEliminacion.EXPIRADA) {
+            return new EliminacionResult(
+                    EstadoEliminacion.EXPIRADA.name(), solicitudEliminacion.fechaExpiracion());
         }
-        if (solicitud.estado() != EstadoEliminacion.PENDIENTE) {
+        if (solicitudEliminacion.estado() != EstadoEliminacion.PENDIENTE) {
             throw new SinSolicitudPendienteException();
         }
-        OffsetDateTime ahora = OffsetDateTime.now();
-        if (solicitud.vencida(ahora)) {
-            if (!eliminaciones.transicionar(solicitud.id(), EstadoEliminacion.PENDIENTE,
+        OffsetDateTime fechaHoraConfirmacion = OffsetDateTime.now();
+        if (solicitudEliminacion.vencida(fechaHoraConfirmacion)) {
+            if (!solicitudesEliminacionRepository.transicionar(
+                    solicitudEliminacion.id(), EstadoEliminacion.PENDIENTE,
                     EstadoEliminacion.EXPIRADA, null)) {
                 return resolverCambioConcurrente(usuarioId);
             }
             // Se devuelve el estado para que infraestructura confirme la transacción antes de producir el error 410.
-            return new EliminacionResult(EstadoEliminacion.EXPIRADA.name(), solicitud.fechaExpiracion());
+            return new EliminacionResult(
+                    EstadoEliminacion.EXPIRADA.name(), solicitudEliminacion.fechaExpiracion());
         }
-        if (servicios.bloqueaEliminacion(usuarioId)) {
+        if (consultaServiciosActivosPort.bloqueaEliminacion(usuarioId)) {
             throw new ServicioBloqueaEliminacionException();
         }
-        if (!eliminaciones.transicionar(solicitud.id(), EstadoEliminacion.PENDIENTE,
-                EstadoEliminacion.CONFIRMADA, ahora)) {
+        if (!solicitudesEliminacionRepository.transicionar(
+                solicitudEliminacion.id(), EstadoEliminacion.PENDIENTE,
+                EstadoEliminacion.CONFIRMADA, fechaHoraConfirmacion)) {
             return resolverCambioConcurrente(usuarioId);
         }
-        eventos.publicar(new Eventos.EliminacionConfirmada(usuarioId, ahora));
-        return new EliminacionResult(EstadoEliminacion.CONFIRMADA.name(), solicitud.fechaExpiracion());
+        publicadorEventos.publicar(new Eventos.EliminacionConfirmada(usuarioId, fechaHoraConfirmacion));
+        return new EliminacionResult(
+                EstadoEliminacion.CONFIRMADA.name(), solicitudEliminacion.fechaExpiracion());
     }
 
     private EliminacionResult resolverCambioConcurrente(UUID usuarioId) {
-        SolicitudEliminacion actual = eliminaciones.ultimaDeUsuario(usuarioId)
+        SolicitudEliminacion solicitudActualizada = solicitudesEliminacionRepository.ultimaDeUsuario(usuarioId)
                 .orElseThrow(SinSolicitudPendienteException::new);
-        if (actual.estado() == EstadoEliminacion.EXPIRADA) {
-            return new EliminacionResult(EstadoEliminacion.EXPIRADA.name(), actual.fechaExpiracion());
+        if (solicitudActualizada.estado() == EstadoEliminacion.EXPIRADA) {
+            return new EliminacionResult(
+                    EstadoEliminacion.EXPIRADA.name(), solicitudActualizada.fechaExpiracion());
         }
         throw new ConflictoEliminacionException();
     }

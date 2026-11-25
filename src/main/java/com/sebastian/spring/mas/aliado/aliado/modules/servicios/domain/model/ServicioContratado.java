@@ -6,12 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Servicio contratado (SPEC-08).
- * Máquina de estados (decisión P-01 documentada: secuencia lineal estricta;
- * TERMINADO exige pasar antes por EN_EJECUCION).
- * CONTRATADO -> EN_EJECUCION -> TERMINADO -> FINALIZADO; cancelación solo antes de FINALIZADO.
- */
+
 public record ServicioContratado(UUID id, UUID solicitudId, UUID propuestaId, UUID clienteId, UUID prestadorId,
                                  EstadoServicio estado, boolean comunicacionHabilitada,
                                  OffsetDateTime fechaContratacion, int version,

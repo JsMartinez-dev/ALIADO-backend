@@ -15,135 +15,146 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Catálogo administrable (SPEC-04 crea las tablas; SPEC-12 las administra). */
 @Service
 public class CatalogoService implements CatalogoConsultaPort, CatalogoAdminPort {
-    private final CategoriaRepository categorias;
-    private final ZonaRepository zonas;
-    private final AuditoriaPort auditoria;
+    private final CategoriaRepository categoriasRepository;
+    private final ZonaRepository zonasRepository;
+    private final AuditoriaPort auditoriaPort;
 
-    public CatalogoService(CategoriaRepository categorias, ZonaRepository zonas, AuditoriaPort auditoria) {
-        this.categorias = categorias;
-        this.zonas = zonas;
-        this.auditoria = auditoria;
+    public CatalogoService(CategoriaRepository categoriasRepository, ZonaRepository zonasRepository,
+            AuditoriaPort auditoriaPort) {
+        this.categoriasRepository = categoriasRepository;
+        this.zonasRepository = zonasRepository;
+        this.auditoriaPort = auditoriaPort;
     }
 
     @Override
     @Transactional
-    public Categoria crearCategoria(UUID administradorId, String nombre) {
-        validarNombre(nombre);
-        if (categorias.porNombre(nombre.trim()).isPresent()) {
+    public Categoria crearCategoria(UUID administradorId, String nombreCategoria) {
+        validarNombre(nombreCategoria);
+        if (categoriasRepository.porNombre(nombreCategoria.trim()).isPresent()) {
             throw new BusinessException.Conflict("CATEGORIA_DUPLICADA", "Ya existe una categoría con ese nombre.");
         }
-        Categoria creada = categorias.guardar(new Categoria(UUID.randomUUID(), nombre.trim(), EstadoCatalogo.ACTIVO));
-        auditoria.registrar(administradorId, "CATEGORY_CREATED", "CATEGORIA", creada.id(), creada.nombre());
-        return creada;
+        Categoria categoriaCreada = categoriasRepository.guardar(
+                new Categoria(UUID.randomUUID(), nombreCategoria.trim(), EstadoCatalogo.ACTIVO));
+        auditoriaPort.registrar(administradorId, "CATEGORY_CREATED", "CATEGORIA",
+                categoriaCreada.id(), categoriaCreada.nombre());
+        return categoriaCreada;
     }
 
     @Override
     @Transactional
-    public Categoria actualizarCategoria(UUID administradorId, UUID id, String nombre, String estado) {
-        Categoria actual = categoriaPorIdOError(id);
-        if (nombre != null && nombre.isBlank()) {
+    public Categoria actualizarCategoria(UUID administradorId, UUID categoriaId, String nombreCategoria,
+            String estadoCategoria) {
+        Categoria categoriaActual = categoriaPorIdOError(categoriaId);
+        if (nombreCategoria != null && nombreCategoria.isBlank()) {
             throw new BusinessException.BadRequest("NOMBRE_REQUERIDO", "El nombre no puede estar vacío.");
         }
-        String nombreFinal = nombre == null ? actual.nombre() : nombre.trim();
-        categorias.porNombre(nombreFinal)
-                .filter(otra -> !otra.id().equals(id))
-                .ifPresent(otra -> {
+        String nombreCategoriaFinal = nombreCategoria == null ? categoriaActual.nombre() : nombreCategoria.trim();
+        categoriasRepository.porNombre(nombreCategoriaFinal)
+                .filter(categoriaExistente -> !categoriaExistente.id().equals(categoriaId))
+                .ifPresent(categoriaExistente -> {
                     throw new BusinessException.Conflict("CATEGORIA_DUPLICADA",
                             "Ya existe otra categoría con ese nombre.");
                 });
-        EstadoCatalogo nuevoEstado = estadoOActual(estado, actual.estado());
-        Categoria actualizada = categorias.guardar(new Categoria(id, nombreFinal, nuevoEstado));
-        auditoria.registrar(administradorId, "CATEGORY_UPDATED", "CATEGORIA", id, nombreFinal);
-        return actualizada;
+        EstadoCatalogo estadoCategoriaActualizado = estadoOActual(estadoCategoria, categoriaActual.estado());
+        Categoria categoriaActualizada = categoriasRepository.guardar(
+                new Categoria(categoriaId, nombreCategoriaFinal, estadoCategoriaActualizado));
+        auditoriaPort.registrar(administradorId, "CATEGORY_UPDATED", "CATEGORIA",
+                categoriaId, nombreCategoriaFinal);
+        return categoriaActualizada;
     }
 
     /** Borrado lógico (SPEC-12): desactivar no rompe borradores ni coberturas existentes. */
     @Override
     @Transactional
-    public void desactivarCategoria(UUID administradorId, UUID id) {
-        Categoria actual = categoriaPorIdOError(id);
-        categorias.guardar(new Categoria(id, actual.nombre(), EstadoCatalogo.INACTIVO));
-        auditoria.registrar(administradorId, "CATEGORY_DEACTIVATED", "CATEGORIA", id, actual.nombre());
+    public void desactivarCategoria(UUID administradorId, UUID categoriaId) {
+        Categoria categoriaActual = categoriaPorIdOError(categoriaId);
+        categoriasRepository.guardar(
+                new Categoria(categoriaId, categoriaActual.nombre(), EstadoCatalogo.INACTIVO));
+        auditoriaPort.registrar(administradorId, "CATEGORY_DEACTIVATED", "CATEGORIA",
+                categoriaId, categoriaActual.nombre());
     }
 
     @Override
     @Transactional
-    public Zona crearZona(UUID administradorId, String nombre, String coberturaGeografica) {
-        validarNombre(nombre);
-        if (zonas.porNombre(nombre.trim()).isPresent()) {
+    public Zona crearZona(UUID administradorId, String nombreZona, String coberturaGeografica) {
+        validarNombre(nombreZona);
+        if (zonasRepository.porNombre(nombreZona.trim()).isPresent()) {
             throw new BusinessException.Conflict("ZONA_DUPLICADA", "Ya existe una zona con ese nombre.");
         }
-        Zona creada = zonas.guardar(new Zona(UUID.randomUUID(), nombre.trim(), coberturaGeografica, EstadoCatalogo.ACTIVO));
-        auditoria.registrar(administradorId, "ZONE_CREATED", "ZONA", creada.id(), creada.nombre());
-        return creada;
+        Zona zonaCreada = zonasRepository.guardar(
+                new Zona(UUID.randomUUID(), nombreZona.trim(), coberturaGeografica, EstadoCatalogo.ACTIVO));
+        auditoriaPort.registrar(administradorId, "ZONE_CREATED", "ZONA", zonaCreada.id(), zonaCreada.nombre());
+        return zonaCreada;
     }
 
     @Override
     @Transactional
-    public Zona actualizarZona(UUID administradorId, UUID id, String nombre, String coberturaGeografica, String estado) {
-        Zona actual = zonaPorIdOError(id);
-        if (nombre != null && nombre.isBlank()) {
+    public Zona actualizarZona(UUID administradorId, UUID zonaId, String nombreZona, String coberturaGeografica,
+            String estadoZona) {
+        Zona zonaActual = zonaPorIdOError(zonaId);
+        if (nombreZona != null && nombreZona.isBlank()) {
             throw new BusinessException.BadRequest("NOMBRE_REQUERIDO", "El nombre no puede estar vacío.");
         }
-        String nombreFinal = nombre == null ? actual.nombre() : nombre.trim();
-        zonas.porNombre(nombreFinal)
-                .filter(otra -> !otra.id().equals(id))
-                .ifPresent(otra -> {
+        String nombreZonaFinal = nombreZona == null ? zonaActual.nombre() : nombreZona.trim();
+        zonasRepository.porNombre(nombreZonaFinal)
+                .filter(zonaExistente -> !zonaExistente.id().equals(zonaId))
+                .ifPresent(zonaExistente -> {
                     throw new BusinessException.Conflict("ZONA_DUPLICADA",
                             "Ya existe otra zona con ese nombre.");
                 });
-        EstadoCatalogo nuevoEstado = estadoOActual(estado, actual.estado());
-        Zona actualizada = zonas.guardar(new Zona(id, nombreFinal,
-                coberturaGeografica == null ? actual.coberturaGeografica() : coberturaGeografica,
-                nuevoEstado));
-        auditoria.registrar(administradorId, "ZONE_UPDATED", "ZONA", id, nombreFinal);
-        return actualizada;
+        EstadoCatalogo estadoZonaActualizado = estadoOActual(estadoZona, zonaActual.estado());
+        Zona zonaActualizada = zonasRepository.guardar(new Zona(zonaId, nombreZonaFinal,
+                coberturaGeografica == null ? zonaActual.coberturaGeografica() : coberturaGeografica,
+                estadoZonaActualizado));
+        auditoriaPort.registrar(administradorId, "ZONE_UPDATED", "ZONA", zonaId, nombreZonaFinal);
+        return zonaActualizada;
     }
 
     @Override
     @Transactional
-    public void desactivarZona(UUID administradorId, UUID id) {
-        Zona actual = zonaPorIdOError(id);
-        zonas.guardar(new Zona(id, actual.nombre(), actual.coberturaGeografica(), EstadoCatalogo.INACTIVO));
-        auditoria.registrar(administradorId, "ZONE_DEACTIVATED", "ZONA", id, actual.nombre());
+    public void desactivarZona(UUID administradorId, UUID zonaId) {
+        Zona zonaActual = zonaPorIdOError(zonaId);
+        zonasRepository.guardar(
+                new Zona(zonaId, zonaActual.nombre(), zonaActual.coberturaGeografica(), EstadoCatalogo.INACTIVO));
+        auditoriaPort.registrar(administradorId, "ZONE_DEACTIVATED", "ZONA",
+                zonaId, zonaActual.nombre());
     }
 
     @Transactional(readOnly = true)
     public List<Categoria> listarCategorias() {
-        return categorias.todas();
+        return categoriasRepository.todas();
     }
 
     @Transactional(readOnly = true)
     public List<Zona> listarZonas() {
-        return zonas.todas();
+        return zonasRepository.todas();
     }
 
-    private void validarNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) {
+    private void validarNombre(String nombreCatalogo) {
+        if (nombreCatalogo == null || nombreCatalogo.isBlank()) {
             throw new BusinessException.BadRequest("NOMBRE_REQUERIDO", "El nombre es obligatorio.");
         }
     }
 
-    private Categoria categoriaPorIdOError(UUID id) {
-        return categorias.porId(id)
+    private Categoria categoriaPorIdOError(UUID categoriaId) {
+        return categoriasRepository.porId(categoriaId)
                 .orElseThrow(() -> new BusinessException.NotFound("CATEGORIA_NO_ENCONTRADA",
                         "Categoría no encontrada."));
     }
 
-    private Zona zonaPorIdOError(UUID id) {
-        return zonas.porId(id)
+    private Zona zonaPorIdOError(UUID zonaId) {
+        return zonasRepository.porId(zonaId)
                 .orElseThrow(() -> new BusinessException.NotFound("ZONA_NO_ENCONTRADA", "Zona no encontrada."));
     }
 
-    private EstadoCatalogo estadoOActual(String estado, EstadoCatalogo actual) {
-        if (estado == null) {
-            return actual;
+    private EstadoCatalogo estadoOActual(String estadoSolicitado, EstadoCatalogo estadoActual) {
+        if (estadoSolicitado == null) {
+            return estadoActual;
         }
         try {
-            return EstadoCatalogo.valueOf(estado);
+            return EstadoCatalogo.valueOf(estadoSolicitado);
         } catch (IllegalArgumentException ex) {
             throw new BusinessException.BadRequest("ESTADO_INVALIDO",
                     "Estado inválido: use ACTIVO o INACTIVO.");
@@ -151,20 +162,22 @@ public class CatalogoService implements CatalogoConsultaPort, CatalogoAdminPort 
     }
 
     @Override
-    public Optional<Categoria> categoriaPorId(UUID id) { return categorias.porId(id); }
+    public Optional<Categoria> categoriaPorId(UUID categoriaId) { return categoriasRepository.porId(categoriaId); }
 
     @Override
-    public Optional<Zona> zonaPorId(UUID id) { return zonas.porId(id); }
+    public Optional<Zona> zonaPorId(UUID zonaId) { return zonasRepository.porId(zonaId); }
 
     @Override
-    public Optional<Categoria> categoriaPorNombre(String nombre) { return categorias.porNombre(nombre); }
+    public Optional<Categoria> categoriaPorNombre(String nombreCategoria) {
+        return categoriasRepository.porNombre(nombreCategoria);
+    }
 
     @Override
-    public Optional<Zona> zonaPorNombre(String nombre) { return zonas.porNombre(nombre); }
+    public Optional<Zona> zonaPorNombre(String nombreZona) { return zonasRepository.porNombre(nombreZona); }
 
     @Override
-    public List<Categoria> categoriasActivas() { return categorias.activas(); }
+    public List<Categoria> categoriasActivas() { return categoriasRepository.activas(); }
 
     @Override
-    public List<Zona> zonasActivas() { return zonas.activas(); }
+    public List<Zona> zonasActivas() { return zonasRepository.activas(); }
 }

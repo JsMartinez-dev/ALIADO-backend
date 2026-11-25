@@ -10,66 +10,73 @@ import java.util.List;
 import java.util.UUID;
 
 public class BuscarPrestadoresService implements BuscarPrestadoresUseCase {
-    private final ConsultaDescubrimientoPort consultas;
-    private final ProyeccionPrestadorPublico proyeccion;
+    private final ConsultaDescubrimientoPort consultaDescubrimientoPort;
+    private final ProyeccionPrestadorPublico proyeccionPrestadorPublico;
 
-    public BuscarPrestadoresService(ConsultaDescubrimientoPort consultas, ProyeccionPrestadorPublico proyeccion) {
-        this.consultas = consultas;
-        this.proyeccion = proyeccion;
+    public BuscarPrestadoresService(ConsultaDescubrimientoPort consultaDescubrimientoPort,
+            ProyeccionPrestadorPublico proyeccionPrestadorPublico) {
+        this.consultaDescubrimientoPort = consultaDescubrimientoPort;
+        this.proyeccionPrestadorPublico = proyeccionPrestadorPublico;
     }
 
     @Override
     public BusquedaPrestadoresResult ejecutar(BuscarPrestadoresQuery query) {
-        UUID categoriaId = null;
-        UUID zonaId = null;
+        UUID categoriaBuscadaId = null;
+        UUID zonaBuscadaId = null;
         if (query.categoria() != null && !query.categoria().isBlank()) {
-            categoriaId = resolverCategoriaId(query.categoria());
-            if (categoriaId == null) {
+            categoriaBuscadaId = resolverCategoriaId(query.categoria());
+            if (categoriaBuscadaId == null) {
                 return new BusquedaPrestadoresResult(List.of(),
-                        consultas.categoriasActivas().stream().map(c -> c.nombre()).toList()); //Devulve una sugerencia de categorias activas
+                        consultaDescubrimientoPort.categoriasActivas().stream()
+                                .map(categoria -> categoria.nombre()).toList());
             }
         }
         if (query.zona() != null && !query.zona().isBlank()) {
-            zonaId = resolverZonaId(query.zona());
-            if (zonaId == null) {
+            zonaBuscadaId = resolverZonaId(query.zona());
+            if (zonaBuscadaId == null) {
                 return new BusquedaPrestadoresResult(List.of(),
-                        consultas.zonasActivas().stream().map(z -> z.nombre()).toList());
+                        consultaDescubrimientoPort.zonasActivas().stream()
+                                .map(zona -> zona.nombre()).toList());
             }
         }
-        UUID zonaBuscada = zonaId;
-        return new BusquedaPrestadoresResult(consultas.visiblesPorCategoriaYZona(categoriaId, zonaId).stream()
-                .filter(perfil -> visibleEnBusqueda(perfil, zonaBuscada))
-                .map(proyeccion::resultado).toList(), List.of());
+        UUID zonaBuscadaIdFinal = zonaBuscadaId;
+        return new BusquedaPrestadoresResult(
+                consultaDescubrimientoPort.visiblesPorCategoriaYZona(categoriaBuscadaId, zonaBuscadaId).stream()
+                        .filter(perfil -> visibleEnBusqueda(perfil, zonaBuscadaIdFinal))
+                        .map(proyeccionPrestadorPublico::resultado).toList(),
+                List.of());
     }
 
-    private boolean visibleEnBusqueda(PerfilProfesional perfil, UUID zonaId) {
-        Visibilidad preferencia = consultas.preferenciaDe(perfil.prestadorId());
-        return preferencia != Visibilidad.PRIVADO && (preferencia != Visibilidad.SOLO_ZONA || zonaId != null);
+    private boolean visibleEnBusqueda(PerfilProfesional perfil, UUID zonaBuscadaId) {
+        Visibilidad preferenciaVisibilidad = consultaDescubrimientoPort.preferenciaDe(perfil.prestadorId());
+        return preferenciaVisibilidad != Visibilidad.PRIVADO
+                && (preferenciaVisibilidad != Visibilidad.SOLO_ZONA || zonaBuscadaId != null);
     }
 
-    private UUID resolverCategoriaId(String param) {
-        UUID id = comoUuid(param);
-        if (id != null) {
-            return consultas.categoriaPorId(id).isPresent() ? id : null;
+    private UUID resolverCategoriaId(String categoria) {
+        UUID categoriaId = comoUuid(categoria);
+        if (categoriaId != null) {
+            return consultaDescubrimientoPort.categoriaPorId(categoriaId).isPresent() ? categoriaId : null;
         }
-        return consultas.categoriaPorNombre(param.trim()).map(c -> c.id()).orElse(null);
+        return consultaDescubrimientoPort.categoriaPorNombre(categoria.trim())
+                .map(categoriaEncontrada -> categoriaEncontrada.id()).orElse(null);
     }
 
-    private UUID resolverZonaId(String param) {
-        UUID id = comoUuid(param);
-        if (id != null) {
-            return consultas.zonaPorId(id).isPresent() ? id : null;
+    private UUID resolverZonaId(String zona) {
+        UUID zonaId = comoUuid(zona);
+        if (zonaId != null) {
+            return consultaDescubrimientoPort.zonaPorId(zonaId).isPresent() ? zonaId : null;
         }
-        return consultas.zonaPorNombre(param.trim()).map(z -> z.id()).orElse(null);
+        return consultaDescubrimientoPort.zonaPorNombre(zona.trim())
+                .map(zonaEncontrada -> zonaEncontrada.id()).orElse(null);
     }
 
-    private UUID comoUuid(String param) {
+    private UUID comoUuid(String valor) {
         try {
-            return UUID.fromString(param.trim());
+            return UUID.fromString(valor.trim());
         } catch (IllegalArgumentException ex) {
             return null;
         }
     }
 
 }
-

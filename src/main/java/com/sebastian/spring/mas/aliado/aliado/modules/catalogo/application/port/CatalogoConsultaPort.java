@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Contrato público del catálogo compartido (SPEC-04/SPEC-12). */
 public interface CatalogoConsultaPort {
     Optional<Categoria> categoriaPorId(UUID id);
     Optional<Zona> zonaPorId(UUID id);

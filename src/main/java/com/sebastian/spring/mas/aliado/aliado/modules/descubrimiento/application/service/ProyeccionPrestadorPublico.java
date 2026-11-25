@@ -5,9 +5,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.descubrimiento.application
 import com.sebastian.spring.mas.aliado.aliado.modules.descubrimiento.domain.model.PrestadorPublico;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.PerfilProfesional;
 import java.util.List;
-
-/** Construcción pública compartida por búsqueda y detalle. */
 public class ProyeccionPrestadorPublico {
+
     private final ConsultaDescubrimientoPort consultas;
 
     public ProyeccionPrestadorPublico(ConsultaDescubrimientoPort consultas) {

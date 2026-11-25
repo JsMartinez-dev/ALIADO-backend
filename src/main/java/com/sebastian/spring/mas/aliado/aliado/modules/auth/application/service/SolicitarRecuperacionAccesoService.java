@@ -15,29 +15,38 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public class SolicitarRecuperacionAccesoService implements SolicitarRecuperacionAccesoUseCase {
-    private final UsuarioRepository usuarios;
-    private final TokenRecuperacionRepository tokens;
-    private final GeneradorCodigoRecuperacion generador;
-    private final HuellaToken huella;
-    private final CorreoPort correo;
-    private final Clock clock;
+    private final UsuarioRepository usuariosRepository;
+    private final TokenRecuperacionRepository tokensRecuperacionRepository;
+    private final GeneradorCodigoRecuperacion generadorCodigoRecuperacion;
+    private final HuellaToken huellaToken;
+    private final CorreoPort correoPort;
+    private final Clock relojSistema;
 
-    public SolicitarRecuperacionAccesoService(UsuarioRepository usuarios, TokenRecuperacionRepository tokens,
-            GeneradorCodigoRecuperacion generador, HuellaToken huella, CorreoPort correo, Clock clock) {
-        this.usuarios = usuarios; this.tokens = tokens; this.generador = generador;
-        this.huella = huella; this.correo = correo; this.clock = clock;
+    public SolicitarRecuperacionAccesoService(UsuarioRepository usuariosRepository,
+            TokenRecuperacionRepository tokensRecuperacionRepository,
+            GeneradorCodigoRecuperacion generadorCodigoRecuperacion, HuellaToken huellaToken,
+            CorreoPort correoPort, Clock relojSistema) {
+        this.usuariosRepository = usuariosRepository;
+        this.tokensRecuperacionRepository = tokensRecuperacionRepository;
+        this.generadorCodigoRecuperacion = generadorCodigoRecuperacion;
+        this.huellaToken = huellaToken;
+        this.correoPort = correoPort;
+        this.relojSistema = relojSistema;
     }
 
     @Override
     public void ejecutar(SolicitarRecuperacionCommand command) {
-        String email = Usuario.normalizarEmail(command.email());
-        usuarios.porEmail(email).ifPresent(usuario -> {
-            String codigo = generador.generar();
-            OffsetDateTime ahora = OffsetDateTime.now(clock);
-            tokens.guardar(new TokenRecuperacion(UUID.randomUUID(), usuario.id(), huella.calcular(codigo),
-                    ahora, ahora.plus(Duration.ofMinutes(30)), false));
-            correo.enviarHtml(email, "Recuperación de acceso a ALIADO",
-                    PlantillaRecuperacionHtml.renderizar(codigo, 30));
+        String correoElectronicoNormalizado = Usuario.normalizarEmail(command.email());
+        usuariosRepository.porEmail(correoElectronicoNormalizado).ifPresent(usuario -> {
+            String codigoRecuperacion = generadorCodigoRecuperacion.generar();
+            OffsetDateTime fechaHoraSolicitud = OffsetDateTime.now(relojSistema);
+
+            tokensRecuperacionRepository.guardar(new TokenRecuperacion(UUID.randomUUID(), usuario.id(),
+                    huellaToken.calcular(codigoRecuperacion), fechaHoraSolicitud,
+                    fechaHoraSolicitud.plus(Duration.ofMinutes(30)), false));
+
+            correoPort.enviarHtml(correoElectronicoNormalizado, "Recuperación de acceso a ALIADO",
+                    PlantillaRecuperacionHtml.renderizar(codigoRecuperacion, 30));
         });
     }
 }

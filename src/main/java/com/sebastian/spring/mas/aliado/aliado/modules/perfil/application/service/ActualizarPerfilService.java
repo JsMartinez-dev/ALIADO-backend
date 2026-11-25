@@ -10,7 +10,6 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.Perfil;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.PerfilRepository;
 
-/** UC008: valida y actualiza exclusivamente los datos básicos de la cuenta autenticada. */
 public class ActualizarPerfilService implements ActualizarPerfilUseCase {
     private final PerfilRepository perfiles;
     private final ConsultarPerfilUseCase consultarPerfil;
