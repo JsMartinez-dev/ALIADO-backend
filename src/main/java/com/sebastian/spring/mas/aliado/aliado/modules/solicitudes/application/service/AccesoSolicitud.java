@@ -5,7 +5,6 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.ex
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.exception.SolicitudNoModificableException;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.Solicitud;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.repository.SolicitudRepository;
-/** Comprobaciones de propiedad y estado compartidas por las operaciones del agregado. */
 public final class AccesoSolicitud {
     private AccesoSolicitud() {}
     public static Solicitud propiaAbierta(SolicitudRepository solicitudes, UUID id, UUID usuarioId) {

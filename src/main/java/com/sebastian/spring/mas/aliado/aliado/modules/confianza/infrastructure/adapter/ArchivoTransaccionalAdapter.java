@@ -6,7 +6,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Compensa los archivos creados cuando su transacción de metadatos revierte. */
 public final class ArchivoTransaccionalAdapter implements ArchivoStorageService {
     private static final Logger log = LoggerFactory.getLogger(ArchivoTransaccionalAdapter.class);
     private final ArchivoStorageService storage;

@@ -3,7 +3,6 @@ package com.sebastian.spring.mas.aliado.aliado.common.events;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-/** Adaptador Spring de PublicadorEventos. */
 @Component
 public class SpringPublicadorEventos implements PublicadorEventos {
     private final ApplicationEventPublisher publisher;

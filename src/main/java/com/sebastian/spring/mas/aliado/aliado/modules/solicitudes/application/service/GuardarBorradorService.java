@@ -7,13 +7,13 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.us
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.EstadoSolicitud;
 
 public class GuardarBorradorService implements GuardarBorradorUseCase {
-    private final CreacionSolicitud creacion;
+    private final CreacionSolicitud creacionSolicitud;
 
-    public GuardarBorradorService(CreacionSolicitud creacion) { this.creacion = creacion; }
+    public GuardarBorradorService(CreacionSolicitud creacion) { this.creacionSolicitud = creacion; }
 
     @Override
     public SolicitudResult ejecutar(GuardarBorradorCommand command) {
-        return creacion.crear(new CrearSolicitudCommand(command.clienteId(), command.categoriaId(), command.descripcion(),
+        return creacionSolicitud.crear(new CrearSolicitudCommand(command.clienteId(), command.categoriaId(), command.descripcion(),
                 command.zonaId(), command.urgencia(), EstadoSolicitud.BORRADOR.name()), EstadoSolicitud.BORRADOR);
     }
 }

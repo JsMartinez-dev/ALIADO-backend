@@ -9,19 +9,19 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.us
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.EstadoSolicitud;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.repository.SolicitudRepository;
 public class DescargarFotoSolicitudService implements DescargarFotoSolicitudUseCase {
-    private final SolicitudRepository solicitudes;
-    private final ArchivoFotoSolicitudPort archivos;
+    private final SolicitudRepository solicitudRepository;
+    private final ArchivoFotoSolicitudPort fotoSolicitudPort;
     public DescargarFotoSolicitudService(SolicitudRepository solicitudes, ArchivoFotoSolicitudPort archivos) {
-        this.solicitudes = solicitudes; this.archivos = archivos;
+        this.solicitudRepository = solicitudes; this.fotoSolicitudPort = archivos;
     }
     @Override
     public DescargaFotoResult ejecutar(ConsultarFotoSolicitudCommand command) {
-        var actual = solicitudes.porId(command.solicitudId()).orElseThrow(SolicitudNoEncontradaException::new);
+        var actual = solicitudRepository.porId(command.solicitudId()).orElseThrow(SolicitudNoEncontradaException::new);
         if (!actual.clienteId().equals(command.usuarioId()) && actual.estado() != EstadoSolicitud.PUBLICADA) {
             throw new SolicitudNoEncontradaException();
         }
         var foto = actual.fotos().stream().filter(f -> f.id().equals(command.fotoId()))
                 .findFirst().orElseThrow(FotoNoEncontradaException::new);
-        return new DescargaFotoResult(archivos.leer(foto.archivoKey()));
+        return new DescargaFotoResult(fotoSolicitudPort.leer(foto.archivoKey()));
     }
 }

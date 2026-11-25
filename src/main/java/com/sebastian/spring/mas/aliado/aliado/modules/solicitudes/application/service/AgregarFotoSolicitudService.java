@@ -9,21 +9,29 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.us
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.FotoSolicitud;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.repository.SolicitudRepository;
 public class AgregarFotoSolicitudService implements AgregarFotoSolicitudUseCase {
-    private final SolicitudRepository solicitudes;
-    private final ArchivoFotoSolicitudPort archivos;
-    public AgregarFotoSolicitudService(SolicitudRepository solicitudes, ArchivoFotoSolicitudPort archivos) {
-        this.solicitudes = solicitudes; this.archivos = archivos;
+    private final SolicitudRepository solicitudesRepository;
+    private final ArchivoFotoSolicitudPort archivoFotoSolicitudPort;
+
+    public AgregarFotoSolicitudService(SolicitudRepository solicitudesRepository,
+            ArchivoFotoSolicitudPort archivoFotoSolicitudPort) {
+        this.solicitudesRepository = solicitudesRepository;
+        this.archivoFotoSolicitudPort = archivoFotoSolicitudPort;
     }
+
     @Override
     public FotoSolicitudResult ejecutar(GuardarFotoSolicitudCommand command) {
-        var actual = AccesoSolicitud.propiaAbierta(solicitudes, command.solicitudId(), command.usuarioId());
-        if (actual.fotos().size() >= 10) {
+        var solicitudActual = AccesoSolicitud.propiaAbierta(
+                solicitudesRepository, command.solicitudId(), command.usuarioId());
+        if (solicitudActual.fotos().size() >= 10) {
             throw new DatosSolicitudInvalidosException("LIMITE_FOTOS", "La solicitud admite como máximo 10 fotos.");
         }
-        String clave = archivos.guardar(command.nombreOriginal(), command.tipoContenido(), command.contenido());
-        int orden = actual.fotos().stream().mapToInt(FotoSolicitud::orden).max().orElse(0) + 1;
-        FotoSolicitud foto = new FotoSolicitud(UUID.randomUUID(), actual.id(), clave, orden);
-        solicitudes.guardar(actual.conFoto(foto));
-        return new FotoSolicitudResult(foto.id(), foto.archivoKey(), foto.orden());
+        String claveArchivoFoto = archivoFotoSolicitudPort.guardar(
+                command.nombreOriginal(), command.tipoContenido(), command.contenido());
+        int ordenFoto = solicitudActual.fotos().stream().mapToInt(FotoSolicitud::orden).max().orElse(0) + 1;
+        FotoSolicitud fotoSolicitud =
+                new FotoSolicitud(UUID.randomUUID(), solicitudActual.id(), claveArchivoFoto, ordenFoto);
+        solicitudesRepository.guardar(solicitudActual.conFoto(fotoSolicitud));
+        return new FotoSolicitudResult(
+                fotoSolicitud.id(), fotoSolicitud.archivoKey(), fotoSolicitud.orden());
     }
 }

@@ -6,17 +6,17 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.po
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.EliminarFotoSolicitudUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.repository.SolicitudRepository;
 public class EliminarFotoSolicitudService implements EliminarFotoSolicitudUseCase {
-    private final SolicitudRepository solicitudes;
-    private final ArchivoFotoSolicitudPort archivos;
+    private final SolicitudRepository solicitudRepository;
+    private final ArchivoFotoSolicitudPort fotoSolicitudPort;
     public EliminarFotoSolicitudService(SolicitudRepository solicitudes, ArchivoFotoSolicitudPort archivos) {
-        this.solicitudes = solicitudes; this.archivos = archivos;
+        this.solicitudRepository = solicitudes; this.fotoSolicitudPort = archivos;
     }
     @Override
     public void ejecutar(ConsultarFotoSolicitudCommand command) {
-        var actual = AccesoSolicitud.propiaAbierta(solicitudes, command.solicitudId(), command.usuarioId());
+        var actual = AccesoSolicitud.propiaAbierta(solicitudRepository, command.solicitudId(), command.usuarioId());
         var foto = actual.fotos().stream().filter(f -> f.id().equals(command.fotoId()))
                 .findFirst().orElseThrow(FotoNoEncontradaException::new);
-        solicitudes.guardar(actual.sinFoto(foto.id()));
-        archivos.eliminar(foto.archivoKey());
+        solicitudRepository.guardar(actual.sinFoto(foto.id()));
+        fotoSolicitudPort.eliminar(foto.archivoKey());
     }
 }

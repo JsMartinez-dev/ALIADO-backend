@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-/** Compensación limitada a solicitudes: no modifica el almacenamiento de otros módulos. */
 @Component
 public class ArchivoFotoSolicitudAdapter implements ArchivoFotoSolicitudPort {
     private static final Logger log = LoggerFactory.getLogger(ArchivoFotoSolicitudAdapter.class);

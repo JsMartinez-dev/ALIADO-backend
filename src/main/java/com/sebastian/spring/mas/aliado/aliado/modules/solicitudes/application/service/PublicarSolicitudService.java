@@ -17,41 +17,51 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.reposit
 import java.time.OffsetDateTime;
 
 public class PublicarSolicitudService implements PublicarSolicitudUseCase {
-    private final SolicitudRepository solicitudes;
-    private final ConsultaCategoriaSolicitudPort categorias;
-    private final DefinirZonaUrgenciaUseCase definirZonaUrgencia;
-    private final PublicadorEventos eventos;
+    private final SolicitudRepository solicitudesRepository;
+    private final ConsultaCategoriaSolicitudPort consultaCategoriaSolicitudPort;
+    private final DefinirZonaUrgenciaUseCase definirZonaUrgenciaUseCase;
+    private final PublicadorEventos publicadorEventos;
 
-    public PublicarSolicitudService(SolicitudRepository solicitudes, ConsultaCategoriaSolicitudPort categorias,
-                                    DefinirZonaUrgenciaUseCase definirZonaUrgencia, PublicadorEventos eventos) {
-        this.solicitudes = solicitudes;
-        this.categorias = categorias;
-        this.definirZonaUrgencia = definirZonaUrgencia;
-        this.eventos = eventos;
+    public PublicarSolicitudService(SolicitudRepository solicitudesRepository,
+            ConsultaCategoriaSolicitudPort consultaCategoriaSolicitudPort,
+            DefinirZonaUrgenciaUseCase definirZonaUrgenciaUseCase,
+            PublicadorEventos publicadorEventos) {
+        this.solicitudesRepository = solicitudesRepository;
+        this.consultaCategoriaSolicitudPort = consultaCategoriaSolicitudPort;
+        this.definirZonaUrgenciaUseCase = definirZonaUrgenciaUseCase;
+        this.publicadorEventos = publicadorEventos;
     }
 
     @Override
     public SolicitudResult ejecutar(PublicarSolicitudCommand command) {
-        Solicitud actual = solicitudes.porId(command.solicitudId()).filter(s -> s.clienteId().equals(command.clienteId()))
+        Solicitud solicitudActual = solicitudesRepository.porId(command.solicitudId())
+                .filter(solicitud -> solicitud.clienteId().equals(command.clienteId()))
                 .orElseThrow(SolicitudNoEncontradaException::new);
-        if (!actual.abierta()) {
+        if (!solicitudActual.abierta()) {
             throw new SolicitudNoModificableException("SOLICITUD_CERRADA",
-                    "La solicitud ya no admite cambios (estado " + actual.estado() + ").");
+                    "La solicitud ya no admite cambios (estado " + solicitudActual.estado() + ").");
         }
-        if (actual.estado() != EstadoSolicitud.BORRADOR) {
+        if (solicitudActual.estado() != EstadoSolicitud.BORRADOR) {
             throw new SolicitudNoModificableException("TRANSICION_INVALIDA", "Solo un borrador puede publicarse.");
         }
-        if (actual.descripcion() == null || actual.descripcion().isBlank() || actual.categoriaId() == null || actual.zonaId() == null) {
+        if (solicitudActual.descripcion() == null || solicitudActual.descripcion().isBlank()
+                || solicitudActual.categoriaId() == null || solicitudActual.zonaId() == null) {
             throw new DatosSolicitudInvalidosException("BORRADOR_INCOMPLETO", "Para publicar faltan la descripción, la categoría o la zona.");
         }
-        if (!categorias.estaActiva(actual.categoriaId())) {
+        if (!consultaCategoriaSolicitudPort.estaActiva(solicitudActual.categoriaId())) {
             throw new DatosSolicitudInvalidosException("CATEGORIA_INVALIDA", "La categoría no existe o no está activa.");
         }
-        definirZonaUrgencia.ejecutar(new DefinirZonaUrgenciaCommand(actual.zonaId(),
-                actual.urgencia() == null ? null : actual.urgencia().name(), true));
-        Solicitud publicada = solicitudes.guardar(actual.transitarA(EstadoSolicitud.PUBLICADA, OffsetDateTime.now()));
-        eventos.publicar(new Eventos.SolicitudPublicada(publicada.id(), command.clienteId(), publicada.categoriaId(),
-                publicada.zonaId(), publicada.urgencia().name(), OffsetDateTime.now()));
-        return SolicitudResult.desde(publicada);
+
+        definirZonaUrgenciaUseCase.ejecutar(new DefinirZonaUrgenciaCommand(solicitudActual.zonaId(),
+                solicitudActual.urgencia() == null ? null : solicitudActual.urgencia().name(), true));
+
+        Solicitud solicitudPublicada = solicitudesRepository.guardar(
+                solicitudActual.transitarA(EstadoSolicitud.PUBLICADA, OffsetDateTime.now()));
+
+        publicadorEventos.publicar(new Eventos.SolicitudPublicada(
+                solicitudPublicada.id(), command.clienteId(), solicitudPublicada.categoriaId(),
+                solicitudPublicada.zonaId(), solicitudPublicada.urgencia().name(), OffsetDateTime.now()));
+
+        return SolicitudResult.desde(solicitudPublicada);
     }
 }

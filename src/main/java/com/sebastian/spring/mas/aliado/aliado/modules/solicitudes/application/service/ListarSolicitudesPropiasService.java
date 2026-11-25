@@ -6,10 +6,13 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.dt
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.ListarSolicitudesPropiasUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.repository.SolicitudRepository;
 public class ListarSolicitudesPropiasService implements ListarSolicitudesPropiasUseCase {
-    private final SolicitudRepository solicitudes;
-    public ListarSolicitudesPropiasService(SolicitudRepository solicitudes) { this.solicitudes = solicitudes; }
+
+    private final SolicitudRepository solicitudesRepository;
+
+    public ListarSolicitudesPropiasService(SolicitudRepository solicitudesRepository) { this.solicitudesRepository = solicitudesRepository; }
     @Override
     public List<SolicitudResult> ejecutar(UUID clienteId) {
-        return solicitudes.porCliente(clienteId).stream().map(SolicitudResult::desde).toList();
+        return solicitudesRepository.porCliente(clienteId).stream().map(SolicitudResult::desde).toList();
     }
+
 }

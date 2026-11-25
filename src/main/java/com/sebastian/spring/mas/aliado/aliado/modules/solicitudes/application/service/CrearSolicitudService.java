@@ -8,7 +8,6 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.us
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.GuardarBorradorUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.EstadoSolicitud;
 
-/** Entrada de creación que conserva la selección de estado del contrato existente. */
 public class CrearSolicitudService implements CrearSolicitudUseCase {
     private final CreacionSolicitud creacion;
     private final GuardarBorradorUseCase guardarBorrador;

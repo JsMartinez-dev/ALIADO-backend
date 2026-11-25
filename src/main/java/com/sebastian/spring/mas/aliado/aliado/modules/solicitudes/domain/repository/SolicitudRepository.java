@@ -10,6 +10,5 @@ public interface SolicitudRepository {
     List<Solicitud> porCliente(UUID clienteId);
     List<Solicitud> publicadas();
     Solicitud guardar(Solicitud solicitud);
-    /** Búsqueda admin (SPEC-12, FR-075): por descripción (contiene) o id exacto. */
     List<Solicitud> buscarPorTexto(String texto);
 }

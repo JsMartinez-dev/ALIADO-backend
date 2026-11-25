@@ -6,10 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Solicitud de servicio (SPEC-04). Agregado raíz: fotos e historial viven dentro de él.
- * Máquina de estados: BORRADOR -> PUBLICADA/CANCELADA; PUBLICADA -> CANCELADA/CONTRATADA.
- */
+
 public record Solicitud(UUID id, UUID clienteId, UUID categoriaId, UUID zonaId, String descripcion,
                         Urgencia urgencia, EstadoSolicitud estado, OffsetDateTime fechaCreacion,
                         OffsetDateTime fechaActualizacion, int version,
@@ -19,7 +16,6 @@ public record Solicitud(UUID id, UUID clienteId, UUID categoriaId, UUID zonaId, 
         return estado == EstadoSolicitud.BORRADOR || estado == EstadoSolicitud.PUBLICADA;
     }
 
-    /** Transición validada por el dominio; registra el historial en la misma operación. */
     public Solicitud transitarA(EstadoSolicitud nuevo, OffsetDateTime ahora) {
         boolean permitido = switch (estado) {
             case BORRADOR -> nuevo == EstadoSolicitud.PUBLICADA || nuevo == EstadoSolicitud.CANCELADA;
