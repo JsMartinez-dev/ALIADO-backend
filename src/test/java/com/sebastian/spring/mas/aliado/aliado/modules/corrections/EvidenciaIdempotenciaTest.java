@@ -72,6 +72,25 @@ class EvidenciaIdempotenciaTest {
     }
 
     @Test
+    void huellaLegadaNulaNoSeReproduceYDevuelve409() {
+        var reporteId = UUID.randomUUID();
+        var usuarioId = UUID.randomUUID();
+        var clave = UUID.randomUUID();
+        when(idempotencia.buscarConHuella(clave,
+                AdjuntarEvidenciaReporteIdempotenteService.operacion(reporteId, usuarioId)))
+                .thenReturn(Optional.of(new IdempotencyRepository.RespuestaConHuella(201,
+                        "{\"id\":\"00000000-0000-0000-0000-000000000000\"}", null)));
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> service().ejecutar(
+                new AdjuntarEvidenciaIdempotenteCommand(reporteId, usuarioId, "evidencia.png",
+                        "image/png", new byte[]{1, 2, 3}, clave)));
+
+        assertEquals(409, ex.status());
+        assertEquals("IDEMPOTENCIA_CONFLICTO", ex.code());
+        verifyNoInteractions(operaciones);
+    }
+
+    @Test
     void sinClaveCreaSinRegistrarIdempotencia() {
         var reporteId = UUID.randomUUID();
         var usuarioId = UUID.randomUUID();

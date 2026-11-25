@@ -12,7 +12,7 @@ Implementado en `POST /api/v1/reportes/{id}/evidencias`:
 - Misma clave, mismo reporte y mismo contenido: devuelve la evidencia original sin crear otra fila ni archivo.
 - Misma clave, mismo reporte y contenido distinto: `409 IDEMPOTENCIA_CONFLICTO`.
 - Otra cuenta u otro reporte no puede reproducir la respuesta de una clave ajena.
-- Las claves nuevas guardan la huella; las claves antiguas sin huella se reproducen por compatibilidad.
+- Las claves nuevas guardan la huella; las claves antiguas con `huella = NULL` no se reproducen y responden `409 IDEMPOTENCIA_CONFLICTO`. Ver `be-13-idempotencia-evidencia.md`.
 - OpenAPI documenta `201`, `409`, `401`, `403` y `404` para la operación.
 
 ## BE-10 — Recuperación de calificación y reseña

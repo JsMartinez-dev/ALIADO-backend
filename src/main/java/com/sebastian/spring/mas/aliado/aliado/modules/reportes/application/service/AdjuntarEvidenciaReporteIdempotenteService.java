@@ -42,9 +42,10 @@ public class AdjuntarEvidenciaReporteIdempotenteService
         var existente = idempotencia.buscarConHuella(command.claveIdempotencia(), operacion);
         if (existente.isPresent()) {
             var guardada = existente.get();
-            if (guardada.huella() != null && !guardada.huella().equals(huella)) {
+            if (guardada.huella() == null || !guardada.huella().equals(huella)) {
                 throw new BusinessException.Conflict("IDEMPOTENCIA_CONFLICTO",
-                        "La Idempotency-Key ya fue usada con un contenido distinto para este reporte.");
+                        "La Idempotency-Key ya fue usada con un contenido no verificable o distinto "
+                                + "para este reporte.");
             }
             return new EvidenciaIdempotenteResult(guardada.statusCode(),
                     leerEvidencia(guardada.cuerpoJson()));
