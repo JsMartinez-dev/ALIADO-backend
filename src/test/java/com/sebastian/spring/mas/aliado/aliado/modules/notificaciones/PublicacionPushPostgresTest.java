@@ -18,10 +18,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.dt
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.CrearSolicitudUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.GuardarBorradorUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.PublicarSolicitudUseCase;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,7 +100,7 @@ class PublicacionPushPostgresTest {
         Datos datos = sembrar();
         compatibilidad.prestadores = List.of(datos.prestador());
 
-        try (Escucha escucha = Escucha.abrir()) {
+        try (EscuchaSenalTrabajoPush escucha = EscuchaSenalTrabajoPush.abrir()) {
             long inicio = System.nanoTime();
             crear.ejecutar(new CrearSolicitudCommand(datos.cliente(), datos.categoria(),
                     "Descripción", datos.zona(), "MEDIA", "PUBLICADA"));
@@ -139,7 +136,7 @@ class PublicacionPushPostgresTest {
         assertEquals(0, contarAvisos(datos.prestador()));
         assertEquals(0, contarTrabajos(datos.prestador()));
 
-        try (Escucha escucha = Escucha.abrir()) {
+        try (EscuchaSenalTrabajoPush escucha = EscuchaSenalTrabajoPush.abrir()) {
             publicar.ejecutar(new PublicarSolicitudCommand(borrador.id(), datos.cliente()));
 
             assertEquals(1, contarAvisos(datos.prestador()));
@@ -151,7 +148,7 @@ class PublicacionPushPostgresTest {
     @Test
     void laSenalNoLlegaAntesDelCommitYLlegaAlConfirmar() throws Exception {
         Datos datos = sembrar();
-        try (Escucha escucha = Escucha.abrir()) {
+        try (EscuchaSenalTrabajoPush escucha = EscuchaSenalTrabajoPush.abrir()) {
             new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
                 registrarAviso.ejecutar(new RegistrarAvisoOportunidadCommand(UUID.randomUUID(),
                         datos.prestador(), 1, "detalle"));
@@ -175,7 +172,7 @@ class PublicacionPushPostgresTest {
         SolicitudResult publicada = crear.ejecutar(new CrearSolicitudCommand(datos.cliente(), datos.categoria(),
                 "Descripción", datos.zona(), "MEDIA", "PUBLICADA"));
 
-        try (Escucha escucha = Escucha.abrir()) {
+        try (EscuchaSenalTrabajoPush escucha = EscuchaSenalTrabajoPush.abrir()) {
             new TransactionTemplate(transactionManager).executeWithoutResult(status -> publicador.publicar(
                     new Eventos.SolicitudPublicada(publicada.id(), datos.cliente(), datos.categoria(), datos.zona(),
                             "MEDIA", OffsetDateTime.now())));
@@ -192,7 +189,7 @@ class PublicacionPushPostgresTest {
         compatibilidad.prestadores = List.of(datos.prestador());
         registro.fallar = true;
 
-        try (Escucha escucha = Escucha.abrir()) {
+        try (EscuchaSenalTrabajoPush escucha = EscuchaSenalTrabajoPush.abrir()) {
             assertThrows(IllegalStateException.class, () -> crear.ejecutar(new CrearSolicitudCommand(
                     datos.cliente(), datos.categoria(), "Descripción", datos.zona(), "MEDIA", "PUBLICADA")));
 
@@ -248,7 +245,7 @@ class PublicacionPushPostgresTest {
         compatibilidad.prestadores = List.of(datos.prestador());
         preferencias.habilitado = false;
 
-        try (Escucha escucha = Escucha.abrir()) {
+        try (EscuchaSenalTrabajoPush escucha = EscuchaSenalTrabajoPush.abrir()) {
             SolicitudResult publicada = crear.ejecutar(new CrearSolicitudCommand(datos.cliente(), datos.categoria(),
                     "Descripción", datos.zona(), "MEDIA", "PUBLICADA"));
 
@@ -314,46 +311,6 @@ class PublicacionPushPostgresTest {
     }
 
     private record Datos(UUID cliente, UUID prestador, UUID categoria, UUID zona) {}
-
-    /** Conexión dedicada fuera del pool: LISTEN antes de publicar y espera bloqueante. */
-    private static final class Escucha implements AutoCloseable {
-        private final Connection conexion;
-        private final PGConnection pg;
-
-        private Escucha(Connection conexion, PGConnection pg) {
-            this.conexion = conexion;
-            this.pg = pg;
-        }
-
-        static Escucha abrir() throws SQLException {
-            Connection conexion = DriverManager.getConnection(System.getenv("ALIADO_PG_URL"),
-                    leer("ALIADO_PG_USERNAME", "aliado"), leer("ALIADO_PG_PASSWORD", "aliado"));
-            conexion.setAutoCommit(true);
-            try (Statement statement = conexion.createStatement()) {
-                statement.execute("LISTEN " + SenalTrabajoPush.CANAL);
-            }
-            PGConnection pg = conexion.unwrap(PGConnection.class);
-            // getNotifications(0) bloquea indefinidamente en el driver: sin drenaje previo basta
-            // con que la suscripción esté activa antes de publicar.
-            return new Escucha(conexion, pg);
-        }
-
-        PGNotification[] esperar(int milisegundos) throws SQLException {
-            long limite = System.currentTimeMillis() + milisegundos;
-            while (System.currentTimeMillis() < limite) {
-                PGNotification[] senales = pg.getNotifications(250);
-                if (senales != null && senales.length > 0) {
-                    return senales;
-                }
-            }
-            return new PGNotification[0];
-        }
-
-        @Override
-        public void close() throws SQLException {
-            conexion.close();
-        }
-    }
 
     @TestConfiguration
     static class Sustituciones {

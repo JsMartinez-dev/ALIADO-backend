@@ -22,9 +22,10 @@ import java.util.UUID;
  * rollback revierte las dos filas y la señal {@code pg_notify} que emite el adaptador.</p>
  *
  * <p>La preferencia se consulta solo para encolar: apagada, el aviso permanece en la
- * bandeja y no se crea trabajo. El encolado se limita al aviso creado en esta ejecución,
- * por lo que reprocesar un evento o volver a habilitar la preferencia no convierte
- * avisos históricos en push (F09-PUSH-01).</p>
+ * bandeja y no se crea trabajo. Sin elección persistida para {@code NUEVA_OPORTUNIDAD/PUSH}
+ * la preferencia vale {@code false} (F09-PUSH-01). El encolado se limita al aviso creado
+ * en esta ejecución, por lo que reprocesar un evento o volver a habilitar la preferencia
+ * no convierte avisos históricos en push (F09-PUSH-01).</p>
  */
 public class RegistrarAvisoOportunidadService implements RegistrarAvisoOportunidadUseCase {
     private final NotificacionRepository notificaciones;

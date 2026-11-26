@@ -10,7 +10,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repo
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.RegistroOportunidadNotificacionAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.CompatibilidadPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.DetectarNuevaOportunidadService;
-import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.ConsultaPreferenciasService;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.PreferenciaNotificacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.TipoAviso;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.repository.PreferenciaRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.dto.CrearSolicitudCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.dto.PublicarSolicitudCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.dto.SolicitudResult;
@@ -49,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class EncoladoOportunidadTest {
     private final NotificacionRepositorioFalso notificaciones = new NotificacionRepositorioFalso();
     private final TrabajoRepositorioFalso trabajos = new TrabajoRepositorioFalso();
-    private final PreferenciasFalsas preferencias = new PreferenciasFalsas();
+    private final PreferenciaRepositorioEnMemoria preferencias = new PreferenciaRepositorioEnMemoria();
     private final CompatibilidadFalsa compatibilidad = new CompatibilidadFalsa();
     private final SolicitudRepositorioFalso solicitudes = new SolicitudRepositorioFalso();
 
@@ -65,8 +68,8 @@ class EncoladoOportunidadTest {
 
     @BeforeEach
     void preparar() {
-        var aviso = new RegistrarAvisoOportunidadService(notificaciones, trabajos, preferencias,
-                Duration.ofMinutes(60));
+        var aviso = new RegistrarAvisoOportunidadService(notificaciones, trabajos,
+                new ConsultaPreferenciasService(preferencias), Duration.ofMinutes(60));
         var registro = new RegistroOportunidadNotificacionAdapter(aviso);
         var detectar = new DetectarNuevaOportunidadService(compatibilidad, registro);
         eventos = evento -> {
@@ -84,6 +87,8 @@ class EncoladoOportunidadTest {
 
     @Test
     void publicacionDirectaGeneraUnAvisoYTrabajoPorDestinatarioElegible() {
+        habilitarPush(prestador, true);
+
         crear.ejecutar(comando("PUBLICADA"));
 
         List<Notificacion> avisos = notificaciones.porDestinatario(prestador);
@@ -104,6 +109,7 @@ class EncoladoOportunidadTest {
 
     @Test
     void publicarUnBorradorGeneraElMismoResultadoQuePublicarDirecto() {
+        habilitarPush(prestador, true);
         SolicitudResult borrador = crear.ejecutar(comando("BORRADOR"));
 
         publicar.ejecutar(new PublicarSolicitudCommand(borrador.id(), cliente));
@@ -117,6 +123,7 @@ class EncoladoOportunidadTest {
 
     @Test
     void reprocesarElEventoNoDuplicaAvisoNiTrabajo() {
+        habilitarPush(prestador, true);
         SolicitudResult publicada = crear.ejecutar(comando("PUBLICADA"));
 
         eventos.publicar(new Eventos.SolicitudPublicada(publicada.id(), cliente, categoria, zona, "MEDIA",
@@ -128,7 +135,12 @@ class EncoladoOportunidadTest {
 
     @Test
     void cadaDestinatarioCompatibleRecibeSuPropioAvisoYTrabajo() {
-        compatibilidad.prestadores = List.of(prestador, UUID.randomUUID(), UUID.randomUUID());
+        UUID segundo = UUID.randomUUID();
+        UUID tercero = UUID.randomUUID();
+        compatibilidad.prestadores = List.of(prestador, segundo, tercero);
+        habilitarPush(prestador, true);
+        habilitarPush(segundo, true);
+        habilitarPush(tercero, true);
 
         crear.ejecutar(comando("PUBLICADA"));
 
@@ -137,8 +149,18 @@ class EncoladoOportunidadTest {
     }
 
     @Test
+    void sinEleccionPersistidaElAvisoSeConservaPeroNoSeEncola() {
+        // Sin fila en preferencias: NUEVA_OPORTUNIDAD/PUSH vale false (F09-PUSH-01).
+        crear.ejecutar(comando("PUBLICADA"));
+
+        assertEquals(1, notificaciones.porDestinatario(prestador).size(), "la bandeja conserva el aviso");
+        assertEquals(0, trabajos.trabajos.size(), "sin elección persistida no se encola push");
+        assertEquals(List.of("NUEVA_OPORTUNIDAD/PUSH"), preferencias.consultas);
+    }
+
+    @Test
     void preferenciaApagadaConservaElAvisoEnLaBandejaSinEncolar() {
-        preferencias.habilitado = false;
+        habilitarPush(prestador, false);
 
         SolicitudResult publicada = crear.ejecutar(comando("PUBLICADA"));
 
@@ -146,7 +168,7 @@ class EncoladoOportunidadTest {
         assertEquals(0, trabajos.trabajos.size());
 
         // Volver a habilitar no convierte en push un aviso histórico ya procesado.
-        preferencias.habilitado = true;
+        habilitarPush(prestador, true);
         eventos.publicar(new Eventos.SolicitudPublicada(publicada.id(), cliente, categoria, zona, "MEDIA",
                 OffsetDateTime.now()));
 
@@ -157,6 +179,11 @@ class EncoladoOportunidadTest {
         crear.ejecutar(comando("PUBLICADA"));
         assertEquals(2, notificaciones.porDestinatario(prestador).size());
         assertEquals(1, trabajos.trabajos.size());
+    }
+
+    private void habilitarPush(UUID prestadorId, boolean habilitada) {
+        preferencias.guardar(new PreferenciaNotificacion(prestadorId, TipoAviso.NUEVA_OPORTUNIDAD, "PUSH",
+                habilitada, true));
     }
 
     private CrearSolicitudCommand comando(String estado) {
@@ -206,13 +233,28 @@ class EncoladoOportunidadTest {
         }
     }
 
-    private static final class PreferenciasFalsas implements ConsultaPreferenciasPort {
-        private boolean habilitado = true;
+    private static final class PreferenciaRepositorioEnMemoria implements PreferenciaRepository {
+        private final Map<String, PreferenciaNotificacion> guardadas = new LinkedHashMap<>();
         private final List<String> consultas = new ArrayList<>();
 
-        @Override public boolean avisoHabilitado(UUID usuarioId, String tipoAviso, String canal) {
+        @Override public List<PreferenciaNotificacion> porUsuario(UUID usuarioId) {
+            return guardadas.values().stream().filter(p -> p.usuarioId().equals(usuarioId)).toList();
+        }
+
+        @Override public Optional<PreferenciaNotificacion> porUsuarioTipoCanal(UUID usuarioId, String tipoAviso,
+                                                                               String canal) {
             consultas.add(tipoAviso + "/" + canal);
-            return habilitado;
+            return Optional.ofNullable(guardadas.get(clave(usuarioId, tipoAviso, canal)));
+        }
+
+        @Override public PreferenciaNotificacion guardar(PreferenciaNotificacion preferencia) {
+            guardadas.put(clave(preferencia.usuarioId(), preferencia.tipoAviso().name(), preferencia.canal()),
+                    preferencia);
+            return preferencia;
+        }
+
+        private static String clave(UUID usuarioId, String tipoAviso, String canal) {
+            return usuarioId + "|" + tipoAviso + "|" + canal;
         }
     }
 
