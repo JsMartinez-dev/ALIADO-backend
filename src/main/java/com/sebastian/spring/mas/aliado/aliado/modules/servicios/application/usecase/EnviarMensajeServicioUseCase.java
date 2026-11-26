@@ -3,4 +3,6 @@ package com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.use
 import java.util.List;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.dto.*;
 
-public interface EnviarMensajeServicioUseCase {MensajeServicioResult ejecutar(EnviarMensajeServicioCommand command);}
+public interface EnviarMensajeServicioUseCase {
+    MensajeServicioResult ejecutar(EnviarMensajeServicioCommand command);
+}

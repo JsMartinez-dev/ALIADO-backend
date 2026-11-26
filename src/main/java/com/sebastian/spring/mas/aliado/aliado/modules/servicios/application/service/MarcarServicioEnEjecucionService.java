@@ -12,5 +12,6 @@ import com.sebastian.spring.mas.aliado.aliado.common.events.*;
 public class MarcarServicioEnEjecucionService implements MarcarServicioEnEjecucionUseCase {
  private final ServicioRepository servicios; private final PublicadorEventos eventos;
  public MarcarServicioEnEjecucionService(ServicioRepository r,PublicadorEventos e){servicios=r;eventos=e;}
- public ServicioResult ejecutar(AccionServicioCommand c){return TransicionServicio.ejecutar(servicios,eventos,c,EstadoServicio.EN_EJECUCION,"PRESTADOR","Solo el prestador del servicio puede iniciarlo.");}
+ public ServicioResult ejecutar(AccionServicioCommand c){
+  return TransicionServicio.ejecutar(servicios,eventos,c,EstadoServicio.EN_EJECUCION,"PRESTADOR","Solo el prestador del servicio puede iniciarlo.");}
 }

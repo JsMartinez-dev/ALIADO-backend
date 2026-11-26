@@ -10,8 +10,26 @@ import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usec
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
 import com.sebastian.spring.mas.aliado.aliado.common.events.*;
 public class EnviarMensajeServicioService implements EnviarMensajeServicioUseCase {
- private final ServicioRepository servicios;public EnviarMensajeServicioService(ServicioRepository r){servicios=r;}
- public MensajeServicioResult ejecutar(EnviarMensajeServicioCommand c){var s=AccesoServicio.participante(servicios,new AccionServicioCommand(c.servicioId(),c.actorId()));AccesoServicio.comunicacion(s);
- if(c.contenido()==null||c.contenido().isBlank()||c.contenido().length()>2000)throw AccesoServicio.error(ServicioOperacionException.Tipo.INVALIDO,"MENSAJE_INVALIDO","El mensaje es obligatorio y admite máximo 2000 caracteres.");
- var m=new MensajeServicio(UUID.randomUUID(),c.servicioId(),c.actorId(),c.contenido().trim(),OffsetDateTime.now());servicios.guardar(s.conMensaje(m));return MensajeServicioResult.desde(m);}
+    private final ServicioRepository serviciosRepository;
+
+    public EnviarMensajeServicioService(ServicioRepository serviciosRepository) {
+        this.serviciosRepository = serviciosRepository;
+    }
+
+    @Override
+    public MensajeServicioResult ejecutar(EnviarMensajeServicioCommand command) {
+        var servicio = AccesoServicio.participante(serviciosRepository,
+                new AccionServicioCommand(command.servicioId(), command.actorId()));
+        AccesoServicio.comunicacion(servicio);
+        if (command.contenido() == null || command.contenido().isBlank() || command.contenido().length() > 2000) {
+            throw AccesoServicio.error(ServicioOperacionException.Tipo.INVALIDO, "MENSAJE_INVALIDO",
+                    "El mensaje es obligatorio y admite máximo 2000 caracteres.");
+        }
+
+        MensajeServicio mensajeServicio = new MensajeServicio(UUID.randomUUID(), command.servicioId(),
+                command.actorId(), command.contenido().trim(), OffsetDateTime.now());
+        serviciosRepository.guardar(servicio.conMensaje(mensajeServicio));
+        return MensajeServicioResult.desde(mensajeServicio);
+    }
 }
+
