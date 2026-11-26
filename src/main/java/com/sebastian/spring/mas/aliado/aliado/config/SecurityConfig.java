@@ -44,6 +44,10 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs", "/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/prestadores/*/confianza").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/perfil/*/publico").permitAll()
+                        // Baja diferida: la credencial opaca del vínculo sustituye a la sesión (F09-PUSH-01).
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/notificaciones/dispositivos/*/revocacion").permitAll()
+                        .requestMatchers("/api/v1/notificaciones/dispositivos/**").hasRole("PRESTADOR")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated())
 
