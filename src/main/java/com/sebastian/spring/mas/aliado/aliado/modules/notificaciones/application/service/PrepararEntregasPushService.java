@@ -27,9 +27,9 @@ import java.util.Optional;
  * procesador, después de confirmar la reclamación. Reutiliza el aviso ya persistido: no
  * vuelve a ejecutar el matching global ni crea avisos. Si la oportunidad, la preferencia
  * o la vigencia dejaron de ser válidas, cierra el padre con su motivo; si no hay
- * dispositivos elegibles, también. En caso contrario crea una entrega por vínculo activo
- * (la unicidad de V9 hace idempotente un reintento de la preparación) y marca el padre
- * como {@code PREPARADO}.</p>
+ * dispositivos elegibles, también. En caso contrario confirma primero el padre y después
+ * crea una entrega por vínculo activo en la misma transacción: si la reclamación venció,
+ * no queda ninguna entrega creada y el padre se reintenta al vencer su plazo.</p>
  */
 public class PrepararEntregasPushService implements PrepararEntregasPushUseCase {
 
@@ -93,15 +93,17 @@ public class PrepararEntregasPushService implements PrepararEntregasPushUseCase 
             return;
         }
 
-        // Ambas escrituras pertenecen a la misma transacción: si la confirmación no
-        // encuentra la reclamación vigente, la preparación se reintenta al vencer el plazo
-        // y los insertos vuelven a ser idempotentes.
-        reclamaciones.crearEntregas(trabajo.id(), destinos);
-        if (reclamaciones.confirmarPreparacion(trabajo.id(), reclamacion.reclamacionId())) {
-            // Si un reintento de preparación encontró todas las entregas ya terminales, el
-            // padre no debe quedarse PREPARADO sin trabajo pendiente.
-            reclamaciones.cerrarPadreSiCorresponde(trabajo.id());
+        // La confirmación va primero: si la reclamación venció, no se crea ninguna entrega y
+        // la preparación se reintenta cuando la fila vuelva a ser reclamable. Ambas
+        // escrituras comparten transacción, así que un fallo al crear las entregas revierte
+        // también la confirmación y el padre no queda PREPARADO sin entregas.
+        if (!reclamaciones.confirmarPreparacion(trabajo.id(), reclamacion.reclamacionId())) {
+            return;
         }
+        reclamaciones.crearEntregas(trabajo.id(), destinos);
+        // Si las entregas ya existían y eran terminales, el padre no debe quedarse
+        // PREPARADO sin trabajo pendiente.
+        reclamaciones.cerrarPadreSiCorresponde(trabajo.id());
     }
 
     private void finalizar(TrabajoPush trabajo, ReclamacionPush reclamacion,

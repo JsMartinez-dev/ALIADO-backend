@@ -14,6 +14,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PoliticaReintentoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEnvioPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VentanaEnvioPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
@@ -61,10 +62,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * F09-PUSH-08 sobre PostgreSQL real: preparación idempotente, A aceptado y B temporal con
- * Retry-After, supresión antes del reintento (vínculo revocado, generación rotada,
- * preferencia apagada, oportunidad cerrada y vigencia vencida), cierre del padre y
- * concurrencia de resultados.
+ * F09-PUSH-08 sobre PostgreSQL real: preparación idempotente y atómica, A aceptado y B
+ * temporal con Retry-After, supresión antes del reintento (vínculo revocado, generación
+ * rotada, preferencia apagada, oportunidad cerrada y vigencia vencida), guardia de la
+ * ventana de envío con liberación de la reclamación, cierre del padre y concurrencia de
+ * resultados.
  *
  * <p>Se ejecuta solo con {@code ALIADO_PG_URL} definido y una base desechable. El
  * adaptador de entrega es un doble que nunca contacta con FCM.</p>
@@ -186,6 +188,122 @@ class PreparacionYReintentoPushPostgresTest {
                 "SELECT COUNT(*) FROM entregas_push WHERE trabajo_id = ?", Integer.class, trabajo),
                 "ON CONFLICT conserva las entregas ya creadas");
         assertEquals("PREPARADO", estadoTrabajo(trabajo));
+    }
+
+    @Test
+    void laPreparacionSinConfirmarNoCreaEntregasYLaFilaVuelveASerReclamable() {
+        UUID prestador = sembrarUsuario("PRESTADOR");
+        UUID notificacion = sembrarNotificacion(prestador);
+        UUID trabajo = sembrarTrabajoPendiente(notificacion, Instant.now().plusSeconds(3_600));
+        UUID instalacion = sembrarDispositivo(prestador, "token-a");
+        UUID reclamacionVencida = UUID.randomUUID();
+        jdbc.update("""
+                UPDATE trabajos_push
+                SET reclamacion_id = ?,
+                    reclamacion_vence_en = CURRENT_TIMESTAMP - interval '1 second'
+                WHERE id = ?
+                """, reclamacionVencida, trabajo);
+
+        EntregaPushFalsa entrega = new EntregaPushFalsa();
+        entrega.responder("token-a", ResultadoEnvioPush.aceptado("fcm-a"));
+        ProcesadorTrabajoPushAdapter procesador = procesador(entrega, true, true,
+                Duration.ofSeconds(1));
+
+        procesador.procesar(ReclamacionPush.preparacion(trabajo, reclamacionVencida,
+                Instant.now().minusSeconds(1)));
+
+        assertEquals(0, contar("entregas_push"),
+                "una preparación que no confirma no deja entregas creadas");
+        assertEquals("PENDIENTE_PREPARACION", estadoTrabajo(trabajo));
+
+        // La reclamación venció: el padre vuelve a ser reclamable y se prepara y envía.
+        ReclamacionTrabajoPushAdapter reclamacion = adaptador(10, Duration.ofSeconds(30), procesador);
+        assertEquals(1, reclamacion.procesarLoteElegible().procesados());
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM entregas_push WHERE trabajo_id = ?", Integer.class, trabajo),
+                "la repetición de la preparación crea una sola entrega por dispositivo");
+        assertEquals(1, reclamacion.procesarLoteElegible().procesados());
+        assertEquals(1, entrega.totalEnvios());
+        assertEquals("ACEPTADA", filaEntrega(porInstalacion(trabajo, instalacion)).get("estado"));
+        assertEquals("FINALIZADO", estadoTrabajo(trabajo));
+    }
+
+    @Test
+    void sinTiempoSuficienteNoSeEnviaYLaEntregaSeReclamaYEnviaUnaSolaVezDespues() {
+        UUID prestador = sembrarUsuario("PRESTADOR");
+        UUID notificacion = sembrarNotificacion(prestador);
+        UUID trabajo = sembrarTrabajoPreparado(notificacion, Instant.now().plusSeconds(3_600));
+        UUID instalacion = sembrarDispositivo(prestador, "token-a");
+        UUID entregaId = sembrarEntrega(trabajo, instalacion, 1, Instant.now().minusSeconds(1));
+        UUID reclamacionId = UUID.randomUUID();
+        jdbc.update("""
+                UPDATE entregas_push
+                SET reclamacion_id = ?,
+                    reclamacion_vence_en = CURRENT_TIMESTAMP + interval '3 seconds'
+                WHERE id = ?
+                """, reclamacionId, entregaId);
+
+        EntregaPushFalsa entrega = new EntregaPushFalsa();
+        entrega.responder("token-a", ResultadoEnvioPush.aceptado("fcm-a"));
+        ProcesadorTrabajoPushAdapter procesador = procesador(entrega, true, true,
+                Duration.ofSeconds(1), Clock.systemUTC(),
+                new VentanaEnvioPush(Duration.ofSeconds(5), Duration.ofSeconds(1)));
+
+        procesador.procesar(ReclamacionPush.envio(entregaId, trabajo, instalacion, 1,
+                reclamacionId, Instant.now().plusSeconds(3)));
+
+        assertEquals(0, entrega.totalEnvios(),
+                "sin ventana para el timeout y el margen no se llama al proveedor");
+        Map<String, Object> liberada = filaEntrega(entregaId);
+        assertEquals("PENDIENTE", liberada.get("estado"));
+        assertNull(liberada.get("reclamacion_id"), "la reclamación se libera");
+        assertNull(liberada.get("reclamacion_vence_en"));
+        assertEquals(0, liberada.get("intentos"), "la liberación no consume un intento");
+
+        // La fila liberada es reclamable de inmediato: el ciclo siguiente la envía una vez.
+        ReclamacionTrabajoPushAdapter reclamacion = adaptador(10, Duration.ofSeconds(30), procesador);
+        assertEquals(1, reclamacion.procesarLoteElegible().procesados());
+        assertEquals(1, entrega.enviosA("token-a"), "se envía una sola vez tras la liberación");
+        assertEquals("ACEPTADA", filaEntrega(entregaId).get("estado"));
+        assertEquals("FINALIZADO", estadoTrabajo(trabajo));
+    }
+
+    @Test
+    void elPlazoDeUnaEntregaReclamadaEsSuVencimientoYNoElIntentoPasado() {
+        UUID prestador = sembrarUsuario("PRESTADOR");
+        UUID notificacion = sembrarNotificacion(prestador);
+        UUID trabajo = sembrarTrabajoPreparado(notificacion, Instant.now().plusSeconds(3_600));
+        UUID instalacion = sembrarDispositivo(prestador, "token-a");
+        sembrarEntrega(trabajo, instalacion, 1, Instant.now().minusSeconds(1));
+
+        ReclamacionTrabajoPushAdapter reclamacion = adaptador(10, Duration.ofSeconds(30),
+                new RegistroProcesador());
+        assertEquals(1, reclamacion.procesarLoteElegible().procesados(),
+                "el registro deja la entrega reclamada sin enviar");
+
+        Instant plazo = reclamacion.proximoPlazo().orElseThrow();
+        assertTrue(plazo.isAfter(Instant.now().plusSeconds(20)),
+                "el temporizador espera el vencimiento de la reclamación, no un plazo pasado");
+    }
+
+    @Test
+    void unaEntregaPendienteDeUnPadreFinalizadoNoProgramaPlazo() {
+        UUID prestador = sembrarUsuario("PRESTADOR");
+        UUID notificacion = sembrarNotificacion(prestador);
+        UUID trabajo = sembrarTrabajoPreparado(notificacion, Instant.now().plusSeconds(3_600));
+        UUID instalacion = sembrarDispositivo(prestador, "token-a");
+        sembrarEntrega(trabajo, instalacion, 1, Instant.now().minusSeconds(1));
+        jdbc.update("""
+                UPDATE trabajos_push
+                SET estado = 'FINALIZADO',
+                    finalizado_en = CURRENT_TIMESTAMP,
+                    motivo_final = 'ENTREGAS_TERMINALES'
+                WHERE id = ?
+                """, trabajo);
+
+        assertTrue(adaptador(10, Duration.ofSeconds(30), new RegistroProcesador())
+                        .proximoPlazo().isEmpty(),
+                "una entrega huérfana no debe programar un temporizador de retraso cero");
     }
 
     @Test
@@ -343,14 +461,20 @@ class PreparacionYReintentoPushPostgresTest {
 
     private ProcesadorTrabajoPushAdapter procesador(EntregaPushPort entrega, boolean preferencia,
                                                     boolean oportunidad, Duration base) {
-        Clock reloj = Clock.systemUTC();
+        return procesador(entrega, preferencia, oportunidad, base, Clock.systemUTC(),
+                new VentanaEnvioPush(Duration.ofSeconds(5), Duration.ofSeconds(1)));
+    }
+
+    private ProcesadorTrabajoPushAdapter procesador(EntregaPushPort entrega, boolean preferencia,
+                                                    boolean oportunidad, Duration base,
+                                                    Clock reloj, VentanaEnvioPush ventana) {
         PoliticaReintentoPush politica = new PoliticaReintentoPush(5, base, () -> 0.0);
         ConsultaPreferenciasPort preferencias = (usuarioId, tipoAviso, canal) -> preferencia;
         RevalidacionOportunidadPushPort revalidacion = (solicitudId, prestadorId) -> oportunidad;
         PrepararEntregasPushService preparar = new PrepararEntregasPushService(reclamaciones,
                 notificaciones, dispositivos, preferencias, revalidacion);
         IniciarEntregaPushService iniciar = new IniciarEntregaPushService(reclamaciones,
-                notificaciones, dispositivos, preferencias, revalidacion);
+                notificaciones, dispositivos, preferencias, revalidacion, ventana, reloj);
         RegistrarResultadoEntregaPushService registrar = new RegistrarResultadoEntregaPushService(
                 reclamaciones, dispositivos, politica, reloj);
         return new ProcesadorTrabajoPushAdapter(preparar, iniciar, registrar, entrega,

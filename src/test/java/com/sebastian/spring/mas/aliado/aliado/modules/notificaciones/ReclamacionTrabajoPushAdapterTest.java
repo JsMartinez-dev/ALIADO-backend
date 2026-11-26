@@ -158,6 +158,11 @@ class ReclamacionTrabajoPushAdapterTest {
         }
 
         @Override
+        public boolean liberarReclamacionDeEntrega(UUID entregaId, UUID reclamacionId) {
+            return false;
+        }
+
+        @Override
         public Optional<Instant> proximoPlazo() {
             return plazo;
         }

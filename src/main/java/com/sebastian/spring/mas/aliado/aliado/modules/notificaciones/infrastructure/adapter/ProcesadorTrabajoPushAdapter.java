@@ -27,7 +27,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * <p>Si el proveedor lanza una excepción, la reclamación permanece persistida y otra
  * instancia (o la misma) la recupera al vencer su plazo. No se abre una transacción
- * alrededor de la llamada externa.</p>
+ * alrededor de la llamada externa. Si la revalidación suprime la entrega o la reclamación
+ * no deja tiempo para enviar y guardar el resultado (D-08), la fase de inicio devuelve
+ * vacío, libera la reclamación y el procesador no invoca al proveedor.</p>
  */
 public class ProcesadorTrabajoPushAdapter implements ProcesadorTrabajoPushPort {
 

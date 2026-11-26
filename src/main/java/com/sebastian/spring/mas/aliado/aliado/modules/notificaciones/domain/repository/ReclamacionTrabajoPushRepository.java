@@ -65,9 +65,20 @@ public interface ReclamacionTrabajoPushRepository {
     boolean guardarResultadoEntrega(ResultadoEntregaPush resultado);
 
     /**
+     * Libera la reclamación de una entrega sin registrar resultado, para que vuelva a ser
+     * reclamable de inmediato cuando el tiempo restante no alcanza para enviar y guardar el
+     * resultado (D-08). La liberación se condiciona al identificador de la reclamación: si
+     * la fila ya fue reclamada por otra instancia, no cambia nada. Emite la señal si
+     * cambia la fila.
+     *
+     * @return {@code true} si la reclamación se liberó
+     */
+    boolean liberarReclamacionDeEntrega(UUID entregaId, UUID reclamacionId);
+
+    /**
      * Menor plazo persistido que puede cambiar la elegibilidad: próximo intento de una
-     * entrega, vencimiento de una reclamación de padre o entrega, o expiración de un
-     * trabajo no finalizado. Vacío si no hay ningún plazo.
+     * entrega con padre {@code PREPARADO}, vencimiento de una reclamación de padre o
+     * entrega, o expiración de un trabajo no finalizado. Vacío si no hay ningún plazo.
      */
     Optional<Instant> proximoPlazo();
 

@@ -13,6 +13,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ProcesarTrabajoPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarResultadoEntregaPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PoliticaReintentoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VentanaEnvioPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
@@ -75,6 +76,25 @@ public class WorkerPushConfig {
                 Math::random);
     }
 
+    /**
+     * Ventana mínima para iniciar un envío (D-08): timeout del proveedor más un margen para
+     * registrar el resultado. Debe ser menor que la vigencia de la reclamación; si no, una
+     * entrega liberada se reclamaría en un bucle de retraso cero sin llegar a enviarse.
+     */
+    @Bean
+    public VentanaEnvioPush ventanaEnvioPush(
+            @Value("${aliado.push.envio.timeout-segundos:5}") long timeoutSegundos,
+            @Value("${aliado.push.envio.margen-segundos:5}") long margenSegundos,
+            @Value("${aliado.push.reclamacion.vigencia-segundos:45}") long vigenciaSegundos) {
+        VentanaEnvioPush ventana = new VentanaEnvioPush(Duration.ofSeconds(timeoutSegundos),
+                Duration.ofSeconds(margenSegundos));
+        if (ventana.requerido().compareTo(Duration.ofSeconds(vigenciaSegundos)) >= 0) {
+            throw new IllegalStateException("El timeout de envío y su margen deben ser menores"
+                    + " que la vigencia de la reclamación");
+        }
+        return ventana;
+    }
+
     @Bean
     public PrepararEntregasPushUseCase prepararEntregasPushUseCase(
             ReclamacionTrabajoPushRepository reclamaciones,
@@ -92,9 +112,11 @@ public class WorkerPushConfig {
             NotificacionRepository notificaciones,
             DispositivoPushRepository dispositivos,
             ConsultaPreferenciasPort preferencias,
-            RevalidacionOportunidadPushPort revalidacion) {
+            RevalidacionOportunidadPushPort revalidacion,
+            VentanaEnvioPush ventana,
+            Clock relojPush) {
         return new IniciarEntregaPushService(reclamaciones, notificaciones, dispositivos,
-                preferencias, revalidacion);
+                preferencias, revalidacion, ventana, relojPush);
     }
 
     @Bean

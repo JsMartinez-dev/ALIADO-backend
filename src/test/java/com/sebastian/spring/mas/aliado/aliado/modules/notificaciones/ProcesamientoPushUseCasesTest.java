@@ -25,6 +25,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VentanaEnvioPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VinculoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
@@ -94,8 +95,24 @@ class ProcesamientoPushUseCasesTest {
         assertEquals(List.of(new DestinoPush(INSTALACION_A, 1), new DestinoPush(INSTALACION_B, 1)),
                 reclamaciones.destinos);
         assertTrue(reclamaciones.confirmada, "la preparación marca el padre");
+        assertEquals(List.of("confirmar", "crear", "cierre"),
+                reclamaciones.orden,
+                "el padre se confirma antes de crear las entregas, en la misma transacción");
         assertTrue(reclamaciones.motivos.isEmpty());
         assertEquals(0, notificaciones.insertados.get(), "no se crea un aviso nuevo");
+    }
+
+    @Test
+    void preparacionSinConfirmarNoCreaEntregasNiCierraElPadre() {
+        reclamaciones.confirmar = false;
+
+        prepararServicio().ejecutar(new PrepararEntregasPushCommand(preparacion()));
+
+        assertTrue(reclamaciones.destinos.isEmpty(),
+                "una reclamación vencida no deja entregas creadas");
+        assertFalse(reclamaciones.cerrada);
+        assertTrue(reclamaciones.motivos.isEmpty());
+        assertEquals(List.of("confirmar"), reclamaciones.orden);
     }
 
     @Test
@@ -223,6 +240,33 @@ class ProcesamientoPushUseCasesTest {
     }
 
     @Test
+    void iniciarEnvioLiberaLaReclamacionCuandoNoAlcanzaLaVentana() {
+        marcarPreparado();
+        reclamaciones.entregas.put(ENTREGA_A, entrega(ENTREGA_A, INSTALACION_A, 1, 0));
+
+        Optional<EnvioPushPendiente> envio = iniciarServicio().ejecutar(
+                new IniciarEntregaPushCommand(reclamacionConVencimiento(AHORA.plusSeconds(3))));
+
+        assertTrue(envio.isEmpty(), "no hay tiempo para el timeout y el margen del resultado");
+        assertTrue(reclamaciones.liberada,
+                "la reclamación se libera para reclamarse con un vencimiento nuevo");
+        assertTrue(reclamaciones.resultados.isEmpty(),
+                "liberar la reclamación no marca un resultado terminal");
+    }
+
+    @Test
+    void iniciarEnvioPermiteLaVentanaCuandoElTiempoRestanteAlcanza() {
+        marcarPreparado();
+        reclamaciones.entregas.put(ENTREGA_A, entrega(ENTREGA_A, INSTALACION_A, 1, 0));
+
+        Optional<EnvioPushPendiente> envio = iniciarServicio().ejecutar(
+                new IniciarEntregaPushCommand(reclamacionConVencimiento(AHORA.plusSeconds(5))));
+
+        assertTrue(envio.isPresent(), "5 s restantes cubren la ventana de 5 s sin margen");
+        assertFalse(reclamaciones.liberada);
+    }
+
+    @Test
     void aceptacionMarcaLaEntregaTerminalYCierraElPadre() {
         EnvioPushPendiente envio = envio(0, AHORA.plusSeconds(3_600));
 
@@ -313,7 +357,8 @@ class ProcesamientoPushUseCasesTest {
 
     private IniciarEntregaPushService iniciarServicio() {
         return new IniciarEntregaPushService(reclamaciones, notificaciones, dispositivos,
-                preferencias, revalidacion);
+                preferencias, revalidacion,
+                new VentanaEnvioPush(Duration.ofSeconds(5), Duration.ZERO), RELOJ);
     }
 
     private RegistrarResultadoEntregaPushService registrarServicio() {
@@ -330,6 +375,10 @@ class ProcesamientoPushUseCasesTest {
     private static ReclamacionPush envioReclamacion(UUID entrega, UUID instalacion, long generacion) {
         return ReclamacionPush.envio(entrega, TRABAJO, instalacion, generacion,
                 UUID.randomUUID(), AHORA.plusSeconds(45));
+    }
+
+    private static ReclamacionPush reclamacionConVencimiento(Instant venceEn) {
+        return ReclamacionPush.envio(ENTREGA_A, TRABAJO, INSTALACION_A, 1, RECLAMACION, venceEn);
     }
 
     private static EnvioPushPendiente envio(int intentos, Instant expiraEn) {
@@ -374,22 +423,30 @@ class ProcesamientoPushUseCasesTest {
         final List<DestinoPush> destinos = new ArrayList<>();
         final List<ResultadoEntregaPush> resultados = new ArrayList<>();
         final List<String> motivos = new ArrayList<>();
+        final List<String> orden = new ArrayList<>();
+        boolean confirmar = true;
         boolean confirmada;
         boolean cerrada;
+        boolean liberada;
         boolean guardarResultado = true;
 
         @Override public LoteReclamadoPush reclamar(int maximo, Duration vencimiento) {
             return LoteReclamadoPush.vacio();
         }
         @Override public boolean confirmarPreparacion(UUID trabajoId, UUID reclamacionId) {
-            confirmada = true;
-            return true;
+            orden.add("confirmar");
+            confirmada = confirmar;
+            return confirmar;
         }
         @Override public boolean guardarResultadoEntrega(ResultadoEntregaPush resultado) {
             if (!guardarResultado) {
                 return false;
             }
             resultados.add(resultado);
+            return true;
+        }
+        @Override public boolean liberarReclamacionDeEntrega(UUID entregaId, UUID reclamacionId) {
+            liberada = true;
             return true;
         }
         @Override public Optional<Instant> proximoPlazo() { return Optional.empty(); }
@@ -404,6 +461,7 @@ class ProcesamientoPushUseCasesTest {
             return trabajo != null && trabajo.expiradoEn(RELOJ.instant());
         }
         @Override public void crearEntregas(UUID trabajoId, List<DestinoPush> destinos) {
+            orden.add("crear");
             this.destinos.addAll(destinos);
         }
         @Override public boolean finalizarTrabajo(UUID trabajoId, UUID reclamacionId, String motivo) {
@@ -411,6 +469,7 @@ class ProcesamientoPushUseCasesTest {
             return true;
         }
         @Override public boolean cerrarPadreSiCorresponde(UUID trabajoId) {
+            orden.add("cierre");
             cerrada = true;
             return true;
         }

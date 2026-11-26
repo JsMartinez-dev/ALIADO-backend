@@ -115,17 +115,38 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
                           WHERE t.id = e.trabajo_id AND t.estado <> 'FINALIZADO')
             """;
 
+    /**
+     * Libera la reclamación de una entrega sin tocar su estado ni su próximo intento: la
+     * fila vuelve a ser reclamable con un vencimiento nuevo. Una entrega terminal o una
+     * reclamación reemplazada no cambian.
+     */
+    private static final String SQL_LIBERAR_RECLAMACION_ENTREGA = """
+            UPDATE entregas_push
+            SET reclamacion_id = NULL,
+                reclamacion_vence_en = NULL
+            WHERE id = ?
+              AND reclamacion_id = ?
+              AND estado = 'PENDIENTE'
+            """;
+
+    /**
+     * Plazos que pueden cambiar la elegibilidad. De una entrega pendiente solo cuenta si su
+     * padre sigue {@code PREPARADO}: las filas huérfanas de un padre cerrado no deben
+     * programar un temporizador de retraso cero. El plazo de una entrega reclamada es su
+     * vencimiento (GREATEST ignora el intento ya pasado), no un despertar inmediato que
+     * repetiría la consulta mientras otra instancia mantiene la reclamación.
+     */
     private static final String SQL_PROXIMO_PLAZO = """
             SELECT MIN(plazo) AS plazo
             FROM (
                 SELECT reclamacion_vence_en AS plazo FROM trabajos_push
                 WHERE reclamacion_vence_en IS NOT NULL
                 UNION ALL
-                SELECT reclamacion_vence_en FROM entregas_push
-                WHERE reclamacion_vence_en IS NOT NULL
-                UNION ALL
-                SELECT proximo_intento_en FROM entregas_push
-                WHERE estado = 'PENDIENTE'
+                SELECT GREATEST(e.proximo_intento_en, e.reclamacion_vence_en)
+                FROM entregas_push e
+                JOIN trabajos_push t ON t.id = e.trabajo_id
+                WHERE e.estado = 'PENDIENTE'
+                  AND t.estado = 'PREPARADO'
                 UNION ALL
                 SELECT expira_en FROM trabajos_push
                 WHERE estado <> 'FINALIZADO'
@@ -260,6 +281,17 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
                 resultado.entregaId(),
                 resultado.reclamacionId(),
                 resultado.generacion());
+        if (filas > 0) {
+            notificar();
+        }
+        return filas > 0;
+    }
+
+    @Override
+    public boolean liberarReclamacionDeEntrega(UUID entregaId, UUID reclamacionId) {
+        Objects.requireNonNull(entregaId, "La entrega es obligatoria");
+        Objects.requireNonNull(reclamacionId, "La reclamación es obligatoria");
+        int filas = jdbc.update(SQL_LIBERAR_RECLAMACION_ENTREGA, entregaId, reclamacionId);
         if (filas > 0) {
             notificar();
         }

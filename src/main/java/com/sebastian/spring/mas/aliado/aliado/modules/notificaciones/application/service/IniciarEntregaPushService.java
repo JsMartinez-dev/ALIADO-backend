@@ -14,11 +14,13 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VentanaEnvioPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VinculoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
+import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,6 +33,12 @@ import java.util.Optional;
  * vínculo del token siga activo para la misma generación y cuenta. Si algo dejó de ser
  * válido, persiste la supresión de esa entrega y no se contacta al proveedor. El matching
  * global no se repite.</p>
+ *
+ * <p>Antes de entregar el envío al procesador exige que el tiempo restante de la
+ * reclamación alcance el timeout del proveedor más un margen para registrar el resultado
+ * (D-08). Si no alcanza, libera la reclamación sin enviar ni marcar resultado: la entrega
+ * vuelve a ser reclamable con un vencimiento nuevo en lugar de arriesgar un resultado
+ * tardío que se descartaría y provocaría un reenvío.</p>
  */
 public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
 
@@ -39,17 +47,23 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
     private final DispositivoPushRepository dispositivos;
     private final ConsultaPreferenciasPort preferencias;
     private final RevalidacionOportunidadPushPort revalidacion;
+    private final VentanaEnvioPush ventana;
+    private final Clock reloj;
 
     public IniciarEntregaPushService(ReclamacionTrabajoPushRepository reclamaciones,
                                      NotificacionRepository notificaciones,
                                      DispositivoPushRepository dispositivos,
                                      ConsultaPreferenciasPort preferencias,
-                                     RevalidacionOportunidadPushPort revalidacion) {
+                                     RevalidacionOportunidadPushPort revalidacion,
+                                     VentanaEnvioPush ventana,
+                                     Clock reloj) {
         this.reclamaciones = Objects.requireNonNull(reclamaciones);
         this.notificaciones = Objects.requireNonNull(notificaciones);
         this.dispositivos = Objects.requireNonNull(dispositivos);
         this.preferencias = Objects.requireNonNull(preferencias);
         this.revalidacion = Objects.requireNonNull(revalidacion);
+        this.ventana = Objects.requireNonNull(ventana);
+        this.reloj = Objects.requireNonNull(reloj);
     }
 
     @Override
@@ -115,6 +129,14 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
         if (vinculo.tokenFcm() == null || vinculo.tokenFcm().isBlank()) {
             suprimir(entrega, reclamacion, EstadoEntregaPush.SUPRIMIDA,
                     CodigosEntregaPush.VINCULO_REVOCADO);
+            return Optional.empty();
+        }
+
+        // Guardia de la ventana de envío (D-08): sin tiempo para el timeout y el margen del
+        // resultado, no se llama al proveedor. La reclamación se libera sin marcar nada y
+        // la fila vuelve a ser reclamable con un vencimiento nuevo.
+        if (!ventana.alcanza(reclamacion.venceEn(), reloj.instant())) {
+            reclamaciones.liberarReclamacionDeEntrega(entrega.id(), reclamacion.reclamacionId());
             return Optional.empty();
         }
 
