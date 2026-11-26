@@ -1,5 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.config;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.EntregaPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
@@ -21,6 +23,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastruct
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ProcesadorTrabajoPushAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ReclamacionTrabajoPushAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.SenalTrabajoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.fcm.EntregaPushFirebaseAdapter;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.fcm.EnvioFcm;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.fcm.EnvioFcmFirebase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.fcm.MensajeFcmMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.CoordinadorTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.EscuchaTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.EscuchaTrabajoPushPostgres;
@@ -45,8 +51,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <p>El worker queda apagado por defecto. F09-PUSH-07 añade el adaptador de reclamación
  * SQL con {@code FOR UPDATE SKIP LOCKED}, vencimiento y señal transaccional.
  * F09-PUSH-08 aporta el procesador que prepara las entregas por dispositivo, revalida y
- * aplica los resultados con la política de reintento. F09-PUSH-09 sustituirá el doble de
- * entrega por el adaptador Firebase; hasta entonces el doble nunca contacta al proveedor.</p>
+ * aplica los resultados con la política de reintento. F09-PUSH-09 añade el adaptador de
+ * Firebase detrás de {@link EntregaPushPort}: se compone solo con
+ * {@code aliado.push.proveedor=firebase}; en cualquier otro caso se conserva el doble que
+ * nunca contacta al proveedor.</p>
  *
  * <p>La conexión de escucha debe apuntar a un endpoint que conserve la sesión PostgreSQL.
  * Si el despliegue usa un pooler en modo transacción, configurar
@@ -130,14 +138,42 @@ public class WorkerPushConfig {
     }
 
     /**
-     * Doble de entrega local. F09-PUSH-09 añadirá el adaptador Firebase bajo otra
-     * configuración; el doble nunca contacta con la red ni marca aceptaciones falsas.
+     * Doble de entrega local y para las pruebas. F09-PUSH-09 compone el adaptador de
+     * Firebase con {@code aliado.push.proveedor=firebase}; el doble nunca contacta con la
+     * red ni marca aceptaciones falsas.
      */
     @Bean
     @ConditionalOnProperty(name = "aliado.push.proveedor", havingValue = "falso",
             matchIfMissing = true)
     public EntregaPushPort entregaPushFalsa() {
         return new EntregaPushFalsaAdapter();
+    }
+
+    /**
+     * Transporte FCM con el timeout de envío de D-08. Comparte la propiedad con
+     * {@link #ventanaEnvioPush} para que la guardia de la reclamación y la espera al
+     * proveedor no puedan divergir. Las credenciales las aporta {@link FirebasePushConfig}.
+     */
+    @Bean(destroyMethod = "close")
+    @ConditionalOnProperty(name = "aliado.push.proveedor", havingValue = "firebase")
+    public EnvioFcm envioFcmFirebase(FirebaseApp firebaseAppPush,
+            @Value("${aliado.push.envio.timeout-segundos:5}") long timeoutSegundos) {
+        return EnvioFcmFirebase.conFirebase(FirebaseMessaging.getInstance(firebaseAppPush),
+                Duration.ofSeconds(timeoutSegundos));
+    }
+
+    /**
+     * Adaptador de entrega FCM. Solo lo habilita el piloto con
+     * {@code aliado.push.proveedor=firebase}; el TTL acota lo que FCM puede retener y el
+     * canal es el acordado con Android.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "aliado.push.proveedor", havingValue = "firebase")
+    public EntregaPushPort entregaPushFirebase(EnvioFcm envioFcmFirebase,
+            @Value("${aliado.push.firebase.ttl-segundos:3600}") long ttlSegundos,
+            @Value("${aliado.push.firebase.canal-android:aliado_oportunidades}") String canalAndroid) {
+        return new EntregaPushFirebaseAdapter(envioFcmFirebase,
+                new MensajeFcmMapper(Duration.ofSeconds(ttlSegundos), canalAndroid));
     }
 
     /**

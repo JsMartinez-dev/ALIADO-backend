@@ -1,9 +1,11 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResultadoLotePush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.EntregaPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.EntregaPushFalsaAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.EscuchaTrabajoPush;
 import java.time.Instant;
 import java.util.Optional;
@@ -19,6 +21,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -35,11 +38,18 @@ class WorkerPushConfigTest {
 
     @Autowired private EscuchaFalsa escucha;
     @Autowired private ReclamacionFalsa reclamacion;
+    @Autowired private EntregaPushPort entrega;
 
     @Test
     void laPropiedadActivaComponeYArrancaElCoordinador() throws Exception {
         assertTrue(reclamacion.llamadas.await(5, TimeUnit.SECONDS));
         assertTrue(escucha.aperturas.get() >= 1, "el coordinador debe suscribir la escucha");
+    }
+
+    @Test
+    void conElProveedorPorDefectoSeConservaElDobleDeEntrega() {
+        assertInstanceOf(EntregaPushFalsaAdapter.class, entrega,
+                "sin aliado.push.proveedor=firebase no se compone FCM");
     }
 
     @TestConfiguration
