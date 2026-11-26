@@ -6,15 +6,22 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.S
 import java.util.List;
 import java.util.UUID;
 public class FiltrarTableroOportunidadesService implements FiltrarTableroOportunidadesUseCase {
- private final ConsultaOportunidadesPort consultas;
- public FiltrarTableroOportunidadesService(ConsultaOportunidadesPort consultas) {this.consultas=consultas;}
+ private final ConsultaOportunidadesPort consultaOportunidadesPort;
+ public FiltrarTableroOportunidadesService(ConsultaOportunidadesPort consultas) {this.consultaOportunidadesPort =consultas;}
+
  @Override public List<Solicitud> ejecutar(FiltrarTableroCommand command) {
+
   UUID categoria=null;
   if(command.categoria()!=null && !command.categoria().isBlank()) {
-   try {categoria=UUID.fromString(command.categoria().trim());}
-   catch(IllegalArgumentException ex) {categoria=consultas.categoriaPorNombre(command.categoria().trim()).map(c->c.id()).orElse(null);}
+   try {
+    categoria=UUID.fromString(command.categoria().trim());
+   }
+   catch(IllegalArgumentException ex) {
+    categoria= consultaOportunidadesPort.categoriaPorNombre(command.categoria().trim()).map(c->c.id()).orElse(null);
+   }
    if(categoria==null) {return List.of();}
   }
+
   UUID criterio=categoria;
   return command.compatibles().stream()
    .filter(s->criterio==null || s.categoriaId().equals(criterio))
@@ -22,4 +29,5 @@ public class FiltrarTableroOportunidadesService implements FiltrarTableroOportun
      || (s.urgencia()!=null && s.urgencia().name().equalsIgnoreCase(command.urgencia())))
    .toList();
  }
+
 }

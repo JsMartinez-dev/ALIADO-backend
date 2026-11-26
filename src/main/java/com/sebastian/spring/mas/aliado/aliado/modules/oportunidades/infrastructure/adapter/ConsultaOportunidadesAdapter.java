@@ -15,19 +15,19 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 @Component
 public class ConsultaOportunidadesAdapter implements ConsultaOportunidadesPort {
- private final SolicitudConsultaPort solicitudes;
- private final PerfilProfesionalConsultaPort perfiles;
- private final CatalogoConsultaPort catalogo;
- private final PerfilVisibilidadPort visibilidad;
+ private final SolicitudConsultaPort solicitudConsultaPort;
+ private final PerfilProfesionalConsultaPort profesionalConsultaPort;
+ private final CatalogoConsultaPort catalogoConsultaPort;
+ private final PerfilVisibilidadPort perfilVisibilidadPort;
  public ConsultaOportunidadesAdapter(SolicitudConsultaPort solicitudes, PerfilProfesionalConsultaPort perfiles,
                                      CatalogoConsultaPort catalogo, PerfilVisibilidadPort visibilidad) {
-  this.solicitudes=solicitudes; this.perfiles=perfiles; this.catalogo=catalogo; this.visibilidad=visibilidad;
+  this.solicitudConsultaPort =solicitudes; this.profesionalConsultaPort =perfiles; this.catalogoConsultaPort =catalogo; this.perfilVisibilidadPort =visibilidad;
  }
- @Override public List<Solicitud> publicadas() {return solicitudes.publicadas();}
- @Override public Optional<Solicitud> solicitudPorId(UUID id) {return solicitudes.porId(id);}
- @Override public Optional<PerfilProfesional> perfilPorPrestadorId(UUID id) {return perfiles.porPrestadorId(id);}
- @Override public Optional<Categoria> categoriaPorId(UUID id) {return catalogo.categoriaPorId(id);}
- @Override public Optional<Categoria> categoriaPorNombre(String nombre) {return catalogo.categoriaPorNombre(nombre);}
- @Override public Optional<Zona> zonaPorId(UUID id) {return catalogo.zonaPorId(id);}
- @Override public Visibilidad preferenciaDe(UUID id) {return visibilidad.preferenciaDe(id);}
+ @Override public List<Solicitud> publicadas() {return solicitudConsultaPort.publicadas();}
+ @Override public Optional<Solicitud> solicitudPorId(UUID id) {return solicitudConsultaPort.porId(id);}
+ @Override public Optional<PerfilProfesional> perfilPorPrestadorId(UUID id) {return profesionalConsultaPort.porPrestadorId(id);}
+ @Override public Optional<Categoria> categoriaPorId(UUID id) {return catalogoConsultaPort.categoriaPorId(id);}
+ @Override public Optional<Categoria> categoriaPorNombre(String nombre) {return catalogoConsultaPort.categoriaPorNombre(nombre);}
+ @Override public Optional<Zona> zonaPorId(UUID id) {return catalogoConsultaPort.zonaPorId(id);}
+ @Override public Visibilidad preferenciaDe(UUID id) {return perfilVisibilidadPort.preferenciaDe(id);}
 }

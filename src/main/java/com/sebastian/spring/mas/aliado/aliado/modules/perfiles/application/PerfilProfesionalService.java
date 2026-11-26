@@ -12,22 +12,16 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Perfil profesional (SPEC-05, UC024–UC033).
- * Un prestador, un perfil; crear exige al menos una categoría Y una zona (FR-024).
- * Conflicto disponibilidad/agenda (plan-05 T026): una disponibilidad que choca con un
- * compromiso ya registrado se rechaza con 409.
- */
+
 @Service
 public class PerfilProfesionalService
         implements PerfilProfesionalConsultaPort, PerfilProfesionalModeracionPort {
-    private final PerfilProfesionalRepository perfiles;
+    private final PerfilProfesionalRepository perfilProfesionalRepository;
 
     public PerfilProfesionalService(PerfilProfesionalRepository perfiles) {
-        this.perfiles = perfiles;
+        this.perfilProfesionalRepository = perfiles;
     }
 
-    /** Cambia el estado de exposición (SPEC-03): PUBLICO u OCULTO. */
     @Transactional
     public PerfilProfesional cambiarExposicion(UUID prestadorId, EstadoExposicion nuevo) {
         if (nuevo == null) {
@@ -35,7 +29,7 @@ public class PerfilProfesionalService
                     "estadoExposicion debe ser PUBLICO u OCULTO.");
         }
         PerfilProfesional actual = propio(prestadorId);
-        return perfiles.guardar(actual.conExposicion(nuevo));
+        return perfilProfesionalRepository.guardar(actual.conExposicion(nuevo));
     }
 
     @Override
@@ -45,18 +39,18 @@ public class PerfilProfesionalService
     }
 
     private PerfilProfesional propio(UUID prestadorId) {
-        return perfiles.porPrestadorId(prestadorId)
+        return perfilProfesionalRepository.porPrestadorId(prestadorId)
                 .orElseThrow(() -> new BusinessException.NotFound("PERFIL_NO_ENCONTRADO",
                         "Primero debes crear tu perfil profesional."));
     }
 
     @Override
     public Optional<PerfilProfesional> porPrestadorId(UUID prestadorId) {
-        return perfiles.porPrestadorId(prestadorId);
+        return perfilProfesionalRepository.porPrestadorId(prestadorId);
     }
 
     @Override
     public List<PerfilProfesional> visiblesPorCategoriaYZona(UUID categoriaId, UUID zonaId) {
-        return perfiles.visiblesPorCategoriaYZona(categoriaId, zonaId);
+        return perfilProfesionalRepository.visiblesPorCategoriaYZona(categoriaId, zonaId);
     }
 }

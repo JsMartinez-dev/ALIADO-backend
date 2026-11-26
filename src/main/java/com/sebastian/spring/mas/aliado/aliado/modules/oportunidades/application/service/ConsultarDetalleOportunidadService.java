@@ -5,17 +5,22 @@ import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.ConsultaOportunidadesPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.ConsultarDetalleOportunidadUseCase;
 public class ConsultarDetalleOportunidadService implements ConsultarDetalleOportunidadUseCase {
- private final ConsultaOportunidadesPort consultas;
- private final EvaluacionCompatibilidad evaluacion;
- private final ProyeccionOportunidad proyeccion;
+ private final ConsultaOportunidadesPort consultaOportunidadesPort;
+ private final EvaluacionCompatibilidad evaluacionCompatibilidad;
+ private final ProyeccionOportunidad proyeccionOportunidad;
  public ConsultarDetalleOportunidadService(ConsultaOportunidadesPort consultas, EvaluacionCompatibilidad evaluacion,
-                                          ProyeccionOportunidad proyeccion) {
-  this.consultas=consultas; this.evaluacion=evaluacion; this.proyeccion=proyeccion;
+                                          ProyeccionOportunidad proyeccionOportunidad) {
+  this.consultaOportunidadesPort =consultas; this.evaluacionCompatibilidad =evaluacion; this.proyeccionOportunidad = proyeccionOportunidad;
  }
+
  @Override public OportunidadResult ejecutar(ConsultarDetalleOportunidadQuery query) {
-  var perfil=consultas.perfilPorPrestadorId(query.prestadorId()).orElse(null);
-  var solicitud=consultas.solicitudPorId(query.solicitudId()).orElse(null);
-  if(perfil==null || solicitud==null || !evaluacion.compatible(solicitud,perfil)) {throw new OportunidadNoDisponibleException();}
-  return proyeccion.proyectar(solicitud);
+  var perfil= consultaOportunidadesPort.perfilPorPrestadorId(query.prestadorId()).orElse(null);
+  var solicitud= consultaOportunidadesPort.solicitudPorId(query.solicitudId()).orElse(null);
+
+  if(perfil==null || solicitud==null || !evaluacionCompatibilidad.compatible(solicitud,perfil)) {
+    throw new OportunidadNoDisponibleException();
+  }
+
+  return proyeccionOportunidad.proyectar(solicitud);
  }
 }

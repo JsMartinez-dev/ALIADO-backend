@@ -7,7 +7,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.catalogo.domain.model.Zona
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-/** Lecturas requeridas por oportunidades, sin detalles de persistencia. */
+
 public interface ConsultaOportunidadesPort {
  List<Solicitud> publicadas();
  Optional<Solicitud> solicitudPorId(UUID id);

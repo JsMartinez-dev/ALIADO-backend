@@ -6,10 +6,12 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import java.util.List;
 import java.util.UUID;
 public class ConsultarNotificacionesOportunidadesService implements ConsultarNotificacionesOportunidadesUseCase {
- private final NotificacionRepository notificaciones;
- public ConsultarNotificacionesOportunidadesService(NotificacionRepository notificaciones) {this.notificaciones=notificaciones;}
+ private final NotificacionRepository notificacionRepository;
+ public ConsultarNotificacionesOportunidadesService(NotificacionRepository notificacionRepository) {this.notificacionRepository = notificacionRepository;}
+
  @Override public List<NotificacionOportunidadResult> ejecutar(UUID prestadorId) {
-  return notificaciones.porDestinatarioYTipo(prestadorId,TipoNotificacion.NUEVA_OPORTUNIDAD.name()).stream()
+  return notificacionRepository.porDestinatarioYTipo(prestadorId,TipoNotificacion.NUEVA_OPORTUNIDAD.name()).stream()
    .map(n->new NotificacionOportunidadResult(n.id(),n.aggregateId(),n.detalle(),n.estadoEntrega().name(),n.fechaGeneracion())).toList();
+
  }
 }

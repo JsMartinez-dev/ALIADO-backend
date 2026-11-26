@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Tablero de oportunidades del Prestador (SPEC-06). Solo rol PRESTADOR. */
 @RestController
 @RequestMapping("/api/v1")
 public class OportunidadController {
