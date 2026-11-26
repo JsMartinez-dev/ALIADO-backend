@@ -53,10 +53,11 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Scope compile: la escucha dedicada del worker push (F09-PUSH-06) usa
+             PGConnection.getNotifications para la espera bloqueante de LISTEN/NOTIFY. -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>
