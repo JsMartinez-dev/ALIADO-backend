@@ -16,4 +16,10 @@ public final class NotificacionDtos {
     /** PUT /api/v1/notificaciones/dispositivos/{instalacionId}. Nunca devuelve secretos. */
     public record DispositivoPushRequest(@NotBlank String plataforma, @NotNull Boolean permisoConcedido,
                                          @Size(max = 4096) String token, String credencialRevocacion) {}
+
+    /**
+     * GET /api/v1/notificaciones/{notificacionId}/oportunidad (F09-PUSH-10). Solo expone el
+     * estado mínimo permitido al destinatario; nunca descripción, ubicación ni contacto.
+     */
+    public record OportunidadDesdeAvisoResponse(UUID solicitudId, String estado, boolean puedeCotizar) {}
 }

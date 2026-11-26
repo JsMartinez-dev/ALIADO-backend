@@ -1,6 +1,9 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.config;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesOportunidadesService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarAvisoOportunidadService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ResolverOportunidadAvisoService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.EstadoOportunidadAvisoPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ResolverOportunidadAvisoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarDispositivoPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RetirarDispositivoPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RevocarVinculoPushDiferidoService;
@@ -36,6 +39,16 @@ public class NotificacionUseCaseConfig {
    @Value("${aliado.push.vigencia-minutos:60}") long vigenciaMinutos) {
   return new RegistrarAvisoOportunidadService(notificaciones, trabajos, preferencias,
     Duration.ofMinutes(vigenciaMinutos));
+ }
+
+ /** Estado permitido al destinatario del aviso, dentro de una lectura consistente (F09-PUSH-10). */
+ @Bean public ResolverOportunidadAvisoUseCase resolverOportunidadAvisoUseCase(
+   NotificacionRepository notificaciones, EstadoOportunidadAvisoPort estadoOportunidad,
+   PlatformTransactionManager manager) {
+  var service = new ResolverOportunidadAvisoService(notificaciones, estadoOportunidad);
+  var transaction = new TransactionTemplate(manager);
+  transaction.setReadOnly(true);
+  return command -> transaction.execute(status -> service.ejecutar(command));
  }
 
  @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarAceptacionPropuestaUseCase notificarAceptacionPropuesta(com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort port) { return new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarAceptacionPropuestaService(port); }

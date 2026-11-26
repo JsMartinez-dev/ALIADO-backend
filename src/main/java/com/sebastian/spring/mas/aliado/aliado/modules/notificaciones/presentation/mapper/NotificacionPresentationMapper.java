@@ -2,7 +2,9 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentati
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.NotificacionOportunidadResult;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.OportunidadDesdeAvisoResult;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RegistrarDispositivoPushCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResolverOportunidadAvisoCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RetirarDispositivoPushCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RevocarVinculoPushDiferidoCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentation.dto.NotificacionDtos;
@@ -26,6 +28,20 @@ public final class NotificacionPresentationMapper {
             com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.NotificacionResult result) {
         return new NotificacionDtos.NotificacionResponse(result.id(), result.tipo(), result.servicioId(),
                 result.solicitudId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion());
+    }
+
+    /** GET /api/v1/notificaciones/{notificacionId}/oportunidad: solo cuenta y aviso (F09-PUSH-10). */
+    public static ResolverOportunidadAvisoCommand aResolverOportunidadCommand(UUID notificacionId,
+                                                                              UUID prestadorId) {
+        if (notificacionId == null || prestadorId == null) {
+            throw datosInvalidos();
+        }
+        return new ResolverOportunidadAvisoCommand(notificacionId, prestadorId);
+    }
+
+    public static NotificacionDtos.OportunidadDesdeAvisoResponse aResponse(OportunidadDesdeAvisoResult result) {
+        return new NotificacionDtos.OportunidadDesdeAvisoResponse(result.solicitudId(),
+                result.estado().name(), result.puedeCotizar());
     }
 
     public static RegistrarDispositivoPushCommand aCommand(UUID instalacionId, UUID usuarioId,

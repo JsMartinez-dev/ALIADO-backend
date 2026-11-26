@@ -19,6 +19,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.ConsultarDetalleOportunidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.DetectarNuevaOportunidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.DetectarNuevaOportunidadService;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.ResolverEstadoOportunidadService;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.ResolverEstadoOportunidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.RegistroNotificacionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.CompatibilidadPort;
 
@@ -56,6 +58,17 @@ public class OportunidadUseCaseConfig {
     public EvaluarCompatibilidadPrestadorUseCase evaluarCompatibilidadPrestadorUseCase(
             ConsultaOportunidadesPort consultas, EvaluacionCompatibilidad evaluacion) {
         return new EvaluarCompatibilidadPrestadorService(consultas, evaluacion);
+    }
+
+    /** Estado mínimo al abrir un aviso de oportunidad (F09-PUSH-10). */
+    @Bean
+    public ResolverEstadoOportunidadUseCase resolverEstadoOportunidadUseCase(
+            ConsultaOportunidadesPort consultas, EvaluacionCompatibilidad evaluacion,
+            PlatformTransactionManager transactionManager) {
+        var service = new ResolverEstadoOportunidadService(consultas, evaluacion);
+        var transaction = new TransactionTemplate(transactionManager);
+        transaction.setReadOnly(true);
+        return query -> transaction.execute(status -> service.ejecutar(query));
     }
 
     @Bean

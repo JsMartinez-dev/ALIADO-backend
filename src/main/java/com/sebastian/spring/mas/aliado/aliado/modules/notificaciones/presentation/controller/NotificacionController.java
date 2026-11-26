@@ -4,6 +4,7 @@ import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarNotificacionesOportunidadesUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarNotificacionesUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarDispositivoPushUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ResolverOportunidadAvisoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RetirarDispositivoPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RevocarVinculoPushDiferidoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentation.mapper.NotificacionPresentationMapper;
@@ -35,17 +36,20 @@ public class NotificacionController {
     private final RegistrarDispositivoPushUseCase registrarDispositivo;
     private final RetirarDispositivoPushUseCase retirarDispositivo;
     private final RevocarVinculoPushDiferidoUseCase revocarVinculoDiferido;
+    private final ResolverOportunidadAvisoUseCase resolverOportunidadAviso;
 
     public NotificacionController(ConsultarNotificacionesUseCase notificaciones,
                                   ConsultarNotificacionesOportunidadesUseCase oportunidadesUseCase,
                                   RegistrarDispositivoPushUseCase registrarDispositivo,
                                   RetirarDispositivoPushUseCase retirarDispositivo,
-                                  RevocarVinculoPushDiferidoUseCase revocarVinculoDiferido) {
+                                  RevocarVinculoPushDiferidoUseCase revocarVinculoDiferido,
+                                  ResolverOportunidadAvisoUseCase resolverOportunidadAviso) {
         this.notificaciones = notificaciones;
         this.oportunidadesUseCase = oportunidadesUseCase;
         this.registrarDispositivo = registrarDispositivo;
         this.retirarDispositivo = retirarDispositivo;
         this.revocarVinculoDiferido = revocarVinculoDiferido;
+        this.resolverOportunidadAviso = resolverOportunidadAviso;
     }
 
     @GetMapping
@@ -61,6 +65,16 @@ public class NotificacionController {
         SecurityUtils.exigirRol("PRESTADOR");
         return ResponseEntity.ok(oportunidadesUseCase.ejecutar(SecurityUtils.actual().id()).stream()
                 .map(NotificacionPresentationMapper::aResponse).toList());
+    }
+
+    /** Estado permitido al destinatario del aviso; cualquier otro caso usa el error genérico. */
+    @GetMapping("/{notificacionId}/oportunidad")
+    public ResponseEntity<NotificacionDtos.OportunidadDesdeAvisoResponse> oportunidadDesdeAviso(
+            @PathVariable UUID notificacionId) {
+        SecurityUtils.exigirRol("PRESTADOR");
+        return ResponseEntity.ok(NotificacionPresentationMapper.aResponse(
+                resolverOportunidadAviso.ejecutar(NotificacionPresentationMapper.aResolverOportunidadCommand(
+                        notificacionId, SecurityUtils.actual().id()))));
     }
 
     /** Alta o sincronización de la instalación Android de la cuenta autenticada. */
