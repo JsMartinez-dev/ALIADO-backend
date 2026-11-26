@@ -10,4 +10,13 @@ public interface NotificacionRepository {
     List<Notificacion> porDestinatarioYTipo(UUID destinatarioId, String tipo);
     List<Notificacion> pendientesParaEntrega();
     Notificacion guardar(Notificacion notificacion);
+
+    /**
+     * Inserta el aviso si el evento (tipo, agregado, destinatario y versión) no existe.
+     * La unicidad de V4 resuelve la concurrencia sin lanzar un error que invalide la
+     * transacción de negocio.
+     *
+     * @return {@code true} solo si esta llamada creó la fila.
+     */
+    boolean insertarSiNoExiste(Notificacion notificacion);
 }

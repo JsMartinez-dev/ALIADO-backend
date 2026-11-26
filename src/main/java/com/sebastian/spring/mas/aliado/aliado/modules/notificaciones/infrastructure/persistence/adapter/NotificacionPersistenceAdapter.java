@@ -6,14 +6,24 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastruct
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.persistence.mapper.NotificacionPersistenceMapper;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 public class NotificacionPersistenceAdapter implements NotificacionRepository {
-    private final NotificacionJpaRepository jpa;
+    private static final String SQL_INSERTAR_AVISO = """
+            INSERT INTO notificaciones (id, destinatario_id, tipo, aggregate_id, event_version, detalle,
+                                        canal, estado_entrega, intentos, fecha_generacion)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (tipo, aggregate_id, destinatario_id, event_version) DO NOTHING
+            """;
 
-    public NotificacionPersistenceAdapter(NotificacionJpaRepository jpa) {
+    private final NotificacionJpaRepository jpa;
+    private final JdbcTemplate jdbc;
+
+    public NotificacionPersistenceAdapter(NotificacionJpaRepository jpa, JdbcTemplate jdbc) {
         this.jpa = jpa;
+        this.jdbc = jdbc;
     }
 
     @Override
@@ -41,5 +51,15 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
     @Override
     public Notificacion guardar(Notificacion notificacion) {
         return NotificacionPersistenceMapper.aDominio(jpa.save(NotificacionPersistenceMapper.aEntidad(notificacion)));
+    }
+
+    @Override
+    public boolean insertarSiNoExiste(Notificacion notificacion) {
+        int creados = jdbc.update(SQL_INSERTAR_AVISO,
+                notificacion.id(), notificacion.destinatarioId(), notificacion.tipo().name(),
+                notificacion.aggregateId(), notificacion.eventVersion(), notificacion.detalle(),
+                notificacion.canal().name(), notificacion.estadoEntrega().name(), notificacion.intentos(),
+                notificacion.fechaGeneracion());
+        return creados == 1;
     }
 }
