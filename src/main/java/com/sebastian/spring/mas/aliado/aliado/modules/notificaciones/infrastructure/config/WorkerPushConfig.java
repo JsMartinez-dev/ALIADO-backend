@@ -1,8 +1,11 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.config;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ProcesarTrabajoPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ProcesarTrabajoPushUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ReclamacionTrabajoPushAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.SenalTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.CoordinadorTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.EscuchaTrabajoPush;
@@ -17,14 +20,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Composición del worker push dirigido por {@code LISTEN}/{@code NOTIFY} (F09-PUSH-06).
+ * Composición del worker push dirigido por {@code LISTEN}/{@code NOTIFY} (F09-PUSH-06/07).
  *
- * <p>El worker queda apagado por defecto: el pedido F09-PUSH-06 solo aporta la escucha,
- * el coordinador y el temporizador. El adaptador de reclamación llega en F09-PUSH-07 y el
- * despacho real en F09-PUSH-08; al existir el bean {@link ReclamacionTrabajoPushPort} se
- * puede activar con {@code aliado.push.worker-habilitado=true}.</p>
+ * <p>El worker queda apagado por defecto. F09-PUSH-07 añade el adaptador de reclamación
+ * SQL con {@code FOR UPDATE SKIP LOCKED}, vencimiento y señal transaccional; el
+ * procesamiento de cada reclamación lo aporta F09-PUSH-08 mediante
+ * {@link ProcesadorTrabajoPushPort}. Activar el worker sin ese procesador falla al
+ * componer el contexto, igual que antes ocurría sin adaptador de reclamación.</p>
  *
  * <p>La conexión de escucha debe apuntar a un endpoint que conserve la sesión PostgreSQL.
  * Si el despliegue usa un pooler en modo transacción, configurar
@@ -37,6 +44,23 @@ public class WorkerPushConfig {
     @Bean
     public ProcesarTrabajoPushUseCase procesarTrabajoPushUseCase(ReclamacionTrabajoPushPort reclamacion) {
         return new ProcesarTrabajoPushService(reclamacion);
+    }
+
+    /**
+     * Reclamación con transacción corta propia: el commit de la reclamación y su
+     * {@code NOTIFY} ocurren antes de procesar el lote y de cualquier llamada externa.
+     */
+    @Bean
+    public ReclamacionTrabajoPushPort reclamacionTrabajoPushPort(
+            ReclamacionTrabajoPushRepository reclamaciones,
+            ProcesadorTrabajoPushPort procesador,
+            PlatformTransactionManager transactionManager,
+            @Value("${aliado.push.reclamacion.tamano-lote:10}") int tamanoLote,
+            @Value("${aliado.push.reclamacion.vigencia-segundos:45}") long vigenciaSegundos) {
+        TransactionTemplate transaccion = new TransactionTemplate(transactionManager);
+        transaccion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador, transaccion,
+                tamanoLote, Duration.ofSeconds(vigenciaSegundos));
     }
 
     /** Sesión de escucha dedicada, fuera del pool de consultas de la aplicación. */

@@ -1,0 +1,73 @@
+package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter;
+
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResultadoLotePush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import org.springframework.transaction.support.TransactionTemplate;
+
+/**
+ * Implementación del puerto que consume el coordinador del worker push (F09-PUSH-07).
+ *
+ * <p>Cada iteración abre una transacción corta con {@code REQUIRES_NEW} que reclama el
+ * lote con {@code FOR UPDATE SKIP LOCKED}, escribe identificador y vencimiento y emite
+ * {@code NOTIFY}; al confirmar, el lote se procesa fuera de esa transacción mediante
+ * {@link ProcesadorTrabajoPushPort}. La preparación y el envío reales llegan en
+ * F09-PUSH-08; hasta entonces el worker permanece apagado por configuración y la
+ * composición exige un procesador.</p>
+ *
+ * <p>Si alguna de las dos colas agotó su cupo, informa que resta trabajo para drenar de
+ * inmediato. Los resultados que se guarden después del vencimiento o de un reemplazo
+ * afectan cero filas: la reclamación vencida vuelve a ser elegible al cumplirse su plazo,
+ * sin depender de una publicación nueva.</p>
+ */
+public class ReclamacionTrabajoPushAdapter implements ReclamacionTrabajoPushPort {
+
+    private final ReclamacionTrabajoPushRepository reclamaciones;
+    private final ProcesadorTrabajoPushPort procesador;
+    private final TransactionTemplate transaccion;
+    private final int maximo;
+    private final Duration vencimiento;
+
+    public ReclamacionTrabajoPushAdapter(ReclamacionTrabajoPushRepository reclamaciones,
+                                         ProcesadorTrabajoPushPort procesador,
+                                         TransactionTemplate transaccion,
+                                         int maximo, Duration vencimiento) {
+        if (maximo < 1) {
+            throw new IllegalArgumentException("El tamaño del lote debe ser positivo");
+        }
+        if (vencimiento == null || vencimiento.isZero() || vencimiento.isNegative()) {
+            throw new IllegalArgumentException("La vigencia de la reclamación debe ser positiva");
+        }
+        this.reclamaciones = reclamaciones;
+        this.procesador = procesador;
+        this.transaccion = transaccion;
+        this.maximo = maximo;
+        this.vencimiento = vencimiento;
+    }
+
+    @Override
+    public ResultadoLotePush procesarLoteElegible() {
+        LoteReclamadoPush lote = transaccion.execute(estado ->
+                reclamaciones.reclamar(maximo, vencimiento));
+        if (lote == null || lote.reclamaciones().isEmpty()) {
+            return new ResultadoLotePush(0, false);
+        }
+        // La llamada externa y la escritura de resultados ocurren después del commit de la
+        // reclamación: si el worker cae aquí, la fila se recupera al vencer su plazo.
+        for (ReclamacionPush reclamacion : lote.reclamaciones()) {
+            procesador.procesar(reclamacion);
+        }
+        return new ResultadoLotePush(lote.procesados(), lote.quedanElegibles());
+    }
+
+    @Override
+    public Optional<Instant> proximoPlazo() {
+        return reclamaciones.proximoPlazo();
+    }
+}

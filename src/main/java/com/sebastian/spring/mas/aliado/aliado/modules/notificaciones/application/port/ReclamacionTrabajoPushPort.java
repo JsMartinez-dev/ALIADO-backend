@@ -5,13 +5,14 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Puerto de reclamación y drenaje del worker push (F09-PUSH-06).
+ * Puerto de reclamación y drenaje del worker push (F09-PUSH-06/07).
  *
- * <p>Este puerto define lo que el worker necesita: un lote elegible acotado y el menor
- * plazo persistido que puede cambiar la elegibilidad. La implementación SQL con
- * {@code FOR UPDATE SKIP LOCKED}, reclamación con vencimiento y {@code NOTIFY}
- * transaccional llega en F09-PUSH-07; el despacho real por dispositivo, en F09-PUSH-08.
- * Hasta entonces el ciclo se ejercita con dobles.</p>
+ * <p>Define lo que el worker necesita: un lote elegible acotado y el menor plazo
+ * persistido que puede cambiar la elegibilidad. F09-PUSH-07 aporta la implementación SQL
+ * con {@code FOR UPDATE SKIP LOCKED}, reclamación con identificador y vencimiento,
+ * {@code NOTIFY} transaccional y escrituras de resultado condicionadas. El despacho real
+ * por dispositivo llega en F09-PUSH-08 a través de
+ * {@link ProcesadorTrabajoPushPort}.</p>
  */
 public interface ReclamacionTrabajoPushPort {
 

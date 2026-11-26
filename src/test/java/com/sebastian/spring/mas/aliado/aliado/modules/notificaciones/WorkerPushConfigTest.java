@@ -1,7 +1,9 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResultadoLotePush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.scheduler.EscuchaTrabajoPush;
 import java.time.Instant;
 import java.util.Optional;
@@ -48,6 +50,18 @@ class WorkerPushConfigTest {
 
         @Bean @Primary ReclamacionFalsa reclamacionFalsa() {
             return new ReclamacionFalsa();
+        }
+
+        /** F09-PUSH-07: la composición exige el procesador que implementará F09-PUSH-08. */
+        @Bean @Primary ProcesadorFalso procesadorFalso() {
+            return new ProcesadorFalso();
+        }
+    }
+
+    static final class ProcesadorFalso implements ProcesadorTrabajoPushPort {
+        @Override
+        public void procesar(ReclamacionPush reclamacion) {
+            // Doble: el despacho real llega en F09-PUSH-08.
         }
     }
 
