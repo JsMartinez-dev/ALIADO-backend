@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Bandeja de notificaciones propias (SPEC-09). Sin endpoint de creación. */
 @RestController
 @RequestMapping("/api/v1/notificaciones")
 public class NotificacionController {
@@ -25,8 +24,7 @@ public class NotificacionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NotificacionDtos.NotificacionResponse>> listar(
-            @RequestParam(required = false) String tipo) {
+    public ResponseEntity<List<NotificacionDtos.NotificacionResponse>> listar(@RequestParam(required = false) String tipo) {
         var command = new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ConsultarNotificacionesCommand(SecurityUtils.actual().id(), tipo);
         return ResponseEntity.ok(notificaciones.ejecutar(command).stream()
                 .map(NotificacionPresentationMapper::aResponse).toList());

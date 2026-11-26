@@ -6,10 +6,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.application.use
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-/**
- * Enganches de notificación (SPEC-09): cada evento de negocio registra su aviso
- * dentro de la misma transacción. La entrega externa la hace el worker, nunca aquí.
- */
+
 @Component
 public class NotificacionEventListener {
     private final com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarAceptacionPropuestaUseCase aceptacion;

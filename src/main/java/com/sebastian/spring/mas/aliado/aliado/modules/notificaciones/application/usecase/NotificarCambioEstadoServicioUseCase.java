@@ -2,4 +2,6 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.applicatio
 
 import com.sebastian.spring.mas.aliado.aliado.common.events.Eventos;
 
-public interface NotificarCambioEstadoServicioUseCase { void ejecutar(Eventos.ServicioEstadoCambiado evento); }
+public interface NotificarCambioEstadoServicioUseCase {
+    void ejecutar(Eventos.ServicioEstadoCambiado evento);
+}

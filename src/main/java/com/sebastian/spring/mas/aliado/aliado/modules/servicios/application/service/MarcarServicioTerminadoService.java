@@ -10,7 +10,9 @@ import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usec
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
 import com.sebastian.spring.mas.aliado.aliado.common.events.*;
 public class MarcarServicioTerminadoService implements MarcarServicioTerminadoUseCase {
- private final ServicioRepository servicios; private final PublicadorEventos eventos;
+ private final ServicioRepository servicios;
+ private final PublicadorEventos eventos;
+
  public MarcarServicioTerminadoService(ServicioRepository r,PublicadorEventos e){servicios=r;eventos=e;}
  public ServicioResult ejecutar(AccionServicioCommand c){return TransicionServicio.ejecutar(servicios,eventos,c,EstadoServicio.TERMINADO,"PRESTADOR","Solo el prestador del servicio puede terminarlo.");}
 }

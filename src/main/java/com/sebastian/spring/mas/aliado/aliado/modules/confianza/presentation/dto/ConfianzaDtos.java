@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** Contratos HTTP de confianza (SPEC-10). */
 public final class ConfianzaDtos {
     private ConfianzaDtos() {}
 

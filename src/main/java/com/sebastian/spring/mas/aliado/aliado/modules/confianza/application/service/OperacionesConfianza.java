@@ -22,14 +22,7 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-/**
- * Calificaciones, reseñas y reputación (SPEC-10, UC059–UC062).
- * Reputación = media aritmética de las calificaciones (decisión documentada: la fórmula
- * no estaba definida en los SPEC). Nivel de verificación derivado de solicitudes APROBADAS:
- * 0 = SIN_VERIFICAR, >=1 = BASICO; AMPLIADO queda reservado para decisión de producto.
- * Ningún nivel se presenta como certificación legal (FR-062).
- * La verificación vive en VerificacionService.
- */
+
 public class OperacionesConfianza {
     private final CalificacionRepository calificaciones;
     private final ResenaRepository resenas;

@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/** Calificaciones, reseñas, reputación y verificación (SPEC-10). */
 @RestController
 @RequestMapping("/api/v1")
 public class ConfianzaController {

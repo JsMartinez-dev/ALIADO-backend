@@ -10,10 +10,32 @@ import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usec
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
 import com.sebastian.spring.mas.aliado.aliado.common.events.*;
 final class TransicionServicio {
- private TransicionServicio(){}
- static ServicioResult ejecutar(ServicioRepository r,PublicadorEventos e,AccionServicioCommand c,EstadoServicio nuevo,String rol,String mensaje){
- var s=AccesoServicio.participante(r,c);
- if(rol.equals("PRESTADOR")&&!s.prestadorId().equals(c.actorId())||rol.equals("CLIENTE")&&!s.clienteId().equals(c.actorId()))throw AccesoServicio.error(ServicioOperacionException.Tipo.NO_AUTORIZADO,"NO_AUTORIZADO",mensaje);
- var ahora=OffsetDateTime.now();var actualizado=r.guardar(s.transitarA(nuevo,c.actorId(),ahora));
- e.publicar(new Eventos.ServicioEstadoCambiado(actualizado.id(),actualizado.clienteId(),actualizado.prestadorId(),s.estado().name(),nuevo.name(),c.actorId(),ahora,nuevo.ordinal()+1));return ServicioResult.desde(actualizado);}
+    private TransicionServicio() {}
+
+    static ServicioResult ejecutar(ServicioRepository serviciosRepository, PublicadorEventos publicadorEventos,
+            AccionServicioCommand accionServicioCommand, EstadoServicio nuevoEstado,
+            String rolRequerido, String mensajeNoAutorizado) {
+
+        ServicioContratado servicioActual = AccesoServicio.participante(serviciosRepository, accionServicioCommand);
+
+        boolean esPrestadorNoAutorizado = rolRequerido.equals("PRESTADOR") && !servicioActual.prestadorId().equals(accionServicioCommand.actorId());
+
+        boolean esClienteNoAutorizado = rolRequerido.equals("CLIENTE") && !servicioActual.clienteId().equals(accionServicioCommand.actorId());
+
+        if (esPrestadorNoAutorizado || esClienteNoAutorizado) {
+            throw AccesoServicio.error(ServicioOperacionException.Tipo.NO_AUTORIZADO,
+                    "NO_AUTORIZADO", mensajeNoAutorizado);
+        }
+
+        OffsetDateTime fechaHoraTransicion = OffsetDateTime.now();
+        ServicioContratado servicioActualizado = serviciosRepository.guardar(
+                servicioActual.transitarA(nuevoEstado, accionServicioCommand.actorId(), fechaHoraTransicion));
+
+        publicadorEventos.publicar(new Eventos.ServicioEstadoCambiado(
+                servicioActualizado.id(), servicioActualizado.clienteId(), servicioActualizado.prestadorId(),
+                servicioActual.estado().name(), nuevoEstado.name(), accionServicioCommand.actorId(),
+                fechaHoraTransicion, nuevoEstado.ordinal() + 1));
+
+        return ServicioResult.desde(servicioActualizado);
+    }
 }
