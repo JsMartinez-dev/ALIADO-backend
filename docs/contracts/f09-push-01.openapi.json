@@ -1,0 +1,380 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ALIADO | Piloto push Android",
+    "version": "0.2.0-draft",
+    "description": "Propuesta de F09-PUSH-01. Las rutas del piloto todavía no están implementadas."
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/notificaciones/dispositivos/{instalacionId}": {
+      "parameters": [
+        {
+          "name": "instalacionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Identificador de la instalación Android."
+        },
+        {
+          "name": "X-ALIADO-Installation-Proof",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          },
+          "description": "Secreto base64url de 32 bytes generado por la instalación."
+        }
+      ],
+      "put": {
+        "operationId": "registrarDispositivoPush",
+        "summary": "Sincronizar una instalación Android",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispositivoPushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Instalación sincronizada o entrega deshabilitada."
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin acceso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INSTALACION_NO_DISPONIBLE. La instalación no está disponible con la prueba presentada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TOKEN_PUSH_EN_USO o VINCULO_PUSH_EN_USO. Conflicto de asociación o credencial incompatible con el vínculo vigente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requiere rol Prestador. La cuenta sale de la sesión. El encabezado demuestra posesión de la instalación. Un PUT idéntico conserva la generación."
+      },
+      "delete": {
+        "operationId": "retirarDispositivoPush",
+        "summary": "Desactivar la instalación de la cuenta",
+        "responses": {
+          "204": {
+            "description": "Instalación desactivada o sin cambios."
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCESO_DENEGADO. Rol sin acceso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requiere rol Prestador, prueba de instalación y credencial del vínculo. Revoca solo la generación propia que corresponda a esa credencial.",
+        "security": [
+          {
+            "bearerAuth": [],
+            "pushRevocation": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notificaciones/{notificacionId}/oportunidad": {
+      "parameters": [
+        {
+          "name": "notificacionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Identificador del aviso de oportunidad."
+        }
+      ],
+      "get": {
+        "operationId": "resolverOportunidadDesdeNotificacion",
+        "summary": "Consultar el estado permitido para el destinatario del aviso",
+        "responses": {
+          "200": {
+            "description": "Estado de la oportunidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OportunidadDesdeAviso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin acceso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "OPORTUNIDAD_NO_DISPONIBLE. Aviso u oportunidad sin acceso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requiere rol Prestador y aviso propio de tipo NUEVA_OPORTUNIDAD. ABIERTA requiere publicación y acceso vigente. CERRADA solo revela el estado mínimo permitido al destinatario."
+      }
+    },
+    "/api/v1/notificaciones/dispositivos/{instalacionId}/revocacion": {
+      "parameters": [
+        {
+          "name": "instalacionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Identificador de la instalación Android."
+        }
+      ],
+      "post": {
+        "operationId": "revocarVinculoPushDiferido",
+        "summary": "Revocar el vínculo Android desde una baja sin conexión",
+        "description": "No exige sesión. La credencial opaca solo puede revocar la generación activa que la registró. Una credencial desconocida, retirada o repetida no modifica la instalación.",
+        "security": [
+          {
+            "pushRevocation": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revocación aplicada o sin cambios."
+          },
+          "400": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "pushRevocation": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ALIADO-Push-Revocation"
+      }
+    },
+    "schemas": {
+      "DispositivoPushRequest": {
+        "type": "object",
+        "properties": {
+          "plataforma": {
+            "type": "string",
+            "const": "ANDROID"
+          },
+          "permisoConcedido": {
+            "type": "boolean"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "writeOnly": true
+          },
+          "credencialRevocacion": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "writeOnly": true,
+            "description": "Secreto independiente de 32 bytes, base64url sin padding y exclusivo del vínculo habilitado."
+          }
+        },
+        "required": [
+          "plataforma",
+          "permisoConcedido"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "permisoConcedido": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "token",
+                "credencialRevocacion"
+              ]
+            }
+          }
+        ]
+      },
+      "OportunidadDesdeAviso": {
+        "type": "object",
+        "properties": {
+          "solicitudId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "CERRADA"
+            ]
+          }
+        },
+        "required": [
+          "solicitudId",
+          "estado"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "timestamp",
+          "status",
+          "code",
+          "message",
+          "path"
+        ]
+      }
+    }
+  }
+}
