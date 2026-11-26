@@ -10,38 +10,50 @@ import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.reposito
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.EstadoSolicitud;
 import java.time.OffsetDateTime;
 import java.util.UUID;
-/** UC039: orquesta la creación sin detalles HTTP ni persistencia concreta. */
+
 public class CrearPropuestaService implements CrearPropuestaUseCase {
-    private final PropuestaRepository propuestas;
-    private final ConsultaSolicitudPropuestaPort solicitudes;
-    private final ConsultaCompatibilidadPropuestaPort compatibilidad;
-    private final PublicadorEventos eventos;
-    private final ValidarDisponibilidadPropuestaUseCase disponibilidad;
-    private final ValidarMensajePropuestaUseCase mensaje;
-    public CrearPropuestaService(PropuestaRepository propuestas, ConsultaSolicitudPropuestaPort solicitudes,
-            ConsultaCompatibilidadPropuestaPort compatibilidad, PublicadorEventos eventos,
-            ValidarDisponibilidadPropuestaUseCase disponibilidad, ValidarMensajePropuestaUseCase mensaje) {
-        this.propuestas = propuestas; this.solicitudes = solicitudes; this.compatibilidad = compatibilidad;
-        this.eventos = eventos; this.disponibilidad = disponibilidad; this.mensaje = mensaje;
+    private final PropuestaRepository propuestasRepository;
+    private final ConsultaSolicitudPropuestaPort consultaSolicitudPropuestaPort;
+    private final ConsultaCompatibilidadPropuestaPort consultaCompatibilidadPropuestaPort;
+    private final PublicadorEventos publicadorEventos;
+    private final ValidarDisponibilidadPropuestaUseCase validarDisponibilidadPropuestaUseCase;
+    private final ValidarMensajePropuestaUseCase validarMensajePropuestaUseCase;
+
+    public CrearPropuestaService(PropuestaRepository propuestasRepository,
+            ConsultaSolicitudPropuestaPort consultaSolicitudPropuestaPort,
+            ConsultaCompatibilidadPropuestaPort consultaCompatibilidadPropuestaPort,
+            PublicadorEventos publicadorEventos,
+            ValidarDisponibilidadPropuestaUseCase validarDisponibilidadPropuestaUseCase,
+            ValidarMensajePropuestaUseCase validarMensajePropuestaUseCase) {
+        this.propuestasRepository = propuestasRepository;
+        this.consultaSolicitudPropuestaPort = consultaSolicitudPropuestaPort;
+        this.consultaCompatibilidadPropuestaPort = consultaCompatibilidadPropuestaPort;
+        this.publicadorEventos = publicadorEventos;
+        this.validarDisponibilidadPropuestaUseCase = validarDisponibilidadPropuestaUseCase;
+        this.validarMensajePropuestaUseCase = validarMensajePropuestaUseCase;
     }
-    @Override public PropuestaResult ejecutar(CrearPropuestaCommand command) {
-        String disponibilidadValidada = disponibilidad.ejecutar(command.disponibilidad());
-        String mensajeValidado = mensaje.ejecutar(command.mensaje());
-        var solicitud = solicitudes.porId(command.solicitudId()).orElseThrow(() ->
+
+    @Override
+    public PropuestaResult ejecutar(CrearPropuestaCommand command) {
+        String disponibilidadValidada = validarDisponibilidadPropuestaUseCase.ejecutar(command.disponibilidad());
+        String mensajeValidado = validarMensajePropuestaUseCase.ejecutar(command.mensaje());
+        var solicitudConsultada = consultaSolicitudPropuestaPort.porId(command.solicitudId()).orElseThrow(() ->
                 new RecursoPropuestaNoEncontradoException("SOLICITUD_NO_ENCONTRADA", "Solicitud no encontrada."));
-        if (solicitud.estado() != EstadoSolicitud.PUBLICADA) {
+        if (solicitudConsultada.estado() != EstadoSolicitud.PUBLICADA) {
             throw new ConflictoPropuestaException("SOLICITUD_NO_ABIERTA", "La solicitud ya no admite nuevas propuestas.");
         }
-        if (!compatibilidad.esCompatible(command.solicitudId(), command.prestadorId())) {
+        if (!consultaCompatibilidadPropuestaPort.esCompatible(command.solicitudId(), command.prestadorId())) {
             throw new ConflictoPropuestaException("SOLICITUD_NO_COMPATIBLE", "La solicitud no es compatible con tu perfil profesional.");
         }
-        if (propuestas.activaDePrestadorEnSolicitud(command.solicitudId(), command.prestadorId()).isPresent()) {
+        if (propuestasRepository.activaDePrestadorEnSolicitud(command.solicitudId(), command.prestadorId()).isPresent()) {
             throw new ConflictoPropuestaException("PROPUESTA_DUPLICADA", "Ya tienes una propuesta activa para esta solicitud.");
         }
-        OffsetDateTime ahora = OffsetDateTime.now();
-        var guardada = propuestas.guardar(new Propuesta(UUID.randomUUID(), command.solicitudId(), command.prestadorId(),
-                disponibilidadValidada, mensajeValidado, EstadoPropuesta.ACTIVA, ahora, ahora, 0));
-        eventos.publicar(new Eventos.PropuestaCreada(guardada.id(), command.solicitudId(), command.prestadorId(), solicitud.clienteId(), ahora));
-        return PropuestaResult.desde(guardada);
+        OffsetDateTime fechaHoraCreacion = OffsetDateTime.now();
+        var propuestaGuardada = propuestasRepository.guardar(new Propuesta(UUID.randomUUID(),
+                command.solicitudId(), command.prestadorId(), disponibilidadValidada, mensajeValidado,
+                EstadoPropuesta.ACTIVA, fechaHoraCreacion, fechaHoraCreacion, 0));
+        publicadorEventos.publicar(new Eventos.PropuestaCreada(propuestaGuardada.id(), command.solicitudId(),
+                command.prestadorId(), solicitudConsultada.clienteId(), fechaHoraCreacion));
+        return PropuestaResult.desde(propuestaGuardada);
     }
 }

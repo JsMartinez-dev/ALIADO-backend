@@ -6,4 +6,17 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.po
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.port.ConsultaGestionSolicitudPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.Solicitud;
 @Component
-public class GestionSolicitudAdapter implements ConsultaGestionSolicitudPort {private final SolicitudConsultaPort port;public GestionSolicitudAdapter(SolicitudConsultaPort port){this.port=port;}public Optional<Solicitud> porId(UUID id){return port.porId(id);}public void marcarContratada(UUID id){port.marcarContratada(id);}}
+public class GestionSolicitudAdapter implements ConsultaGestionSolicitudPort {
+    private final SolicitudConsultaPort solicitudConsultaPort;
+
+    public GestionSolicitudAdapter(SolicitudConsultaPort solicitudConsultaPort)
+    {this.solicitudConsultaPort = solicitudConsultaPort;
+    }
+    public Optional<Solicitud> porId(UUID id){
+        return solicitudConsultaPort.porId(id);
+    }
+    public void marcarContratada(UUID id)
+    {
+        solicitudConsultaPort.marcarContratada(id);
+    }
+}
