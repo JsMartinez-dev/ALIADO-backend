@@ -263,6 +263,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> cuerpoInvalido(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        String causa = ex.getMostSpecificCause().getMessage();
+        if (causa != null && causa.contains("La tarifa debe ser un entero positivo en pesos colombianos.")) {
+            return respuesta(HttpStatus.BAD_REQUEST, "TARIFA_INVALIDA",
+                    "La tarifa debe ser un entero positivo en pesos colombianos.", req);
+        }
         return respuesta(HttpStatus.BAD_REQUEST, "DATOS_INVALIDOS", "Datos inválidos.", req);
     }
 

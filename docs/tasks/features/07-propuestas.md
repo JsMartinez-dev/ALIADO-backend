@@ -72,8 +72,8 @@ Conservar el orden por fases y las dependencias `Txxx` del documento de origen; 
 
 | Método | Endpoint | Request body | Respuesta éxito | Errores |
 |---|---|---|---|---|
-| POST | `/api/v1/propuestas` | `{ solicitudId, disponibilidad, mensaje? }` | `201 { id, estado: "ACTIVA" }` | `400` falta disponibilidad; `404` solicitud inexistente; `409` solicitud no abierta o no compatible |
-| PUT | `/api/v1/propuestas/{id}` | `{ disponibilidad?, mensaje? }` | `200 { id, estado }` | `403/404` no pertenece o no existe; `409` propuesta ya no activa |
+| POST | `/api/v1/propuestas` | `{ solicitudId, disponibilidad, tarifaCop, mensaje? }` | `201 { id, estado: "ACTIVA", tarifaCop }` | `400` falta disponibilidad o tarifa inválida (incluye decimal/cadena); `404` solicitud inexistente; `409` solicitud no abierta o no compatible |
+| PUT | `/api/v1/propuestas/{id}` | `{ disponibilidad?, tarifaCop?, mensaje? }` | `200 { id, estado, tarifaCop }` | `400` tarifa inválida (incluye decimal/cadena); `403/404` no pertenece o no existe; `409` propuesta ya no activa |
 | POST | `/api/v1/propuestas/{id}/retirar` | — | `200 { estado: "RETIRADA" }` | `403/404` no pertenece o no existe; `409` propuesta ya no activa |
 
 Todos los endpoints restringidos a rol PRESTADOR mediante el filtro de autorización por rol de SPEC-01 (T018). No se expone un endpoint de listado de "mis propuestas": el SPEC no lo exige (el Prestador llega al `id` de su propuesta desde la respuesta de creación o desde el tablero de SPEC-06); se deja anotado por si una fase posterior lo requiere.
@@ -94,7 +94,7 @@ Aplicar [estados y contrato de cliente](../01-arquitectura-y-stack.md#frontend) 
 
 - [ ] **F07-QA-01** Rechazar solicitud cerrada/no compatible y disponibilidad vacía sin crear filas.
 - [ ] **F07-QA-02** Mutación concurrente y reintento no duplican propuesta ni aviso; política de duplicidad requiere D-09.
-- [ ] **F07-QA-03** No añadir precio/moneda al contrato solo porque exista en la demo: el modelo entregado no los incluye.
+- [ ] **F07-QA-03** Tarifa `tarifaCop` obligatoria en propuestas nuevas (entero positivo COP) y nullable en históricas; validar persistencia y rechazos.
 - [ ] **F07-QA-04** Ejecutar escenarios Given/When/Then del SPEC y todos los SC incluidos abajo con actores y datos independientes; adjuntar evidencia de API, DB y UI.
 
 Validación arquitectónica adicional: verificar Service implements UseCase, constructor de controlador/filtro solo con interfaces, dominio/aplicación sin Spring/JPA/HTTP, mappers separados y un test de integración que acredite el límite transaccional cuando haya mutaciones.

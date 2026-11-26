@@ -16,8 +16,8 @@ public final class ServicioDtos {
     public record SolicitudResumen(UUID id, String descripcion, UUID categoriaId, UUID zonaId, String urgencia,
                                    String estado) {}
 
-    public record PropuestaResumen(UUID id, UUID prestadorId, String disponibilidad, String mensaje, String estado,
-                                   OffsetDateTime fechaCreacion) {}
+    public record PropuestaResumen(UUID id, UUID prestadorId, String disponibilidad, String mensaje, Integer tarifaCop,
+                                   String estado, OffsetDateTime fechaCreacion) {}
 
     public record ServicioResumenResponse(UUID id, UUID solicitudId, UUID propuestaId, String estado,
                                           OffsetDateTime fechaContratacion) {}
