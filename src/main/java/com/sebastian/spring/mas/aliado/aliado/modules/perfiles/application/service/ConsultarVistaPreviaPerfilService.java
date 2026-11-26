@@ -4,7 +4,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConsultarVistaPreviaPerfilUseCase;
 import java.util.UUID;
 public class ConsultarVistaPreviaPerfilService implements ConsultarVistaPreviaPerfilUseCase {
- private final ConsultaVistaPublicaPerfilPort consulta;
- public ConsultarVistaPreviaPerfilService(ConsultaVistaPublicaPerfilPort consulta) {this.consulta=consulta;}
- @Override public VistaPreviaPerfilResult ejecutar(UUID prestadorId) {return consulta.consultar(prestadorId);}
+ private final ConsultaVistaPublicaPerfilPort vistaPublicaPerfilPort;
+ public ConsultarVistaPreviaPerfilService(ConsultaVistaPublicaPerfilPort consulta) {this.vistaPublicaPerfilPort =consulta;}
+ @Override public VistaPreviaPerfilResult ejecutar(UUID prestadorId) {return vistaPublicaPerfilPort.consultar(prestadorId);}
 }

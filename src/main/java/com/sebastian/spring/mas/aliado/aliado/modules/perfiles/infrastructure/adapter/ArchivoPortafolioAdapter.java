@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-/** Compensación limitada al portafolio: no modifica el almacenamiento de otros módulos. */
 @Component
 public class ArchivoPortafolioAdapter implements ArchivoPortafolioPort {
     private static final Logger log = LoggerFactory.getLogger(ArchivoPortafolioAdapter.class);

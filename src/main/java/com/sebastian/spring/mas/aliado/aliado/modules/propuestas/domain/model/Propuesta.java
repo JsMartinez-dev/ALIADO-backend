@@ -4,7 +4,6 @@ import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.domain.exceptio
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** Propuesta de un Prestador sobre una solicitud (SPEC-07). Sin precio ni moneda (F07-QA-03). */
 public record Propuesta(UUID id, UUID solicitudId, UUID prestadorId, String disponibilidad, String mensaje,
                         EstadoPropuesta estado, OffsetDateTime fechaCreacion, OffsetDateTime fechaActualizacion,
                         int version) {

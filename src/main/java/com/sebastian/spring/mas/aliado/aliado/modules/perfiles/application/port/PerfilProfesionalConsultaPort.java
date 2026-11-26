@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Contrato público del perfil profesional para descubrimiento y oportunidades. */
 public interface PerfilProfesionalConsultaPort {
     Optional<PerfilProfesional> porPrestadorId(UUID prestadorId);
     List<PerfilProfesional> visiblesPorCategoriaYZona(UUID categoriaId, UUID zonaId);

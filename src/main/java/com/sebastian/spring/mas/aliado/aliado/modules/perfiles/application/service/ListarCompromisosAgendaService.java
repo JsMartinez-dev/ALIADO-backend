@@ -6,10 +6,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.repository
 import java.util.List;
 import java.util.UUID;
 public class ListarCompromisosAgendaService implements ListarCompromisosAgendaUseCase {
- private final PerfilProfesionalRepository perfiles;
- public ListarCompromisosAgendaService(PerfilProfesionalRepository perfiles) {this.perfiles=perfiles;}
+ private final PerfilProfesionalRepository perfilProfesionalRepository;
+ public ListarCompromisosAgendaService(PerfilProfesionalRepository perfiles) {this.perfilProfesionalRepository =perfiles;}
  @Override public List<CompromisoResult> ejecutar(UUID prestadorId) {
- return perfiles.porPrestadorId(prestadorId).orElseThrow(PerfilProfesionalNoEncontradoException::new).compromisos().stream()
+ return perfilProfesionalRepository.porPrestadorId(prestadorId).orElseThrow(PerfilProfesionalNoEncontradoException::new).compromisos().stream()
  .map(c -> new CompromisoResult(c.id(),c.fechaHoraInicio(),c.fechaHoraFin(),c.origen().name())).toList();
  }
 }

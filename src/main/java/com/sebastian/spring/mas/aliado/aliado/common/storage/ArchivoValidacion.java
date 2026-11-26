@@ -3,7 +3,6 @@ package com.sebastian.spring.mas.aliado.aliado.common.storage;
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import java.util.Set;
 
-/** Reglas de archivo del MVP (P-07 pendiente de cerrar por producto: MIME y tamaños). */
 public final class ArchivoValidacion {
     public static final long MAX_BYTES = 5L * 1024 * 1024;
     public static final Set<String> IMAGENES = Set.of("image/jpeg", "image/png", "image/webp");

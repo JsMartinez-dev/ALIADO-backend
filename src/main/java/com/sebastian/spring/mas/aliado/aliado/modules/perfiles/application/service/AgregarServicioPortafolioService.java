@@ -12,24 +12,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 public class AgregarServicioPortafolioService implements AgregarServicioPortafolioUseCase {
-    private final PerfilProfesionalRepository perfiles;
-    private final ArchivoPortafolioPort archivos;
+    private final PerfilProfesionalRepository perfilProfesionalRepository;
+    private final ArchivoPortafolioPort archivoPortafolioPort;
     public AgregarServicioPortafolioService(PerfilProfesionalRepository perfiles, ArchivoPortafolioPort archivos) {
-        this.perfiles = perfiles;
-        this.archivos = archivos;
+        this.perfilProfesionalRepository = perfiles;
+        this.archivoPortafolioPort = archivos;
     }
     @Override
     public PortafolioResult ejecutar(AgregarServicioPortafolioCommand command) {
-        var actual = perfiles.porPrestadorId(command.prestadorId()).orElseThrow(PerfilProfesionalNoEncontradoException::new);
+        var actual = perfilProfesionalRepository.porPrestadorId(command.prestadorId()).orElseThrow(PerfilProfesionalNoEncontradoException::new);
         if (command.descripcion() == null || command.descripcion().isBlank()) { throw new PortafolioInvalidoException(); }
         String clave = null;
         if (command.contenido() != null && command.contenido().length > 0) {
-            clave = archivos.guardar(command.nombreArchivo(), command.tipoContenido(), command.contenido());
+            clave = archivoPortafolioPort.guardar(command.nombreArchivo(), command.tipoContenido(), command.contenido());
         }
         var item = new ServicioPortafolio(UUID.randomUUID(), actual.id(), command.descripcion().trim(), clave, OffsetDateTime.now());
         var lista = new ArrayList<>(actual.portafolio());
         lista.add(item);
-        perfiles.guardar(actual.conPortafolio(List.copyOf(lista)));
+        perfilProfesionalRepository.guardar(actual.conPortafolio(List.copyOf(lista)));
         return new PortafolioResult(item.id(), item.descripcion(), item.evidenciaKey(), item.fechaCreacion());
     }
 }

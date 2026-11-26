@@ -9,11 +9,13 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 public class ConfigurarDisponibilidadService implements ConfigurarDisponibilidadUseCase {
-    private final PerfilProfesionalRepository perfiles;
-    public ConfigurarDisponibilidadService(PerfilProfesionalRepository perfiles) { this.perfiles = perfiles; }
+    private final PerfilProfesionalRepository perfilProfesionalRepository;
+
+    public ConfigurarDisponibilidadService(PerfilProfesionalRepository perfiles) { this.perfilProfesionalRepository = perfiles; }
+
     @Override
     public PerfilProfesionalResult ejecutar(ConfigurarDisponibilidadCommand command) {
-        var actual = perfiles.porPrestadorId(command.prestadorId()).orElseThrow(PerfilProfesionalNoEncontradoException::new);
+        var actual = perfilProfesionalRepository.porPrestadorId(command.prestadorId()).orElseThrow(PerfilProfesionalNoEncontradoException::new);
         var bloques = command.bloques();
         if (bloques == null) { throw new DatosPerfilProfesionalInvalidosException("DISPONIBILIDAD_INVALIDA", "Los bloques de disponibilidad son obligatorios."); }
         for (DisponibilidadDatos bloque : bloques) {
@@ -36,7 +38,7 @@ public class ConfigurarDisponibilidadService implements ConfigurarDisponibilidad
         List<Disponibilidad> conIds = bloques.stream()
                 .map(b -> new Disponibilidad(UUID.randomUUID(), actual.id(),
                         b.diaSemana(), b.horaInicio(), b.horaFin())).toList();
-        return PerfilProfesionalResult.desde(perfiles.guardar(actual.conDisponibilidades(conIds)));
+        return PerfilProfesionalResult.desde(perfilProfesionalRepository.guardar(actual.conDisponibilidades(conIds)));
     }
 
     private boolean chocaConCompromiso(DisponibilidadDatos bloque, CompromisoAgenda compromiso) {

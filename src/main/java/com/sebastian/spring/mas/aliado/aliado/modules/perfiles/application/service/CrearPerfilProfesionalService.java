@@ -17,23 +17,23 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CrearPerfilProfesionalService implements CrearPerfilProfesionalUseCase {
-    private final PerfilProfesionalRepository perfiles;
-    private final ConsultaCatalogoPerfilPort catalogo;
+    private final PerfilProfesionalRepository perfilProfesionalRepository;
+    private final ConsultaCatalogoPerfilPort consultaCatalogoPerfilPort;
 
     public CrearPerfilProfesionalService(PerfilProfesionalRepository perfiles, ConsultaCatalogoPerfilPort catalogo) {
-        this.perfiles = perfiles;
-        this.catalogo = catalogo;
+        this.perfilProfesionalRepository = perfiles;
+        this.consultaCatalogoPerfilPort = catalogo;
     }
 
     @Override
     public PerfilProfesionalResult ejecutar(CrearPerfilProfesionalCommand command) {
-        if (perfiles.porPrestadorId(command.prestadorId()).isPresent()) {
+        if (perfilProfesionalRepository.porPrestadorId(command.prestadorId()).isPresent()) {
             throw new PerfilProfesionalYaExisteException();
         }
-        Set<UUID> categorias = CatalogoPerfilValidacion.validarActivos(command.categoriaIds(), "categoría", catalogo::categoriaActiva);
-        Set<UUID> zonas = CatalogoPerfilValidacion.validarActivos(command.zonaIds(), "zona de atención", catalogo::zonaActiva);
+        Set<UUID> categorias = CatalogoPerfilValidacion.validarActivos(command.categoriaIds(), "categoría", consultaCatalogoPerfilPort::categoriaActiva);
+        Set<UUID> zonas = CatalogoPerfilValidacion.validarActivos(command.zonaIds(), "zona de atención", consultaCatalogoPerfilPort::zonaActiva);
         List<ExperienciaDatos> experiencias = command.experiencias() == null ? List.of() : command.experiencias();
-        // Se conserva la validación de dominio y el orden de validación del flujo original.
+
         experiencias.forEach(e -> new ExperienciaProfesional(null, null,
                 e == null ? null : e.descripcion(), e == null ? null : e.fechaInicio(), e == null ? null : e.fechaFin()));
         var experienciasDominio = experiencias.stream().map(e -> new ExperienciaProfesional(
@@ -43,7 +43,7 @@ public class CrearPerfilProfesionalService implements CrearPerfilProfesionalUseC
                 command.datosGenerales() == null ? Map.of() : command.datosGenerales(),
                 EstadoExposicion.PUBLICO, ahora, ahora, categorias, zonas, experienciasDominio,
                 List.of(), List.of(), List.of());
-        return PerfilProfesionalResult.desde(perfiles.guardar(perfil));
+        return PerfilProfesionalResult.desde(perfilProfesionalRepository.guardar(perfil));
     }
 
 }

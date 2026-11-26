@@ -8,17 +8,17 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
-/** Reutiliza la política y proyección de descubrimiento sin dependencia inversa de perfiles. */
 @Component
 public class VistaPublicaPerfilAdapter implements ConsultaVistaPublicaPerfilPort {
- private final ConsultarPerfilPublicoUseCase publico;
- private final ConsultaDescubrimientoPort consultas;
+ private final ConsultarPerfilPublicoUseCase consultarPerfilPublicoUseCase;
+ private final ConsultaDescubrimientoPort consultaDescubrimientoPort;
  public VistaPublicaPerfilAdapter(ConsultarPerfilPublicoUseCase publico, ConsultaDescubrimientoPort consultas) {
-  this.publico=publico;this.consultas=consultas;
+  this.consultarPerfilPublicoUseCase =publico;this.consultaDescubrimientoPort =consultas;
  }
+
  @Override public VistaPreviaPerfilResult consultar(UUID prestadorId) {
-  var vista=publico.ejecutar(prestadorId);
-  var perfil=consultas.porPrestadorId(prestadorId).orElseThrow(PerfilPublicoNoDisponibleException::new);
+  var vista= consultarPerfilPublicoUseCase.ejecutar(prestadorId);
+  var perfil= consultaDescubrimientoPort.porPrestadorId(prestadorId).orElseThrow(PerfilPublicoNoDisponibleException::new);
   return new VistaPreviaPerfilResult(prestadorId,vista.categorias(),vista.zonas(),vista.reputacionAgregada(),
     vista.cantidadCalificaciones(),vista.nivelVerificacion(),perfil.disponibilidades().stream().map(d -> new DisponibilidadResult(
       d.id(),d.diaSemana(),d.horaInicio(),d.horaFin())).toList(),vista.datosGenerales(),vista.resenas().stream()

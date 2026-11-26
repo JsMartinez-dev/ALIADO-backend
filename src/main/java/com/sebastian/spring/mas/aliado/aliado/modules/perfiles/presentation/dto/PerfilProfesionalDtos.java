@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Contratos HTTP del perfil profesional (SPEC-05). */
 public final class PerfilProfesionalDtos {
     private PerfilProfesionalDtos() {}
 
