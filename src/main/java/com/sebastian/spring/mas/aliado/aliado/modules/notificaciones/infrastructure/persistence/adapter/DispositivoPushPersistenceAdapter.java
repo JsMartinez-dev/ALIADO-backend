@@ -33,6 +33,11 @@ public class DispositivoPushPersistenceAdapter implements DispositivoPushReposit
             "SELECT instalacion_id, generacion, usuario_id, token_fcm, token_fcm_sha256, "
                     + "revocacion_sha256, vinculado_en, revocado_en "
                     + "FROM vinculos_push WHERE instalacion_id = ? AND revocado_en IS NULL";
+    private static final String SQL_VINCULOS_ACTIVOS_DE_USUARIO =
+            "SELECT instalacion_id, generacion, usuario_id, token_fcm, token_fcm_sha256, "
+                    + "revocacion_sha256, vinculado_en, revocado_en "
+                    + "FROM vinculos_push WHERE usuario_id = ? AND revocado_en IS NULL "
+                    + "AND token_fcm IS NOT NULL ORDER BY instalacion_id";
     private static final String SQL_REVOCAR =
             "UPDATE vinculos_push SET revocado_en = ?, token_fcm = NULL, token_fcm_sha256 = NULL "
                     + "WHERE instalacion_id = ? AND generacion = ? AND revocado_en IS NULL";
@@ -75,6 +80,11 @@ public class DispositivoPushPersistenceAdapter implements DispositivoPushReposit
     public Optional<VinculoPush> vinculoActivo(UUID instalacionId) {
         List<VinculoPush> filas = jdbc.query(SQL_VINCULO_ACTIVO, this::mapearVinculo, instalacionId);
         return filas.stream().findFirst();
+    }
+
+    @Override
+    public List<VinculoPush> vinculosActivosDe(UUID usuarioId) {
+        return jdbc.query(SQL_VINCULOS_ACTIVOS_DE_USUARIO, this::mapearVinculo, usuarioId);
     }
 
     @Override

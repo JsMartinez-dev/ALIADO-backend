@@ -385,6 +385,15 @@ class DispositivoPushUseCasesTest {
         }
 
         @Override
+        public List<VinculoPush> vinculosActivosDe(UUID usuarioId) {
+            return vinculos.values().stream().flatMap(List::stream)
+                    .filter(VinculoPush::activo)
+                    .filter(v -> v.usuarioId().equals(usuarioId))
+                    .filter(v -> v.tokenFcm() != null && !v.tokenFcm().isBlank())
+                    .toList();
+        }
+
+        @Override
         public boolean existeCredencial(byte[] huellaCredencial) {
             return vinculos.values().stream().flatMap(List::stream)
                     .anyMatch(v -> Arrays.equals(v.revocacionSha256(), huellaCredencial));

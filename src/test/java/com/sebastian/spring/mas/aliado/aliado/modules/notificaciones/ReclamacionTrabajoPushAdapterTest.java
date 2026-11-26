@@ -2,9 +2,12 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResultadoLotePush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ReclamacionTrabajoPushAdapter;
 import java.time.Duration;
@@ -157,6 +160,35 @@ class ReclamacionTrabajoPushAdapterTest {
         @Override
         public Optional<Instant> proximoPlazo() {
             return plazo;
+        }
+
+        @Override
+        public Optional<TrabajoPush> buscarTrabajo(UUID trabajoId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<EntregaPush> buscarEntrega(UUID entregaId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean trabajoExpirado(UUID trabajoId) {
+            return false;
+        }
+
+        @Override
+        public void crearEntregas(UUID trabajoId, java.util.List<DestinoPush> destinos) {
+        }
+
+        @Override
+        public boolean finalizarTrabajo(UUID trabajoId, UUID reclamacionId, String motivo) {
+            return false;
+        }
+
+        @Override
+        public boolean cerrarPadreSiCorresponde(UUID trabajoId) {
+            return false;
         }
     }
 

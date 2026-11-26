@@ -2,12 +2,16 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.rep
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface NotificacionRepository {
     boolean existeEvento(String tipo, UUID aggregateId, UUID destinatarioId, int eventVersion);
     List<Notificacion> porDestinatario(UUID destinatarioId);
     List<Notificacion> porDestinatarioYTipo(UUID destinatarioId, String tipo);
+
+    /** Aviso por identificador, sin exponer la entidad de persistencia. */
+    Optional<Notificacion> porId(UUID id);
     List<Notificacion> pendientesParaEntrega();
     Notificacion guardar(Notificacion notificacion);
 

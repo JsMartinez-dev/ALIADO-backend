@@ -1,10 +1,14 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,4 +70,42 @@ public interface ReclamacionTrabajoPushRepository {
      * trabajo no finalizado. Vacío si no hay ningún plazo.
      */
     Optional<Instant> proximoPlazo();
+
+    /** Trabajo padre por identificador. */
+    Optional<TrabajoPush> buscarTrabajo(UUID trabajoId);
+
+    /** Entrega por dispositivo por identificador. */
+    Optional<EntregaPush> buscarEntrega(UUID entregaId);
+
+    /**
+     * Indica si el trabajo alcanzó su vigencia según la hora de PostgreSQL. La elegibilidad
+     * de la fila ya la decide el SQL de reclamación; este método evita que la decisión de
+     * expirar dependa del reloj del proceso.
+     */
+    boolean trabajoExpirado(UUID trabajoId);
+
+    /**
+     * Crea una entrega {@code PENDIENTE} por destino con el próximo intento en el instante
+     * actual de PostgreSQL. La unicidad de V9 ({@code trabajo + instalación + generación})
+     * hace idempotente un reintento de la preparación. Debe ejecutarse dentro de la
+     * transacción de preparación.
+     */
+    void crearEntregas(UUID trabajoId, List<DestinoPush> destinos);
+
+    /**
+     * Cierra el padre con su motivo solo si la reclamación de preparación sigue vigente y
+     * el trabajo continúa pendiente de preparación. Emite la señal si cambia la fila.
+     *
+     * @return {@code true} si el trabajo se cerró
+     */
+    boolean finalizarTrabajo(UUID trabajoId, UUID reclamacionId, String motivo);
+
+    /**
+     * Cierra el padre {@code PREPARADO} cuando ya no queda ninguna entrega
+     * {@code PENDIENTE}. Bloquea la fila del padre para serializar resultados concurrentes
+     * y debe invocarse dentro de la transacción que guardó el último resultado.
+     *
+     * @return {@code true} si esta llamada finalizó el trabajo
+     */
+    boolean cerrarPadreSiCorresponde(UUID trabajoId);
 }

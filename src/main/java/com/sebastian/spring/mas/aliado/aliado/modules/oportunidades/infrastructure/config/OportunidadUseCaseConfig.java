@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.ConsultaOportunidadesPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.EvaluacionCompatibilidad;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.EvaluarCompatibilidadPrestadorService;
+import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.EvaluarCompatibilidadPrestadorUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.ProyeccionOportunidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.ConsultarTableroOportunidadesService;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.usecase.ConsultarTableroOportunidadesUseCase;
@@ -47,6 +49,13 @@ public class OportunidadUseCaseConfig {
     public EvaluacionCompatibilidad evaluacionCompatibilidad(ConsultaOportunidadesPort consultas,
                                                              CalcularCompatibilidadUseCase calculo) {
         return new EvaluacionCompatibilidad(consultas, calculo);
+    }
+
+    /** Evaluación individual reutilizable desde el worker push (F09-PUSH-08). */
+    @Bean
+    public EvaluarCompatibilidadPrestadorUseCase evaluarCompatibilidadPrestadorUseCase(
+            ConsultaOportunidadesPort consultas, EvaluacionCompatibilidad evaluacion) {
+        return new EvaluarCompatibilidadPrestadorService(consultas, evaluacion);
     }
 
     @Bean

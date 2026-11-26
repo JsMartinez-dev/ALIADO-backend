@@ -17,9 +17,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <p>Cada iteración abre una transacción corta con {@code REQUIRES_NEW} que reclama el
  * lote con {@code FOR UPDATE SKIP LOCKED}, escribe identificador y vencimiento y emite
  * {@code NOTIFY}; al confirmar, el lote se procesa fuera de esa transacción mediante
- * {@link ProcesadorTrabajoPushPort}. La preparación y el envío reales llegan en
- * F09-PUSH-08; hasta entonces el worker permanece apagado por configuración y la
- * composición exige un procesador.</p>
+ * {@link ProcesadorTrabajoPushPort}. La preparación por dispositivo, la revalidación y el
+ * envío real los aporta la composición de F09-PUSH-08; el proveedor Firebase llega en
+ * F09-PUSH-09.</p>
  *
  * <p>Si alguna de las dos colas agotó su cupo, informa que resta trabajo para drenar de
  * inmediato. Los resultados que se guarden después del vencimiento o de un reemplazo

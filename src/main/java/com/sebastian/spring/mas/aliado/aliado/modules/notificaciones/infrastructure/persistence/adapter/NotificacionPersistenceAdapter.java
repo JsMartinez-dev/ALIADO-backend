@@ -1,10 +1,17 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.persistence.adapter;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.persistence.jpa.NotificacionJpaRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.persistence.mapper.NotificacionPersistenceMapper;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -44,6 +51,16 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
     }
 
     @Override
+    public Optional<Notificacion> porId(UUID id) {
+        List<Notificacion> filas = jdbc.query("""
+                SELECT id, destinatario_id, tipo, aggregate_id, event_version, detalle, canal,
+                       estado_entrega, intentos, fecha_generacion, fecha_entrega
+                FROM notificaciones WHERE id = ?
+                """, this::mapearNotificacion, id);
+        return filas.stream().findFirst();
+    }
+
+    @Override
     public List<Notificacion> pendientesParaEntrega() {
         return jpa.findPendientesParaEntrega().stream().map(NotificacionPersistenceMapper::aDominio).toList();
     }
@@ -61,5 +78,19 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
                 notificacion.canal().name(), notificacion.estadoEntrega().name(), notificacion.intentos(),
                 notificacion.fechaGeneracion());
         return creados == 1;
+    }
+
+    private Notificacion mapearNotificacion(ResultSet rs, int fila) throws SQLException {
+        return new Notificacion(rs.getObject("id", UUID.class),
+                rs.getObject("destinatario_id", UUID.class),
+                TipoNotificacion.valueOf(rs.getString("tipo")),
+                rs.getObject("aggregate_id", UUID.class),
+                rs.getInt("event_version"),
+                rs.getString("detalle"),
+                Canal.valueOf(rs.getString("canal")),
+                EstadoEntrega.valueOf(rs.getString("estado_entrega")),
+                rs.getInt("intentos"),
+                rs.getObject("fecha_generacion", OffsetDateTime.class),
+                rs.getObject("fecha_entrega", OffsetDateTime.class));
     }
 }

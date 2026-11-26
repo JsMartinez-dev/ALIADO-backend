@@ -216,6 +216,10 @@ class EncoladoOportunidadTest {
             return porDestinatario(destinatarioId).stream().filter(n -> n.tipo().name().equals(tipo)).toList();
         }
 
+        @Override public Optional<Notificacion> porId(UUID id) {
+            return guardadas.values().stream().filter(n -> n.id().equals(id)).findFirst();
+        }
+
         @Override public List<Notificacion> pendientesParaEntrega() { return List.of(); }
 
         int total() { return guardadas.size(); }

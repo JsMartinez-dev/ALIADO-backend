@@ -1,9 +1,14 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.persistence.adapter;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.MotivoCierreTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.SenalTrabajoPush;
 import java.sql.ResultSet;
@@ -62,9 +67,9 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
             FROM entregas_push e
             JOIN trabajos_push t ON t.id = e.trabajo_id
             WHERE e.estado = 'PENDIENTE'
-              AND e.proximo_intento_en <= CURRENT_TIMESTAMP
+              AND (e.proximo_intento_en <= CURRENT_TIMESTAMP OR t.expira_en <= CURRENT_TIMESTAMP)
               AND (e.reclamacion_vence_en IS NULL OR e.reclamacion_vence_en <= CURRENT_TIMESTAMP)
-              AND t.estado <> 'FINALIZADO'
+              AND t.estado = 'PREPARADO'
             ORDER BY e.proximo_intento_en, e.id
             LIMIT ?
             FOR UPDATE OF e SKIP LOCKED
@@ -125,6 +130,56 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
                 SELECT expira_en FROM trabajos_push
                 WHERE estado <> 'FINALIZADO'
             ) plazos
+            """;
+
+    private static final String SQL_TRABAJO = """
+            SELECT id, notificacion_id, estado, encolado_en, expira_en, motivo_final
+            FROM trabajos_push WHERE id = ?
+            """;
+
+    private static final String SQL_ENTREGA = """
+            SELECT id, trabajo_id, instalacion_id, generacion, estado, intentos, proximo_intento_en
+            FROM entregas_push WHERE id = ?
+            """;
+
+    private static final String SQL_TRABAJO_EXPIRADO = """
+            SELECT expira_en <= CURRENT_TIMESTAMP FROM trabajos_push WHERE id = ?
+            """;
+
+    private static final String SQL_CREAR_ENTREGA = """
+            INSERT INTO entregas_push (id, trabajo_id, instalacion_id, generacion, estado,
+                                       intentos, proximo_intento_en)
+            VALUES (?, ?, ?, ?, 'PENDIENTE', 0, CURRENT_TIMESTAMP)
+            ON CONFLICT (trabajo_id, instalacion_id, generacion) DO NOTHING
+            """;
+
+    private static final String SQL_FINALIZAR_TRABAJO = """
+            UPDATE trabajos_push
+            SET estado = 'FINALIZADO',
+                finalizado_en = CURRENT_TIMESTAMP,
+                motivo_final = ?,
+                reclamacion_id = NULL,
+                reclamacion_vence_en = NULL
+            WHERE id = ?
+              AND estado = 'PENDIENTE_PREPARACION'
+              AND reclamacion_id = ?
+              AND reclamacion_vence_en > CURRENT_TIMESTAMP
+            """;
+
+    private static final String SQL_BLOQUEAR_PADRE = """
+            SELECT id FROM trabajos_push WHERE id = ? AND estado = 'PREPARADO' FOR UPDATE
+            """;
+
+    private static final String SQL_ENTREGAS_PENDIENTES = """
+            SELECT COUNT(*) FROM entregas_push WHERE trabajo_id = ? AND estado = 'PENDIENTE'
+            """;
+
+    private static final String SQL_CERRAR_PADRE = """
+            UPDATE trabajos_push
+            SET estado = 'FINALIZADO',
+                finalizado_en = CURRENT_TIMESTAMP,
+                motivo_final = ?
+            WHERE id = ? AND estado = 'PREPARADO'
             """;
 
     private final JdbcTemplate jdbc;
@@ -220,12 +275,95 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
         return plazos.stream().filter(Objects::nonNull).findFirst();
     }
 
+    @Override
+    public Optional<TrabajoPush> buscarTrabajo(UUID trabajoId) {
+        List<TrabajoPush> filas = jdbc.query(SQL_TRABAJO, this::mapearTrabajo, trabajoId);
+        return filas.stream().findFirst();
+    }
+
+    @Override
+    public Optional<EntregaPush> buscarEntrega(UUID entregaId) {
+        List<EntregaPush> filas = jdbc.query(SQL_ENTREGA, this::mapearEntregaDetalle, entregaId);
+        return filas.stream().findFirst();
+    }
+
+    @Override
+    public boolean trabajoExpirado(UUID trabajoId) {
+        Objects.requireNonNull(trabajoId, "El trabajo es obligatorio");
+        List<Boolean> expirado = jdbc.query(SQL_TRABAJO_EXPIRADO,
+                (rs, fila) -> rs.getBoolean(1), trabajoId);
+        return expirado.stream().findFirst().orElse(false);
+    }
+
+    @Override
+    public void crearEntregas(UUID trabajoId, List<DestinoPush> destinos) {
+        Objects.requireNonNull(trabajoId, "El trabajo de las entregas es obligatorio");
+        Objects.requireNonNull(destinos, "Los destinos de las entregas son obligatorios");
+        for (DestinoPush destino : destinos) {
+            jdbc.update(SQL_CREAR_ENTREGA, UUID.randomUUID(), trabajoId,
+                    destino.instalacionId(), destino.generacion());
+        }
+    }
+
+    @Override
+    public boolean finalizarTrabajo(UUID trabajoId, UUID reclamacionId, String motivo) {
+        Objects.requireNonNull(trabajoId, "El trabajo es obligatorio");
+        Objects.requireNonNull(reclamacionId, "La reclamación es obligatoria");
+        int filas = jdbc.update(SQL_FINALIZAR_TRABAJO, motivo, trabajoId, reclamacionId);
+        if (filas > 0) {
+            notificar();
+        }
+        return filas > 0;
+    }
+
+    @Override
+    public boolean cerrarPadreSiCorresponde(UUID trabajoId) {
+        Objects.requireNonNull(trabajoId, "El trabajo es obligatorio");
+        // El bloqueo serializa los resultados concurrentes del mismo padre: el segundo
+        // espera a que el primero confirme y vuelve a contar las entregas pendientes.
+        List<UUID> bloqueados = jdbc.query(SQL_BLOQUEAR_PADRE,
+                (rs, fila) -> rs.getObject("id", UUID.class), trabajoId);
+        if (bloqueados.isEmpty()) {
+            return false;
+        }
+        Integer pendientes = jdbc.queryForObject(SQL_ENTREGAS_PENDIENTES, Integer.class, trabajoId);
+        if (pendientes != null && pendientes > 0) {
+            return false;
+        }
+        int filas = jdbc.update(SQL_CERRAR_PADRE,
+                MotivoCierreTrabajoPush.ENTREGAS_TERMINALES.name(), trabajoId);
+        if (filas > 0) {
+            notificar();
+        }
+        return filas > 0;
+    }
+
     private Optional<Instant> reclamarFila(String sql, UUID reclamacionId, double segundos,
                                            UUID identificador) {
         List<Instant> vencimientos = jdbc.query(sql,
                 (rs, fila) -> rs.getObject("reclamacion_vence_en", OffsetDateTime.class).toInstant(),
                 reclamacionId, segundos, identificador);
         return vencimientos.stream().findFirst();
+    }
+
+    private TrabajoPush mapearTrabajo(ResultSet rs, int fila) throws SQLException {
+        return new TrabajoPush(rs.getObject("id", UUID.class),
+                rs.getObject("notificacion_id", UUID.class),
+                EstadoTrabajoPush.valueOf(rs.getString("estado")),
+                rs.getObject("encolado_en", OffsetDateTime.class).toInstant(),
+                rs.getObject("expira_en", OffsetDateTime.class).toInstant(),
+                rs.getString("motivo_final"));
+    }
+
+    private EntregaPush mapearEntregaDetalle(ResultSet rs, int fila) throws SQLException {
+        OffsetDateTime proximo = rs.getObject("proximo_intento_en", OffsetDateTime.class);
+        return new EntregaPush(rs.getObject("id", UUID.class),
+                rs.getObject("trabajo_id", UUID.class),
+                rs.getObject("instalacion_id", UUID.class),
+                rs.getLong("generacion"),
+                EstadoEntregaPush.valueOf(rs.getString("estado")),
+                rs.getInt("intentos"),
+                proximo == null ? null : proximo.toInstant());
     }
 
     private FilaEntrega mapearEntrega(ResultSet rs, int fila) throws SQLException {

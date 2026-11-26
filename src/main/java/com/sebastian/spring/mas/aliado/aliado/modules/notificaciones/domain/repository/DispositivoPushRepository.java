@@ -3,6 +3,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.rep
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.InstalacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VinculoPush;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +32,13 @@ public interface DispositivoPushRepository {
 
     /** Vínculo vigente de la instalación, si existe. */
     Optional<VinculoPush> vinculoActivo(UUID instalacionId);
+
+    /**
+     * Vínculos activos con token de una cuenta, en el orden de sus instalaciones. La
+     * preparación push crea una entrega por cada uno; el token se vuelve a consultar al
+     * enviar para revalidar la generación.
+     */
+    List<VinculoPush> vinculosActivosDe(UUID usuarioId);
 
     /** Indica si la huella de credencial ya fue usada por un vínculo activo o retirado. */
     boolean existeCredencial(byte[] huellaCredencial);
