@@ -69,11 +69,8 @@ public class NotificacionService implements NotificacionPort, NotificacionConsul
     }
 
     private NotificacionConsulta aConsulta(Notificacion n) {
-        UUID servicioId = (n.tipo() == TipoNotificacion.ACEPTACION_PROPUESTA
-                || n.tipo() == TipoNotificacion.CAMBIO_ESTADO_SERVICIO) ? n.aggregateId() : null;
-        // SPEC-06: el aggregateId de NUEVA_OPORTUNIDAD ES la solicitud que la originó.
-        UUID solicitudId = n.tipo() == TipoNotificacion.NUEVA_OPORTUNIDAD ? n.aggregateId() : null;
-        return new NotificacionConsulta(n.id(), n.tipo(), servicioId, solicitudId, n.detalle(),
-                n.estadoEntrega(), n.fechaGeneracion());
+        // La interpretación del agregado vive en el dominio y la comparte la bandeja paginada.
+        return new NotificacionConsulta(n.id(), n.tipo(), n.servicioId(), n.solicitudId(),
+                n.detalle(), n.estadoEntrega(), n.fechaGeneracion());
     }
 }

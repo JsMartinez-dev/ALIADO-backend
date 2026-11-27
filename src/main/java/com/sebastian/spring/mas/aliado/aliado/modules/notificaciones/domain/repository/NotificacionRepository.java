@@ -1,6 +1,8 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoLectura;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -42,4 +44,23 @@ public interface NotificacionRepository {
      * @return número de filas actualizadas; {@code 0} si la cuenta no tenía pendientes.
      */
     int marcarTodasLeidas(UUID destinatarioId, OffsetDateTime leidaEn);
+
+    /**
+     * Página de la bandeja propia (F09-BANDEJA-03), ordenada por
+     * {@code fecha_generacion DESC, id DESC} y filtrada en la consulta por destinatario,
+     * estado de lectura y tipo.
+     *
+     * @param antesDeFecha fecha del cursor; {@code null} junto con {@code antesDeId} inicia
+     *                     la paginación.
+     * @param antesDeId    identificador del cursor, desempate del par fecha–ID.
+     * @param limite       máximo de filas a devolver; el caso de uso pide {@code limite + 1}
+     *                     para detectar otra página.
+     * @return como máximo {@code limite} avisos posteriores al cursor.
+     */
+    List<Notificacion> buscarBandeja(UUID destinatarioId, EstadoLectura estadoLectura,
+                                     TipoNotificacion tipo, OffsetDateTime antesDeFecha,
+                                     UUID antesDeId, int limite);
+
+    /** {@code true} si la cuenta tiene al menos un aviso con {@code leida_en IS NULL}. */
+    boolean hayNoLeidas(UUID destinatarioId);
 }

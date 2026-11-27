@@ -6,7 +6,9 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoLectura;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.TrabajoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria;
@@ -274,6 +276,32 @@ class EncoladoOportunidadTest {
                 }
             }
             return actualizadas;
+        }
+
+        @Override public List<Notificacion> buscarBandeja(UUID destinatarioId,
+                EstadoLectura estadoLectura, TipoNotificacion tipo, OffsetDateTime antesDeFecha,
+                UUID antesDeId, int limite) {
+            return guardadas.values().stream()
+                    .filter(n -> n.destinatarioId().equals(destinatarioId))
+                    .filter(n -> switch (estadoLectura) {
+                        case NO_LEIDA -> n.leidaEn() == null;
+                        case LEIDA -> n.leidaEn() != null;
+                        case TODAS -> true;
+                    })
+                    .filter(n -> tipo == null || n.tipo() == tipo)
+                    .filter(n -> antesDeFecha == null
+                            || n.fechaGeneracion().isBefore(antesDeFecha)
+                            || (n.fechaGeneracion().isEqual(antesDeFecha)
+                                && n.id().compareTo(antesDeId) < 0))
+                    .sorted(java.util.Comparator.comparing(Notificacion::fechaGeneracion)
+                            .thenComparing(Notificacion::id).reversed())
+                    .limit(limite)
+                    .toList();
+        }
+
+        @Override public boolean hayNoLeidas(UUID destinatarioId) {
+            return guardadas.values().stream().anyMatch(n -> n.destinatarioId().equals(destinatarioId)
+                    && n.leidaEn() == null);
         }
 
         int total() { return guardadas.size(); }

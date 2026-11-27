@@ -24,6 +24,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEnvioPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoLectura;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
@@ -561,6 +562,12 @@ class ProcesamientoPushUseCasesTest {
             }
             return actualizadas;
         }
+        @Override public List<Notificacion> buscarBandeja(UUID destinatarioId,
+                EstadoLectura estadoLectura, TipoNotificacion tipo, OffsetDateTime antesDeFecha,
+                UUID antesDeId, int limite) {
+            return List.of();
+        }
+        @Override public boolean hayNoLeidas(UUID destinatarioId) { return false; }
 
         private static Notificacion conLectura(Notificacion n, OffsetDateTime leidaEn) {
             return new Notificacion(n.id(), n.destinatarioId(), n.tipo(), n.aggregateId(),

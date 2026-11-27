@@ -1,5 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.config;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarBandejaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesOportunidadesService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarResumenNoLeidasService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.MarcarAvisoLeidoService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.MarcarTodasLeidasService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarAvisoOportunidadService;
@@ -15,7 +17,9 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarDispositivoPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RetirarDispositivoPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RevocarVinculoPushDiferidoService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarBandejaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarNotificacionesOportunidadesUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarResumenNoLeidasUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarAvisoOportunidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarDispositivoPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RetirarDispositivoPushUseCase;
@@ -135,6 +139,28 @@ public class NotificacionUseCaseConfig {
   var transaction = new TransactionTemplate(manager);
   transaction.setReadOnly(true);
   return command -> transaction.execute(status -> service.ejecutar(command));
+ }
+
+ /**
+  * Bandeja paginada propia (F09-BANDEJA-03). La lectura corre en una transacción de solo
+  * lectura; el cursor y los filtros se validan antes de llegar al adaptador y el
+  * destinatario procede del comando de sesión.
+  */
+ @Bean public ConsultarBandejaUseCase consultarBandejaUseCase(
+   NotificacionRepository notificaciones, PlatformTransactionManager manager) {
+  var service = new ConsultarBandejaService(notificaciones);
+  var transaction = new TransactionTemplate(manager);
+  transaction.setReadOnly(true);
+  return command -> transaction.execute(status -> service.ejecutar(command));
+ }
+
+ /** Resumen de la campana con una consulta de existencia por destinatario (F09-BANDEJA-03). */
+ @Bean public ConsultarResumenNoLeidasUseCase consultarResumenNoLeidasUseCase(
+   NotificacionRepository notificaciones, PlatformTransactionManager manager) {
+  var service = new ConsultarResumenNoLeidasService(notificaciones);
+  var transaction = new TransactionTemplate(manager);
+  transaction.setReadOnly(true);
+  return destinatarioId -> transaction.execute(status -> service.ejecutar(destinatarioId));
  }
 
  /** Alta y sincronización de la instalación: una sola transacción para generación y vínculo. */

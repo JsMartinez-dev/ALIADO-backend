@@ -6,6 +6,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.EntregarAvisoBandejaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoLectura;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
@@ -229,6 +230,12 @@ class EntregaAvisoBandejaTest {
             }
             return actualizadas;
         }
+        @Override public List<Notificacion> buscarBandeja(UUID destinatarioId,
+                EstadoLectura estadoLectura, TipoNotificacion tipo, OffsetDateTime antesDeFecha,
+                UUID antesDeId, int limite) {
+            return List.of();
+        }
+        @Override public boolean hayNoLeidas(UUID destinatarioId) { return false; }
 
         private static Notificacion conLectura(Notificacion n, OffsetDateTime leidaEn) {
             return new Notificacion(n.id(), n.destinatarioId(), n.tipo(), n.aggregateId(),

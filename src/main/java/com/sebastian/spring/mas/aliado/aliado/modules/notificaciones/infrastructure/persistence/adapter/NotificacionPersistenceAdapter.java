@@ -2,6 +2,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastruc
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoLectura;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
@@ -10,6 +11,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastruct
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -103,6 +105,52 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
     @Override
     public int marcarTodasLeidas(UUID destinatarioId, OffsetDateTime leidaEn) {
         return jdbc.update(SQL_MARCAR_TODAS_LAS_LEIDAS, leidaEn, destinatarioId);
+    }
+
+    /**
+     * Página de la bandeja (F09-BANDEJA-03) en una sola consulta. El par fecha–ID se compara
+     * lexicográficamente con la fila de comparación de PostgreSQL, que usa el índice
+     * {@code (destinatario_id, fecha_generacion DESC, id DESC)} de V10. El destinatario
+     * siempre viene de la sesión y nunca del cursor.
+     */
+    @Override
+    public List<Notificacion> buscarBandeja(UUID destinatarioId, EstadoLectura estadoLectura,
+                                            TipoNotificacion tipo, OffsetDateTime antesDeFecha,
+                                            UUID antesDeId, int limite) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT id, destinatario_id, tipo, aggregate_id, event_version, detalle, canal,
+                       estado_entrega, intentos, fecha_generacion, fecha_entrega, leida_en
+                  FROM notificaciones
+                 WHERE destinatario_id = ?
+                """);
+        List<Object> argumentos = new ArrayList<>();
+        argumentos.add(destinatarioId);
+        if (estadoLectura == EstadoLectura.NO_LEIDA) {
+            sql.append(" AND leida_en IS NULL");
+        } else if (estadoLectura == EstadoLectura.LEIDA) {
+            sql.append(" AND leida_en IS NOT NULL");
+        }
+        if (tipo != null) {
+            sql.append(" AND tipo = ?");
+            argumentos.add(tipo.name());
+        }
+        if (antesDeFecha != null && antesDeId != null) {
+            sql.append(" AND (fecha_generacion, id) < (?, ?)");
+            argumentos.add(antesDeFecha);
+            argumentos.add(antesDeId);
+        }
+        sql.append(" ORDER BY fecha_generacion DESC, id DESC LIMIT ?");
+        argumentos.add(limite);
+        return jdbc.query(sql.toString(), this::mapearNotificacion, argumentos.toArray());
+    }
+
+    @Override
+    public boolean hayNoLeidas(UUID destinatarioId) {
+        Boolean existe = jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM notificaciones
+                                WHERE destinatario_id = ? AND leida_en IS NULL)
+                """, Boolean.class, destinatarioId);
+        return Boolean.TRUE.equals(existe);
     }
 
     private Notificacion mapearNotificacion(ResultSet rs, int fila) throws SQLException {

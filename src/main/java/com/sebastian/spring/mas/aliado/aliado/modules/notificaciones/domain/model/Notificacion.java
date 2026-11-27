@@ -7,4 +7,20 @@ import java.util.UUID;
 public record Notificacion(UUID id, UUID destinatarioId, TipoNotificacion tipo, UUID aggregateId,
                            int eventVersion, String detalle, Canal canal, EstadoEntrega estadoEntrega,
                            int intentos, OffsetDateTime fechaGeneracion, OffsetDateTime fechaEntrega,
-                           OffsetDateTime leidaEn) {}
+                           OffsetDateTime leidaEn) {
+
+    /**
+     * Servicio al que se refiere el aviso cuando el agregado de origen es un servicio
+     * contratado (SPEC-07/SPEC-08). La interpretación del agregado es una regla del
+     * dominio y la comparten la bandeja y las consultas existentes.
+     */
+    public UUID servicioId() {
+        return tipo == TipoNotificacion.ACEPTACION_PROPUESTA
+                || tipo == TipoNotificacion.CAMBIO_ESTADO_SERVICIO ? aggregateId : null;
+    }
+
+    /** Solicitud que originó el aviso; el agregado de SPEC-06 es la propia solicitud. */
+    public UUID solicitudId() {
+        return tipo == TipoNotificacion.NUEVA_OPORTUNIDAD ? aggregateId : null;
+    }
+}
