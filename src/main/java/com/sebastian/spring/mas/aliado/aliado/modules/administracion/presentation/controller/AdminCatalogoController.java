@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Administración del catálogo (SPEC-12). Solo rol ADMINISTRADOR (ver SecurityConfig). */
 @RestController
 @RequestMapping("/api/v1/admin")
 public class AdminCatalogoController {

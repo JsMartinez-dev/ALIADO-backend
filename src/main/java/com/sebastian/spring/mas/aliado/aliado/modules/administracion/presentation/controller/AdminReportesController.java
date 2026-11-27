@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Cola y resolución de reportes (SPEC-12). Solo rol ADMINISTRADOR (ver SecurityConfig). */
 @RestController
 @RequestMapping("/api/v1/admin")
 public class AdminReportesController {

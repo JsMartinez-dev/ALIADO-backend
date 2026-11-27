@@ -4,20 +4,18 @@ import com.sebastian.spring.mas.aliado.aliado.modules.administracion.application
 import com.sebastian.spring.mas.aliado.aliado.modules.administracion.application.dto.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.administracion.application.dto.AdminResult.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.administracion.application.usecase.BloquearCuentaUseCase;
-import java.time.*;
-import java.util.*;
 
 public class BloquearCuentaService implements BloquearCuentaUseCase {
-  private final BloqueoCuentaService operaciones;
+  private final BloqueoCuentaService bloqueoCuentaService;
 
-  public BloquearCuentaService(BloqueoCuentaService operaciones) {
-    this.operaciones = operaciones;
+  public BloquearCuentaService(BloqueoCuentaService bloqueoCuentaService) {
+    this.bloqueoCuentaService = bloqueoCuentaService;
   }
 
   @Override
   public BloqueoResponse ejecutar(BloquearCuentaCommand command) {
     var value =
-        operaciones.bloquearUsuario(
+        bloqueoCuentaService.bloquearUsuario(
             command.usuarioId(), command.administradorId(), command.motivo());
     return new BloqueoResponse(value.id(), value.usuarioId(), value.motivo(), value.activo());
   }

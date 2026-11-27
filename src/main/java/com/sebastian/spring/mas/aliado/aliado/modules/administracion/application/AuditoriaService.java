@@ -12,10 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuditoriaService implements AuditoriaPort {
 
-  private final AuditoriaRepository auditoria;
+  private final AuditoriaRepository auditoriaRepository;
 
-  public AuditoriaService(AuditoriaRepository auditoria) {
-    this.auditoria = auditoria;
+  public AuditoriaService(AuditoriaRepository auditoriaRepository) {
+    this.auditoriaRepository = auditoriaRepository;
   }
 
   @Override
@@ -26,7 +26,7 @@ public class AuditoriaService implements AuditoriaPort {
         detalle == null
             ? null
             : detalle.replaceAll("(?i)(password|token|correo|email|direccion)[^,;]*", "[omitido]");
-    auditoria.guardar(
+    auditoriaRepository.guardar(
         new Auditoria(
             UUID.randomUUID(),
             administradorId,
