@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Creación y gestión de propuestas (SPEC-07). Solo rol PRESTADOR, salvo la lectura del CLIENTE. */
@@ -29,17 +30,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class PropuestaController extends BaseController {
     private final ListarPropuestasRecibidasUseCase listarPropuestas;
     private final CrearPropuestaUseCase crearPropuesta;
+    private final ListarPropuestasPropiasUseCase listarPropias;
     private final EditarPropuestaUseCase editarPropuesta;
     private final RetirarPropuestaUseCase retirarPropuesta;
 
     public PropuestaController(ListarPropuestasRecibidasUseCase listarPropuestas, CrearPropuestaUseCase crearPropuesta,
+                               ListarPropuestasPropiasUseCase listarPropias,
                                EditarPropuestaUseCase editarPropuesta, RetirarPropuestaUseCase retirarPropuesta, ObjectMapper objectMapper,
                                IdempotenciaPort idempotencyService) {
         super(objectMapper, idempotencyService);
         this.listarPropuestas = listarPropuestas;
         this.crearPropuesta = crearPropuesta;
+        this.listarPropias = listarPropias;
         this.editarPropuesta = editarPropuesta;
         this.retirarPropuesta = retirarPropuesta;
+    }
+
+    @GetMapping("/propuestas/mias")
+    public ResponseEntity<List<PropuestaDtos.PropuestaResponse>> misPropuestas(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamano) {
+        SecurityUtils.exigirRol("PRESTADOR");
+        return ResponseEntity.ok(listarPropias.ejecutar(SecurityUtils.actual().id(), pagina, tamano).stream()
+                .map(PropuestaPresentationMapper::aResponse).toList());
     }
 
     @PostMapping("/propuestas")

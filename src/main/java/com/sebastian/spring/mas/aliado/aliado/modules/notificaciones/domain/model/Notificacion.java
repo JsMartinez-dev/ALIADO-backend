@@ -19,6 +19,10 @@ public record Notificacion(UUID id, UUID destinatarioId, TipoNotificacion tipo, 
                 || tipo == TipoNotificacion.CAMBIO_ESTADO_SERVICIO ? aggregateId : null;
     }
 
+    public UUID propuestaId() {
+        return tipo == TipoNotificacion.PROPUESTA_RECIBIDA ? aggregateId : null;
+    }
+
     /** Solicitud que originó el aviso; el agregado de SPEC-06 es la propia solicitud. */
     public UUID solicitudId() {
         return tipo == TipoNotificacion.NUEVA_OPORTUNIDAD ? aggregateId : null;

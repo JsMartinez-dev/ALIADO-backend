@@ -1,5 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReferenciaPropuestaAvisoPort;
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.cursor.CursorBandeja;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.AvisoBandejaResult;
@@ -29,7 +30,10 @@ public class ConsultarBandejaService implements ConsultarBandejaUseCase {
 
     private final NotificacionRepository notificaciones;
 
-    public ConsultarBandejaService(NotificacionRepository notificaciones) {
+    private final ReferenciaPropuestaAvisoPort referencias;
+
+    public ConsultarBandejaService(NotificacionRepository notificaciones, ReferenciaPropuestaAvisoPort referencias) {
+        this.referencias = Objects.requireNonNull(referencias);
         this.notificaciones = Objects.requireNonNull(notificaciones);
     }
 
@@ -58,8 +62,15 @@ public class ConsultarBandejaService implements ConsultarBandejaUseCase {
                         pagina.get(pagina.size() - 1).id(), estadoLectura, tipo)
                 : null;
 
-        return new BandejaAvisosResult(pagina.stream().map(AvisoBandejaResult::desde).toList(),
+        return new BandejaAvisosResult(pagina.stream().map(this::aAviso).toList(),
                 cursorSiguiente);
+    }
+
+    private AvisoBandejaResult aAviso(Notificacion aviso) {
+        var propuestaId = aviso.propuestaId();
+        var solicitudId = propuestaId == null ? aviso.solicitudId()
+                : referencias.solicitudPropia(propuestaId, aviso.destinatarioId()).orElse(null);
+        return AvisoBandejaResult.desde(aviso, solicitudId);
     }
 
     private static EstadoLectura estadoLectura(String valor) {

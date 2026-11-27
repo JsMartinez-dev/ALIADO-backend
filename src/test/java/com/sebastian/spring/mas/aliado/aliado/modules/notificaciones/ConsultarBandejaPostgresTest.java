@@ -223,7 +223,7 @@ class ConsultarBandejaPostgresTest {
     }
 
     private ConsultarBandejaUseCase bandeja() {
-        var service = new ConsultarBandejaService(notificaciones);
+        var service = new ConsultarBandejaService(notificaciones, (propuesta, destinatario) -> java.util.Optional.empty());
         var transaction = new TransactionTemplate(transactionManager);
         transaction.setReadOnly(true);
         return command -> transaction.execute(status -> service.ejecutar(command));

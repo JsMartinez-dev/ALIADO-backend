@@ -27,13 +27,13 @@ public final class NotificacionPresentationMapper {
 
     public static NotificacionDtos.NotificacionResponse aResponse(NotificacionOportunidadResult result) {
         return new NotificacionDtos.NotificacionResponse(result.id(), "NUEVA_OPORTUNIDAD", null,
-                result.solicitudId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion());
+                result.solicitudId(), null, result.detalle(), result.estadoEntrega(), result.fechaGeneracion());
     }
 
     public static NotificacionDtos.NotificacionResponse aResponse(
             com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.NotificacionResult result) {
         return new NotificacionDtos.NotificacionResponse(result.id(), result.tipo(), result.servicioId(),
-                result.solicitudId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion());
+                result.solicitudId(), result.propuestaId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion());
     }
 
     /**
@@ -51,7 +51,7 @@ public final class NotificacionPresentationMapper {
     /** Elemento de la bandeja: {@code leidaEn} se copia tal cual, nulo mientras siga pendiente. */
     public static NotificacionDtos.AvisoBandejaResponse aResponse(AvisoBandejaResult result) {
         return new NotificacionDtos.AvisoBandejaResponse(result.id(), result.tipo(), result.servicioId(),
-                result.solicitudId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion(),
+                result.solicitudId(), result.propuestaId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion(),
                 result.leidaEn());
     }
 

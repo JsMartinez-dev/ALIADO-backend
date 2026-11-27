@@ -16,6 +16,15 @@ public class PropuestaUseCaseConfig {
     @Bean public ValidarMensajePropuestaUseCase validarMensajePropuestaUseCase() {
         return new ValidarMensajePropuestaService();
     }
+    @Bean public ListarPropuestasPropiasUseCase listarPropuestasPropiasUseCase(
+            PropuestaRepository propuestas, PlatformTransactionManager manager) {
+        var service = new ListarPropuestasPropiasService(propuestas);
+        var transaction = new TransactionTemplate(manager);
+        transaction.setReadOnly(true);
+        return (prestadorId, pagina, tamano) ->
+                transaction.execute(status -> service.ejecutar(prestadorId, pagina, tamano));
+    }
+
     @Bean public CrearPropuestaUseCase crearPropuestaUseCase(PropuestaRepository propuestas,
             ConsultaSolicitudPropuestaPort solicitudes, ConsultaCompatibilidadPropuestaPort compatibilidad,
             PublicadorEventos eventos, ValidarDisponibilidadPropuestaUseCase disponibilidad,

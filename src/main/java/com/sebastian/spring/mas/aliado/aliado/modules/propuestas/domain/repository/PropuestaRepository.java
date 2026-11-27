@@ -9,6 +9,7 @@ public interface PropuestaRepository {
     Optional<Propuesta> porId(UUID id);
     Optional<Propuesta> activaDePrestadorEnSolicitud(UUID solicitudId, UUID prestadorId);
     List<Propuesta> activasDeSolicitud(UUID solicitudId);
+    List<Propuesta> porPrestador(UUID prestadorId, int pagina, int tamano);
     List<Propuesta> porSolicitud(UUID solicitudId);
     Propuesta guardar(Propuesta propuesta);
 }
