@@ -1,8 +1,10 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RegistrarAvisoOportunidadCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarAvisoOportunidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
@@ -31,15 +33,21 @@ public class RegistrarAvisoOportunidadService implements RegistrarAvisoOportunid
     private final NotificacionRepository notificaciones;
     private final TrabajoPushRepository trabajos;
     private final ConsultaPreferenciasPort preferencias;
+    private final ConfiguracionCanalPush configuracion;
+    private final MetricasPushPort metricas;
     private final Duration vigencia;
 
     public RegistrarAvisoOportunidadService(NotificacionRepository notificaciones,
                                             TrabajoPushRepository trabajos,
                                             ConsultaPreferenciasPort preferencias,
+                                            ConfiguracionCanalPush configuracion,
+                                            MetricasPushPort metricas,
                                             Duration vigencia) {
         this.notificaciones = notificaciones;
         this.trabajos = trabajos;
         this.preferencias = preferencias;
+        this.configuracion = configuracion;
+        this.metricas = metricas;
         this.vigencia = vigencia;
     }
 
@@ -52,9 +60,14 @@ public class RegistrarAvisoOportunidadService implements RegistrarAvisoOportunid
         if (!notificaciones.insertarSiNoExiste(aviso)) {
             return; // Evento ya procesado: no duplica aviso ni trabajo.
         }
+        // El apagado del canal y los tipos habilitados se aplican al encolar, no al aviso
+        // histórico: volver a activar el piloto no convierte en push avisos anteriores.
+        if (!configuracion.habilitadoPara(TipoNotificacion.NUEVA_OPORTUNIDAD)) {
+            return;
+        }
         if (preferencias.avisoHabilitado(command.prestadorId(), TipoNotificacion.NUEVA_OPORTUNIDAD.name(),
-                Canal.PUSH.name())) {
-            trabajos.encolarSiNoExiste(aviso.id(), vigencia);
+                Canal.PUSH.name()) && trabajos.encolarSiNoExiste(aviso.id(), vigencia)) {
+            metricas.encolado(TipoNotificacion.NUEVA_OPORTUNIDAD);
         }
     }
 }

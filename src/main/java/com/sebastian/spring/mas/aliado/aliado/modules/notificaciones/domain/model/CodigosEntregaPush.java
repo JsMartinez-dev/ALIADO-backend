@@ -13,6 +13,7 @@ public final class CodigosEntregaPush {
     public static final String VINCULO_REVOCADO = "VINCULO_REVOCADO";
     public static final String GENERACION_OBSOLETA = "GENERACION_OBSOLETA";
     public static final String TIPO_NO_SOPORTADO = "TIPO_NO_SOPORTADO";
+    public static final String CANAL_NO_HABILITADO = "CANAL_NO_HABILITADO";
     public static final String VIGENCIA_AGOTADA = "VIGENCIA_AGOTADA";
     public static final String INTENTOS_AGOTADOS = "INTENTOS_AGOTADOS";
     public static final String TOKEN_DESREGISTRADO = "TOKEN_DESREGISTRADO";

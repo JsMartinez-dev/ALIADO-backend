@@ -1,9 +1,11 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.PrepararEntregasPushCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.RevalidacionOportunidadPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.PrepararEntregasPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.MotivoCierreTrabajoPush;
@@ -38,17 +40,23 @@ public class PrepararEntregasPushService implements PrepararEntregasPushUseCase 
     private final DispositivoPushRepository dispositivos;
     private final ConsultaPreferenciasPort preferencias;
     private final RevalidacionOportunidadPushPort revalidacion;
+    private final ConfiguracionCanalPush configuracion;
+    private final MetricasPushPort metricas;
 
     public PrepararEntregasPushService(ReclamacionTrabajoPushRepository reclamaciones,
                                        NotificacionRepository notificaciones,
                                        DispositivoPushRepository dispositivos,
                                        ConsultaPreferenciasPort preferencias,
-                                       RevalidacionOportunidadPushPort revalidacion) {
+                                       RevalidacionOportunidadPushPort revalidacion,
+                                       ConfiguracionCanalPush configuracion,
+                                       MetricasPushPort metricas) {
         this.reclamaciones = Objects.requireNonNull(reclamaciones);
         this.notificaciones = Objects.requireNonNull(notificaciones);
         this.dispositivos = Objects.requireNonNull(dispositivos);
         this.preferencias = Objects.requireNonNull(preferencias);
         this.revalidacion = Objects.requireNonNull(revalidacion);
+        this.configuracion = Objects.requireNonNull(configuracion);
+        this.metricas = Objects.requireNonNull(metricas);
     }
 
     @Override
@@ -61,6 +69,12 @@ public class PrepararEntregasPushService implements PrepararEntregasPushUseCase 
         TrabajoPush trabajo = encontrado.get();
         if (reclamaciones.trabajoExpirado(trabajo.id())) {
             finalizar(trabajo, reclamacion, MotivoCierreTrabajoPush.VIGENCIA_AGOTADA);
+            return;
+        }
+        // Apagado controlado del canal: se cierra el trabajo sin preparar entregas ni
+        // llamar al proveedor. La bandeja no depende de este cierre.
+        if (!configuracion.habilitadoPara(TipoNotificacion.NUEVA_OPORTUNIDAD)) {
+            finalizar(trabajo, reclamacion, MotivoCierreTrabajoPush.CANAL_NO_HABILITADO);
             return;
         }
 
@@ -108,6 +122,9 @@ public class PrepararEntregasPushService implements PrepararEntregasPushUseCase 
 
     private void finalizar(TrabajoPush trabajo, ReclamacionPush reclamacion,
                            MotivoCierreTrabajoPush motivo) {
-        reclamaciones.finalizarTrabajo(trabajo.id(), reclamacion.reclamacionId(), motivo.name());
+        if (reclamaciones.finalizarTrabajo(trabajo.id(), reclamacion.reclamacionId(), motivo.name())) {
+            // Un cierre sin envío también es un fallo observable del piloto.
+            metricas.fallo(motivo.name());
+        }
     }
 }

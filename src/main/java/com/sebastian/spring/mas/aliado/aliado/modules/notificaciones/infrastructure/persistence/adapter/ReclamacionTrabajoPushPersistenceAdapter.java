@@ -6,6 +6,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoTrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.MotivoCierreTrabajoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PendientesPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
@@ -151,6 +152,17 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
                 SELECT expira_en FROM trabajos_push
                 WHERE estado <> 'FINALIZADO'
             ) plazos
+            """;
+
+    /**
+     * Foto de la cola para el cierre de lote (F09-PUSH-11). No se ejecuta en reposo: el
+     * worker solo la consulta después de procesar trabajo.
+     */
+    private static final String SQL_PENDIENTES = """
+            SELECT
+                (SELECT COUNT(*) FROM trabajos_push WHERE estado <> 'FINALIZADO') AS trabajos,
+                (SELECT COUNT(*) FROM entregas_push WHERE estado = 'PENDIENTE') AS entregas,
+                (SELECT MIN(encolado_en) FROM trabajos_push WHERE estado <> 'FINALIZADO') AS mas_antiguo
             """;
 
     private static final String SQL_TRABAJO = """
@@ -305,6 +317,15 @@ public class ReclamacionTrabajoPushPersistenceAdapter implements ReclamacionTrab
             return plazo == null ? null : plazo.toInstant();
         });
         return plazos.stream().filter(Objects::nonNull).findFirst();
+    }
+
+    @Override
+    public PendientesPush pendientes() {
+        return jdbc.queryForObject(SQL_PENDIENTES, (rs, fila) -> {
+            OffsetDateTime masAntiguo = rs.getObject("mas_antiguo", OffsetDateTime.class);
+            return new PendientesPush((int) rs.getLong("trabajos"), (int) rs.getLong("entregas"),
+                    masAntiguo == null ? null : masAntiguo.toInstant());
+        });
     }
 
     @Override

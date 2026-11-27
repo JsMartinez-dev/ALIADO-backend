@@ -145,6 +145,8 @@ class ProcesadorTrabajoPushAdapterTest {
         RegistrarResultadoEntregaPushService registrar = new RegistrarResultadoEntregaPushService(
                 reclamaciones, dispositivos,
                 new PoliticaReintentoPush(5, Duration.ofSeconds(30), () -> 1.0),
+                new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria(
+                        Clock.fixed(Instant.parse("2026-03-01T10:00:00Z"), ZoneOffset.UTC)),
                 Clock.fixed(Instant.parse("2026-03-01T10:00:00Z"), ZoneOffset.UTC));
 
         // Cadena real: adaptador FCM -> procesador -> caso de uso de resultado.
@@ -187,7 +189,7 @@ class ProcesadorTrabajoPushAdapterTest {
 
     private static EnvioPushPendiente envio() {
         return new EnvioPushPendiente(ENTREGA, TRABAJO, INSTALACION, 1, RECLAMACION, 0,
-                Instant.now().plusSeconds(3_600),
+                Instant.now().plusSeconds(3_600), Instant.now(),
                 new MensajePush(NOTIFICACION, SOLICITUD, TipoNotificacion.NUEVA_OPORTUNIDAD,
                         "token-fcm-de-prueba"));
     }

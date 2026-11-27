@@ -5,11 +5,14 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PendientesPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ReclamacionTrabajoPushAdapter;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -70,6 +73,30 @@ class ReclamacionTrabajoPushAdapterTest {
     }
 
     @Test
+    void conLaColaEnReposoNoSeConsultaElTamanoNiSeInstrumentaNada() {
+        RepositorioFalso repositorio = new RepositorioFalso(LoteReclamadoPush.vacio());
+
+        adaptador(repositorio, new ProcesadorFalso(repositorio), 8).procesarLoteElegible();
+
+        assertEquals(0, repositorio.consultasPendientes,
+                "el lote vacío no lee la cola: no hay sondeo de la instrumentación en reposo");
+    }
+
+    @Test
+    void alCerrarUnLoteConTrabajoSeInstrumentaLaColaUnaVez() {
+        ReclamacionPush preparacion = ReclamacionPush.preparacion(UUID.randomUUID(),
+                UUID.randomUUID(), AHORA.plusSeconds(30));
+        RepositorioFalso repositorio = new RepositorioFalso(
+                new LoteReclamadoPush(List.of(preparacion), false));
+        repositorio.pendientes = new PendientesPush(1, 0, AHORA);
+
+        adaptador(repositorio, new ProcesadorFalso(repositorio), 8).procesarLoteElegible();
+
+        assertEquals(1, repositorio.consultasPendientes,
+                "la cola se mide una sola vez por lote, no por elemento");
+    }
+
+    @Test
     void unLoteSaturadoOrdenaDrenarDeInmediato() {
         List<ReclamacionPush> reclamaciones = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
@@ -100,6 +127,7 @@ class ReclamacionTrabajoPushAdapterTest {
                                                            ProcesadorTrabajoPushPort procesador,
                                                            int maximo) {
         return new ReclamacionTrabajoPushAdapter(repositorio, procesador,
+                new MetricasPushEnMemoria(Clock.systemUTC()),
                 new TransactionTemplate(GESTOR_SIN_TRANSACCION_REAL), maximo, VIGENCIA);
     }
 
@@ -124,6 +152,8 @@ class ReclamacionTrabajoPushAdapterTest {
         private final LoteReclamadoPush lote;
         final List<String> eventos = new CopyOnWriteArrayList<>();
         Optional<Instant> plazo = Optional.empty();
+        PendientesPush pendientes = PendientesPush.vacio();
+        int consultasPendientes;
         int maximo;
         Duration vencimiento;
         int reclamaciones;
@@ -165,6 +195,12 @@ class ReclamacionTrabajoPushAdapterTest {
         @Override
         public Optional<Instant> proximoPlazo() {
             return plazo;
+        }
+
+        @Override
+        public PendientesPush pendientes() {
+            consultasPendientes++;
+            return pendientes;
         }
 
         @Override

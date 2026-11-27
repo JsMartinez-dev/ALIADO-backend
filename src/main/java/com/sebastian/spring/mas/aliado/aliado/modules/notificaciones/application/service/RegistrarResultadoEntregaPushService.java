@@ -2,16 +2,19 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.applicatio
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.EnvioPushPendiente;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RegistrarResultadoEntregaPushCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarResultadoEntregaPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.CodigosEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PoliticaReintentoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEnvioPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoResultadoEnvioPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -34,14 +37,18 @@ public class RegistrarResultadoEntregaPushService implements RegistrarResultadoE
     private final ReclamacionTrabajoPushRepository reclamaciones;
     private final DispositivoPushRepository dispositivos;
     private final PoliticaReintentoPush politica;
+    private final MetricasPushPort metricas;
     private final Clock reloj;
 
     public RegistrarResultadoEntregaPushService(ReclamacionTrabajoPushRepository reclamaciones,
                                                 DispositivoPushRepository dispositivos,
-                                                PoliticaReintentoPush politica, Clock reloj) {
+                                                PoliticaReintentoPush politica,
+                                                MetricasPushPort metricas,
+                                                Clock reloj) {
         this.reclamaciones = Objects.requireNonNull(reclamaciones);
         this.dispositivos = Objects.requireNonNull(dispositivos);
         this.politica = Objects.requireNonNull(politica);
+        this.metricas = Objects.requireNonNull(metricas);
         this.reloj = Objects.requireNonNull(reloj);
     }
 
@@ -97,6 +104,7 @@ public class RegistrarResultadoEntregaPushService implements RegistrarResultadoE
                 envio.reclamacionId(), envio.generacion(), estado, intentos, proximoIntento,
                 idMensaje, codigo);
         if (reclamaciones.guardarResultadoEntrega(persistido)) {
+            registrarMetrica(envio, persistido);
             // Solo se revoca la generación enviada y únicamente si el resultado se aplicó a
             // una reclamación todavía vigente; una generación nueva queda intacta.
             if (revocarToken) {
@@ -104,6 +112,20 @@ public class RegistrarResultadoEntregaPushService implements RegistrarResultadoE
                         OffsetDateTime.ofInstant(reloj.instant(), ZoneOffset.UTC));
             }
             reclamaciones.cerrarPadreSiCorresponde(envio.trabajoId());
+        }
+    }
+
+    /**
+     * Instrumentación (F09-PUSH-11): solo se cuentan resultados realmente aplicados, para
+     * que un resultado tardío descartado no infle la aceptación ni los reintentos.
+     */
+    private void registrarMetrica(EnvioPushPendiente envio, ResultadoEntregaPush persistido) {
+        TipoNotificacion tipo = envio.mensaje().tipo();
+        switch (persistido.estado()) {
+            case ACEPTADA -> metricas.aceptacion(tipo,
+                    Duration.between(envio.encoladoEn(), reloj.instant()));
+            case PENDIENTE -> metricas.reintento(tipo, persistido.intentos());
+            default -> metricas.fallo(persistido.ultimoCodigoError());
         }
     }
 }

@@ -1,10 +1,12 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResultadoLotePush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,12 +32,14 @@ public class ReclamacionTrabajoPushAdapter implements ReclamacionTrabajoPushPort
 
     private final ReclamacionTrabajoPushRepository reclamaciones;
     private final ProcesadorTrabajoPushPort procesador;
+    private final MetricasPushPort metricas;
     private final TransactionTemplate transaccion;
     private final int maximo;
     private final Duration vencimiento;
 
     public ReclamacionTrabajoPushAdapter(ReclamacionTrabajoPushRepository reclamaciones,
                                          ProcesadorTrabajoPushPort procesador,
+                                         MetricasPushPort metricas,
                                          TransactionTemplate transaccion,
                                          int maximo, Duration vencimiento) {
         if (maximo < 1) {
@@ -46,6 +50,7 @@ public class ReclamacionTrabajoPushAdapter implements ReclamacionTrabajoPushPort
         }
         this.reclamaciones = reclamaciones;
         this.procesador = procesador;
+        this.metricas = metricas;
         this.transaccion = transaccion;
         this.maximo = maximo;
         this.vencimiento = vencimiento;
@@ -58,12 +63,25 @@ public class ReclamacionTrabajoPushAdapter implements ReclamacionTrabajoPushPort
         if (lote == null || lote.reclamaciones().isEmpty()) {
             return new ResultadoLotePush(0, false);
         }
+        registrarReclamaciones(lote);
         // La llamada externa y la escritura de resultados ocurren después del commit de la
         // reclamación: si el worker cae aquí, la fila se recupera al vencer su plazo.
         for (ReclamacionPush reclamacion : lote.reclamaciones()) {
             procesador.procesar(reclamacion);
         }
+        // El tamaño de la cola se instrumenta una sola vez por lote con trabajo; con la
+        // cola vacía no se consulta, así la métrica no introduce sondeo en reposo.
+        metricas.pendientes(reclamaciones.pendientes());
         return new ResultadoLotePush(lote.procesados(), lote.quedanElegibles());
+    }
+
+    private void registrarReclamaciones(LoteReclamadoPush lote) {
+        int preparaciones = (int) lote.reclamaciones().stream()
+                .filter(reclamacion -> reclamacion.tipo() == TipoReclamacionPush.PREPARACION)
+                .count();
+        int envios = lote.procesados() - preparaciones;
+        metricas.reclamacion(TipoReclamacionPush.PREPARACION, preparaciones);
+        metricas.reclamacion(TipoReclamacionPush.ENVIO, envios);
     }
 
     @Override

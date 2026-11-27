@@ -8,10 +8,12 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ReclamacionTrabajoPushAdapter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -317,7 +319,8 @@ class ReclamacionTrabajoPushPostgresTest {
                                                     ProcesadorTrabajoPushPort procesador) {
         TransactionTemplate transaccion = new TransactionTemplate(transactionManager);
         transaccion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador, transaccion,
+        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador,
+                new MetricasPushEnMemoria(Clock.systemUTC()), transaccion,
                 maximoPorTipo, vigencia);
     }
 

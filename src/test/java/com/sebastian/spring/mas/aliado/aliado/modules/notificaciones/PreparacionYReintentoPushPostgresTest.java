@@ -9,8 +9,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.PrepararEntregasPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarResultadoEntregaPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.CodigosEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.MensajePush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PendientesPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PoliticaReintentoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEnvioPush;
@@ -18,6 +20,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ProcesadorTrabajoPushAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.ReclamacionTrabajoPushAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
@@ -431,6 +434,7 @@ class PreparacionYReintentoPushPostgresTest {
                 EnvioPushPendiente envio = new EnvioPushPendiente(claim.entregaId(),
                         claim.trabajoId(), claim.instalacionId(), claim.generacion(),
                         claim.reclamacionId(), 0, Instant.now().plusSeconds(3_600),
+                        Instant.now(),
                         new MensajePush(notificacion, UUID.randomUUID(),
                                 com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion.NUEVA_OPORTUNIDAD,
                                 "token"));
@@ -459,6 +463,43 @@ class PreparacionYReintentoPushPostgresTest {
                 "SELECT reclamacion_id FROM trabajos_push WHERE id = ?", UUID.class, trabajo));
     }
 
+    @Test
+    void laFotoDeLaColaCuentaSoloTrabajoAbiertoYEntregasPendientes() {
+        UUID prestador = sembrarUsuario("PRESTADOR");
+        UUID notificacion = sembrarNotificacion(prestador);
+        UUID trabajo = sembrarTrabajoPreparado(notificacion, Instant.now().plusSeconds(3_600));
+        UUID instalacion = sembrarDispositivo(prestador, "token-foto");
+        sembrarEntrega(trabajo, instalacion, 1, Instant.now().plusSeconds(30));
+
+        PendientesPush conTrabajo = reclamaciones.pendientes();
+
+        assertEquals(1, conTrabajo.trabajosAbiertos());
+        assertEquals(1, conTrabajo.entregasPendientes());
+        assertTrue(conTrabajo.masAntiguoEn() != null
+                        && conTrabajo.antiguedadEn(Instant.now()).toMinutes() >= 59,
+                "la antigüedad sale del encolado real del trabajo abierto");
+
+        // Con la cola en reposo (padre finalizado y entrega terminal) la foto queda vacía:
+        // la instrumentación no inventa pendientes.
+        jdbc.update("""
+                UPDATE entregas_push SET estado = 'SUPRIMIDA', intentos = 0,
+                                        proximo_intento_en = NULL, finalizada_en = CURRENT_TIMESTAMP,
+                                        ultimo_codigo_error = 'CANAL_NO_HABILITADO'
+                WHERE trabajo_id = ?
+                """, trabajo);
+        jdbc.update("""
+                UPDATE trabajos_push SET estado = 'FINALIZADO', finalizado_en = CURRENT_TIMESTAMP,
+                                         motivo_final = 'CANAL_NO_HABILITADO'
+                WHERE id = ?
+                """, trabajo);
+
+        PendientesPush vacia = reclamaciones.pendientes();
+
+        assertEquals(0, vacia.trabajosAbiertos());
+        assertEquals(0, vacia.entregasPendientes());
+        assertNull(vacia.masAntiguoEn());
+    }
+
     private ProcesadorTrabajoPushAdapter procesador(EntregaPushPort entrega, boolean preferencia,
                                                     boolean oportunidad, Duration base) {
         return procesador(entrega, preferencia, oportunidad, base, Clock.systemUTC(),
@@ -472,11 +513,13 @@ class PreparacionYReintentoPushPostgresTest {
         ConsultaPreferenciasPort preferencias = (usuarioId, tipoAviso, canal) -> preferencia;
         RevalidacionOportunidadPushPort revalidacion = (solicitudId, prestadorId) -> oportunidad;
         PrepararEntregasPushService preparar = new PrepararEntregasPushService(reclamaciones,
-                notificaciones, dispositivos, preferencias, revalidacion);
+                notificaciones, dispositivos, preferencias, revalidacion,
+                ConfiguracionCanalPush.desde(true, "NUEVA_OPORTUNIDAD"), metricas(reloj));
         IniciarEntregaPushService iniciar = new IniciarEntregaPushService(reclamaciones,
-                notificaciones, dispositivos, preferencias, revalidacion, ventana, reloj);
+                notificaciones, dispositivos, preferencias, revalidacion, ventana,
+                ConfiguracionCanalPush.desde(true, "NUEVA_OPORTUNIDAD"), metricas(reloj), reloj);
         RegistrarResultadoEntregaPushService registrar = new RegistrarResultadoEntregaPushService(
-                reclamaciones, dispositivos, politica, reloj);
+                reclamaciones, dispositivos, politica, metricas(reloj), reloj);
         return new ProcesadorTrabajoPushAdapter(preparar, iniciar, registrar, entrega,
                 transaccion());
     }
@@ -484,13 +527,17 @@ class PreparacionYReintentoPushPostgresTest {
     private RegistrarResultadoEntregaPushService registrarServicio() {
         return new RegistrarResultadoEntregaPushService(reclamaciones, dispositivos,
                 new PoliticaReintentoPush(5, Duration.ofSeconds(1), () -> 0.0),
-                Clock.systemUTC());
+                metricas(Clock.systemUTC()), Clock.systemUTC());
     }
 
     private ReclamacionTrabajoPushAdapter adaptador(int maximo, Duration vigencia,
                                                     ProcesadorTrabajoPushPort procesador) {
-        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador, transaccion(),
-                maximo, vigencia);
+        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador,
+                metricas(Clock.systemUTC()), transaccion(), maximo, vigencia);
+    }
+
+    private MetricasPushEnMemoria metricas(Clock reloj) {
+        return new MetricasPushEnMemoria(reloj);
     }
 
     private TransactionTemplate transaccion() {

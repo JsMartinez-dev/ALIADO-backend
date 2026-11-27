@@ -1,7 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application;
 
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.CanalEntregaNotificacion;
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.EntregaNotificacionesPort;
+import com.sebastian.spring.mas.aliado.aliado.common.events.PublicadorEventos;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.AvisoBandejaRegistrado;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionConsultaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
@@ -18,20 +18,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Notificaciones (SPEC-09, UC057–UC058; SPEC-06/07 como productores).
- * Registro dentro de la transacción de negocio; entrega asíncrona posterior con reintentos.
- * Sin endpoint de creación: una notificación nunca se genera sin un evento real (SC-004).
+ * Registro dentro de la transacción de negocio; la entrega del canal de bandeja se
+ * dispara por el evento del aviso registrado, después del commit, sin sondeo periódico de
+ * la tabla (F09-PUSH-11). Sin endpoint de creación: una notificación nunca se genera sin
+ * un evento real (SC-004).
  */
 @Service
-public class NotificacionService implements NotificacionPort, NotificacionConsultaPort, EntregaNotificacionesPort {
+public class NotificacionService implements NotificacionPort, NotificacionConsultaPort {
     private final NotificacionRepository notificaciones;
-    private final CanalEntregaNotificacion canal;
     private final ConsultaPreferenciasPort preferencias;
+    private final PublicadorEventos eventos;
 
-    public NotificacionService(NotificacionRepository notificaciones, CanalEntregaNotificacion canal,
-                               ConsultaPreferenciasPort preferencias) {
+    public NotificacionService(NotificacionRepository notificaciones,
+                               ConsultaPreferenciasPort preferencias,
+                               PublicadorEventos eventos) {
         this.notificaciones = notificaciones;
-        this.canal = canal;
         this.preferencias = preferencias;
+        this.eventos = eventos;
     }
 
     @Override
@@ -49,6 +52,8 @@ public class NotificacionService implements NotificacionPort, NotificacionConsul
         Notificacion notificacion = new Notificacion(UUID.randomUUID(), destinatarioId, tipo, aggregateId,
                 eventVersion, detalle, canalEfectivo, EstadoEntrega.PENDIENTE, 0, OffsetDateTime.now(), null);
         notificaciones.guardar(notificacion);
+        // Solo este aviso se entrega, y solo tras confirmar la transacción de negocio.
+        eventos.publicar(new AvisoBandejaRegistrado(notificacion.id()));
     }
 
     @Override
@@ -70,43 +75,5 @@ public class NotificacionService implements NotificacionPort, NotificacionConsul
         UUID solicitudId = n.tipo() == TipoNotificacion.NUEVA_OPORTUNIDAD ? n.aggregateId() : null;
         return new NotificacionConsulta(n.id(), n.tipo(), servicioId, solicitudId, n.detalle(),
                 n.estadoEntrega(), n.fechaGeneracion());
-    }
-
-    /** Worker de entrega: reintenta PENDIENTE/FALLIDA; a los 3 intentos queda FALLIDA. */
-    @Override
-    @Transactional
-    public void entregarPendientes() {
-        for (Notificacion pendiente : notificaciones.pendientesParaEntrega()) {
-            // UC038: sin proveedor real la oportunidad continúa pendiente. No se
-            // registra un intento fallido ni se repite un log cada ronda del scheduler.
-            if (!canal.disponibleParaEntrega(pendiente)) {
-                continue;
-            }
-            // La preferencia pudo cambiar desde el registro: si ya no está habilitada,
-            // se salta la ronda sin gastar un intento; queda PENDIENTE por si se re-habilita.
-            if (!preferencias.avisoHabilitado(pendiente.destinatarioId(), pendiente.tipo().name(),
-                    pendiente.canal().name())) {
-                continue;
-            }
-            boolean entregada = false;
-            try {
-                entregada = canal.entregar(pendiente);
-            } catch (Exception ignored) {
-                entregada = false;
-            }
-            OffsetDateTime ahora = OffsetDateTime.now();
-            if (entregada) {
-                notificaciones.guardar(new Notificacion(pendiente.id(), pendiente.destinatarioId(),
-                        pendiente.tipo(), pendiente.aggregateId(), pendiente.eventVersion(), pendiente.detalle(),
-                        pendiente.canal(), EstadoEntrega.ENTREGADA, pendiente.intentos() + 1,
-                        pendiente.fechaGeneracion(), ahora));
-            } else {
-                int intentos = pendiente.intentos() + 1;
-                notificaciones.guardar(new Notificacion(pendiente.id(), pendiente.destinatarioId(),
-                        pendiente.tipo(), pendiente.aggregateId(), pendiente.eventVersion(), pendiente.detalle(),
-                        pendiente.canal(), intentos >= 3 ? EstadoEntrega.FALLIDA : EstadoEntrega.PENDIENTE,
-                        intentos, pendiente.fechaGeneracion(), null));
-            }
-        }
     }
 }

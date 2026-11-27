@@ -2,10 +2,12 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.applicatio
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.EnvioPushPendiente;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.IniciarEntregaPushCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.RevalidacionOportunidadPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.IniciarEntregaPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.CodigosEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.MensajePush;
@@ -48,6 +50,8 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
     private final ConsultaPreferenciasPort preferencias;
     private final RevalidacionOportunidadPushPort revalidacion;
     private final VentanaEnvioPush ventana;
+    private final ConfiguracionCanalPush configuracion;
+    private final MetricasPushPort metricas;
     private final Clock reloj;
 
     public IniciarEntregaPushService(ReclamacionTrabajoPushRepository reclamaciones,
@@ -56,6 +60,8 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
                                      ConsultaPreferenciasPort preferencias,
                                      RevalidacionOportunidadPushPort revalidacion,
                                      VentanaEnvioPush ventana,
+                                     ConfiguracionCanalPush configuracion,
+                                     MetricasPushPort metricas,
                                      Clock reloj) {
         this.reclamaciones = Objects.requireNonNull(reclamaciones);
         this.notificaciones = Objects.requireNonNull(notificaciones);
@@ -63,6 +69,8 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
         this.preferencias = Objects.requireNonNull(preferencias);
         this.revalidacion = Objects.requireNonNull(revalidacion);
         this.ventana = Objects.requireNonNull(ventana);
+        this.configuracion = Objects.requireNonNull(configuracion);
+        this.metricas = Objects.requireNonNull(metricas);
         this.reloj = Objects.requireNonNull(reloj);
     }
 
@@ -100,6 +108,14 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
             return Optional.empty();
         }
         Notificacion notificacion = aviso.get();
+
+        // Apagado controlado del canal: la entrega se suprime sin llamar al proveedor y el
+        // padre se cierra cuando corresponda. La bandeja conserva el aviso ya registrado.
+        if (!configuracion.habilitadoPara(notificacion.tipo())) {
+            suprimir(entrega, reclamacion, EstadoEntregaPush.SUPRIMIDA,
+                    CodigosEntregaPush.CANAL_NO_HABILITADO);
+            return Optional.empty();
+        }
 
         if (!preferencias.avisoHabilitado(notificacion.destinatarioId(),
                 TipoNotificacion.NUEVA_OPORTUNIDAD.name(), Canal.PUSH.name())) {
@@ -144,7 +160,7 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
                 notificacion.tipo(), vinculo.tokenFcm());
         return Optional.of(new EnvioPushPendiente(entrega.id(), trabajo.id(),
                 entrega.instalacionId(), entrega.generacion(), reclamacion.reclamacionId(),
-                entrega.intentos(), trabajo.expiraEn(), mensaje));
+                entrega.intentos(), trabajo.expiraEn(), trabajo.encoladoEn(), mensaje));
     }
 
     private void suprimir(EntregaPush entrega, ReclamacionPush reclamacion,
@@ -154,6 +170,7 @@ public class IniciarEntregaPushService implements IniciarEntregaPushUseCase {
                 reclamacion.reclamacionId(), entrega.generacion(), estado, entrega.intentos(),
                 null, null, codigo);
         if (reclamaciones.guardarResultadoEntrega(supresion)) {
+            metricas.fallo(codigo);
             reclamaciones.cerrarPadreSiCorresponde(entrega.trabajoId());
         }
     }

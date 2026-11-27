@@ -3,6 +3,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastruc
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.EntregaPushPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ProcesadorTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReclamacionTrabajoPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.RevalidacionOportunidadPushPort;
@@ -14,6 +15,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.PrepararEntregasPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ProcesarTrabajoPushUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.RegistrarResultadoEntregaPushUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PoliticaReintentoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.VentanaEnvioPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
@@ -109,9 +111,11 @@ public class WorkerPushConfig {
             NotificacionRepository notificaciones,
             DispositivoPushRepository dispositivos,
             ConsultaPreferenciasPort preferencias,
-            RevalidacionOportunidadPushPort revalidacion) {
+            RevalidacionOportunidadPushPort revalidacion,
+            ConfiguracionCanalPush configuracion,
+            MetricasPushPort metricas) {
         return new PrepararEntregasPushService(reclamaciones, notificaciones, dispositivos,
-                preferencias, revalidacion);
+                preferencias, revalidacion, configuracion, metricas);
     }
 
     @Bean
@@ -122,9 +126,11 @@ public class WorkerPushConfig {
             ConsultaPreferenciasPort preferencias,
             RevalidacionOportunidadPushPort revalidacion,
             VentanaEnvioPush ventana,
+            ConfiguracionCanalPush configuracion,
+            MetricasPushPort metricas,
             Clock relojPush) {
         return new IniciarEntregaPushService(reclamaciones, notificaciones, dispositivos,
-                preferencias, revalidacion, ventana, relojPush);
+                preferencias, revalidacion, ventana, configuracion, metricas, relojPush);
     }
 
     @Bean
@@ -132,9 +138,10 @@ public class WorkerPushConfig {
             ReclamacionTrabajoPushRepository reclamaciones,
             DispositivoPushRepository dispositivos,
             PoliticaReintentoPush politica,
+            MetricasPushPort metricas,
             Clock relojPush) {
         return new RegistrarResultadoEntregaPushService(reclamaciones, dispositivos, politica,
-                relojPush);
+                metricas, relojPush);
     }
 
     /**
@@ -200,12 +207,13 @@ public class WorkerPushConfig {
     public ReclamacionTrabajoPushPort reclamacionTrabajoPushPort(
             ReclamacionTrabajoPushRepository reclamaciones,
             ProcesadorTrabajoPushPort procesador,
+            MetricasPushPort metricas,
             PlatformTransactionManager transactionManager,
             @Value("${aliado.push.reclamacion.tamano-lote:10}") int tamanoLote,
             @Value("${aliado.push.reclamacion.vigencia-segundos:45}") long vigenciaSegundos) {
         TransactionTemplate transaccion = new TransactionTemplate(transactionManager);
         transaccion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador, transaccion,
+        return new ReclamacionTrabajoPushAdapter(reclamaciones, procesador, metricas, transaccion,
                 tamanoLote, Duration.ofSeconds(vigenciaSegundos));
     }
 

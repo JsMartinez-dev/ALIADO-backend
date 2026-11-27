@@ -61,11 +61,6 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
     }
 
     @Override
-    public List<Notificacion> pendientesParaEntrega() {
-        return jpa.findPendientesParaEntrega().stream().map(NotificacionPersistenceMapper::aDominio).toList();
-    }
-
-    @Override
     public Notificacion guardar(Notificacion notificacion) {
         return NotificacionPersistenceMapper.aDominio(jpa.save(NotificacionPersistenceMapper.aEntidad(notificacion)));
     }

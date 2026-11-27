@@ -10,6 +10,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarResultadoEntregaPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.CodigosEntregaPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
@@ -19,6 +20,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PoliticaReintentoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PendientesPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEnvioPush;
@@ -30,6 +32,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.mode
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.DispositivoPushRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.ReclamacionTrabajoPushRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
 import java.time.Clock;
 import java.time.Duration;
@@ -71,6 +74,7 @@ class ProcesamientoPushUseCasesTest {
     private DispositivoRepositorioFalso dispositivos;
     private PreferenciasFalsas preferencias;
     private RevalidacionFalsa revalidacion;
+    private MetricasPushEnMemoria metricas;
 
     @BeforeEach
     void preparar() {
@@ -79,11 +83,39 @@ class ProcesamientoPushUseCasesTest {
         dispositivos = new DispositivoRepositorioFalso();
         preferencias = new PreferenciasFalsas();
         revalidacion = new RevalidacionFalsa();
+        metricas = new MetricasPushEnMemoria(RELOJ);
         reclamaciones.trabajos.put(TRABAJO, trabajo(EstadoTrabajoPush.PENDIENTE_PREPARACION,
                 AHORA.plusSeconds(3_600)));
         notificaciones.guardadas.put(NOTIFICACION, aviso());
         dispositivos.vinculos.add(vinculo(INSTALACION_A, 1, "token-a"));
         dispositivos.vinculos.add(vinculo(INSTALACION_B, 1, "token-b"));
+    }
+
+    @Test
+    void conElCanalApagadoLaPreparacionCierraSinCrearEntregasNiTocarLaBandeja() {
+        prepararServicio(false).ejecutar(new PrepararEntregasPushCommand(preparacion()));
+
+        assertEquals(List.of("CANAL_NO_HABILITADO"), reclamaciones.motivos);
+        assertTrue(reclamaciones.destinos.isEmpty(), "no se prepara ningún envío");
+        assertFalse(reclamaciones.confirmada, "el padre no queda PREPARADO");
+        assertEquals(0, notificaciones.insertados.get(), "el aviso de bandeja no se toca");
+    }
+
+    @Test
+    void conElCanalApagadoElEnvioSeSuprimeSinLlamarAlProveedor() {
+        marcarPreparado();
+        reclamaciones.entregas.put(ENTREGA_A, entrega(ENTREGA_A, INSTALACION_A, 1, 0));
+
+        Optional<EnvioPushPendiente> envio = iniciarServicio(false).ejecutar(
+                new IniciarEntregaPushCommand(envioReclamacion(ENTREGA_A, INSTALACION_A, 1)));
+
+        assertTrue(envio.isEmpty(), "sin envío no hay mensaje para el proveedor");
+        assertEquals(EstadoEntregaPush.SUPRIMIDA, reclamaciones.resultados.get(0).estado());
+        assertEquals(CodigosEntregaPush.CANAL_NO_HABILITADO,
+                reclamaciones.resultados.get(0).ultimoCodigoError());
+        assertEquals(0, reclamaciones.resultados.get(0).intentos(),
+                "un apagado no consume intentos de la entrega");
+        assertTrue(reclamaciones.cerrada, "el cierre del padre sigue evaluándose");
     }
 
     @Test
@@ -351,20 +383,33 @@ class ProcesamientoPushUseCasesTest {
     }
 
     private PrepararEntregasPushService prepararServicio() {
+        return prepararServicio(true);
+    }
+
+    private PrepararEntregasPushService prepararServicio(boolean canalHabilitado) {
         return new PrepararEntregasPushService(reclamaciones, notificaciones, dispositivos,
-                preferencias, revalidacion);
+                preferencias, revalidacion, configuracion(canalHabilitado), metricas);
     }
 
     private IniciarEntregaPushService iniciarServicio() {
+        return iniciarServicio(true);
+    }
+
+    private IniciarEntregaPushService iniciarServicio(boolean canalHabilitado) {
         return new IniciarEntregaPushService(reclamaciones, notificaciones, dispositivos,
                 preferencias, revalidacion,
-                new VentanaEnvioPush(Duration.ofSeconds(5), Duration.ZERO), RELOJ);
+                new VentanaEnvioPush(Duration.ofSeconds(5), Duration.ZERO),
+                configuracion(canalHabilitado), metricas, RELOJ);
+    }
+
+    private static ConfiguracionCanalPush configuracion(boolean habilitado) {
+        return ConfiguracionCanalPush.desde(habilitado, "NUEVA_OPORTUNIDAD");
     }
 
     private RegistrarResultadoEntregaPushService registrarServicio() {
         // Jitter 0 para que el backoff sea determinista en las aserciones.
         return new RegistrarResultadoEntregaPushService(reclamaciones, dispositivos,
-                new PoliticaReintentoPush(5, Duration.ofSeconds(30), () -> 0.0), RELOJ);
+                new PoliticaReintentoPush(5, Duration.ofSeconds(30), () -> 0.0), metricas, RELOJ);
     }
 
     private static ReclamacionPush preparacion() {
@@ -383,7 +428,7 @@ class ProcesamientoPushUseCasesTest {
 
     private static EnvioPushPendiente envio(int intentos, Instant expiraEn) {
         return new EnvioPushPendiente(ENTREGA_A, TRABAJO, INSTALACION_A, 1, RECLAMACION,
-                intentos, expiraEn,
+                intentos, expiraEn, AHORA,
                 new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.MensajePush(
                         NOTIFICACION, SOLICITUD, TipoNotificacion.NUEVA_OPORTUNIDAD, "token-a"));
     }
@@ -450,6 +495,9 @@ class ProcesamientoPushUseCasesTest {
             return true;
         }
         @Override public Optional<Instant> proximoPlazo() { return Optional.empty(); }
+        @Override public PendientesPush pendientes() {
+            return new PendientesPush(trabajos.size(), entregas.size(), null);
+        }
         @Override public Optional<TrabajoPush> buscarTrabajo(UUID trabajoId) {
             return Optional.ofNullable(trabajos.get(trabajoId));
         }
@@ -488,7 +536,6 @@ class ProcesamientoPushUseCasesTest {
         @Override public Optional<Notificacion> porId(UUID id) {
             return Optional.ofNullable(guardadas.get(id));
         }
-        @Override public List<Notificacion> pendientesParaEntrega() { return List.of(); }
         @Override public Notificacion guardar(Notificacion notificacion) { return notificacion; }
         @Override public boolean insertarSiNoExiste(Notificacion notificacion) {
             insertados.incrementAndGet();

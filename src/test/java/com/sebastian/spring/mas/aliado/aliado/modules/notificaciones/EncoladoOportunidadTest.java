@@ -4,9 +4,12 @@ import com.sebastian.spring.mas.aliado.aliado.common.events.Eventos;
 import com.sebastian.spring.mas.aliado.aliado.common.events.PublicadorEventos;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarAvisoOportunidadService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ConfiguracionCanalPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EstadoEntrega;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.TrabajoPushRepository;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.MetricasPushEnMemoria;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.RegistroOportunidadNotificacionAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.port.CompatibilidadPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.oportunidades.application.service.DetectarNuevaOportunidadService;
@@ -30,6 +33,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.E
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.Solicitud;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.model.Urgencia;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.domain.repository.SolicitudRepository;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -65,11 +69,18 @@ class EncoladoOportunidadTest {
     private CrearSolicitudUseCase crear;
     private GuardarBorradorUseCase guardarBorrador;
     private PublicarSolicitudUseCase publicar;
+    private MetricasPushEnMemoria metricas;
 
     @BeforeEach
     void preparar() {
+        construir(ConfiguracionCanalPush.desde(true, "NUEVA_OPORTUNIDAD"));
+    }
+
+    private void construir(ConfiguracionCanalPush configuracion) {
+        metricas = new MetricasPushEnMemoria(Clock.systemUTC());
         var aviso = new RegistrarAvisoOportunidadService(notificaciones, trabajos,
-                new ConsultaPreferenciasService(preferencias), Duration.ofMinutes(60));
+                new ConsultaPreferenciasService(preferencias), configuracion, metricas,
+                Duration.ofMinutes(60));
         var registro = new RegistroOportunidadNotificacionAdapter(aviso);
         var detectar = new DetectarNuevaOportunidadService(compatibilidad, registro);
         eventos = evento -> {
@@ -96,6 +107,29 @@ class EncoladoOportunidadTest {
         assertEquals(Canal.PUSH, avisos.get(0).canal());
         assertEquals(1, trabajos.trabajos.size());
         assertTrue(trabajos.trabajos.containsKey(avisos.get(0).id()));
+    }
+
+    @Test
+    void elEncoladoSeReflejaEnLasMetricasDelCanal() {
+        habilitarPush(prestador, true);
+
+        crear.ejecutar(comando("PUBLICADA"));
+
+        assertEquals(Map.of("NUEVA_OPORTUNIDAD", 1L), metricas.resumen().encolados());
+    }
+
+    @Test
+    void conElCanalApagadoElAvisoSeConservaSinEncolarTrabajoNuevo() {
+        construir(ConfiguracionCanalPush.desde(false, "NUEVA_OPORTUNIDAD"));
+        habilitarPush(prestador, true);
+
+        crear.ejecutar(comando("PUBLICADA"));
+
+        List<Notificacion> avisos = notificaciones.porDestinatario(prestador);
+        assertEquals(1, avisos.size(), "la bandeja no depende del push");
+        assertEquals(EstadoEntrega.PENDIENTE, avisos.get(0).estadoEntrega());
+        assertEquals(0, trabajos.trabajos.size(), "apagado el canal no se encola trabajo");
+        assertEquals(Map.of(), metricas.resumen().encolados());
     }
 
     @Test
@@ -219,8 +253,6 @@ class EncoladoOportunidadTest {
         @Override public Optional<Notificacion> porId(UUID id) {
             return guardadas.values().stream().filter(n -> n.id().equals(id)).findFirst();
         }
-
-        @Override public List<Notificacion> pendientesParaEntrega() { return List.of(); }
 
         int total() { return guardadas.size(); }
 

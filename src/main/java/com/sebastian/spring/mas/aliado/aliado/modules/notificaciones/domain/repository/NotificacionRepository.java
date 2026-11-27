@@ -12,7 +12,6 @@ public interface NotificacionRepository {
 
     /** Aviso por identificador, sin exponer la entidad de persistencia. */
     Optional<Notificacion> porId(UUID id);
-    List<Notificacion> pendientesParaEntrega();
     Notificacion guardar(Notificacion notificacion);
 
     /**

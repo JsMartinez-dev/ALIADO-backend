@@ -3,6 +3,7 @@ package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.rep
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.DestinoPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.EntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.LoteReclamadoPush;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.PendientesPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ReclamacionPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.ResultadoEntregaPush;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TrabajoPush;
@@ -81,6 +82,13 @@ public interface ReclamacionTrabajoPushRepository {
      * entrega, o expiración de un trabajo no finalizado. Vacío si no hay ningún plazo.
      */
     Optional<Instant> proximoPlazo();
+
+    /**
+     * Tamaño y antigüedad observados de la cola para la instrumentación del cierre de
+     * lote (F09-PUSH-11). Es una lectura puntual: el worker solo la usa cuando acaba de
+     * procesar trabajo, nunca con la cola en reposo.
+     */
+    PendientesPush pendientes();
 
     /** Trabajo padre por identificador. */
     Optional<TrabajoPush> buscarTrabajo(UUID trabajoId);
