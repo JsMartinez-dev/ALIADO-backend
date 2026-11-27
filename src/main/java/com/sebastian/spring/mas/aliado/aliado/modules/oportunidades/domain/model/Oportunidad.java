@@ -6,4 +6,7 @@ import java.util.UUID;
 
 /** Oportunidad = solicitud publicada vista desde un Prestador compatible (SPEC-06, proyección). */
 public record Oportunidad(UUID solicitudId, String categoria, String zonaAproximada, String urgencia,
-                          String descripcion, OffsetDateTime fechaCreacion, List<String> fotos) {}
+                          String descripcion, OffsetDateTime fechaCreacion,
+                          List<FotoDetalle> fotosDetalle) {
+    public record FotoDetalle(UUID id, int orden) {}
+}
