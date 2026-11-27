@@ -13,4 +13,5 @@ public class ReportarUsuarioService implements ReportarUsuarioUseCase {
     public UUID ejecutar(ReportarUsuarioCommand command) {
         return operaciones.crearReporteUsuario(command.objetivoId(), command.reportanteId(), command.motivo());
     }
+
 }

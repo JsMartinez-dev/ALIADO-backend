@@ -24,125 +24,129 @@ import java.util.List;
 import java.util.UUID;
 
 public class OperacionesConfianza {
-    private final CalificacionRepository calificaciones;
-    private final ResenaRepository resenas;
-    private final ReputacionRepository reputaciones;
-    private final SolicitudVerificacionRepository verificaciones;
-    private final ServicioLecturaPort servicios;
-    private final ReportePort reportes;
-    private final RolConsultaPort roles;
+    private final CalificacionRepository calificacionesRepository;
+    private final ResenaRepository resenasRepository;
+    private final ReputacionRepository reputacionesRepository;
+    private final SolicitudVerificacionRepository solicitudesVerificacionRepository;
+    private final ServicioLecturaPort servicioLecturaPort;
+    private final ReportePort reportePort;
+    private final RolConsultaPort rolConsultaPort;
 
-    public OperacionesConfianza(CalificacionRepository calificaciones, ResenaRepository resenas,
-                            ReputacionRepository reputaciones,
-                            SolicitudVerificacionRepository verificaciones,
-                            ServicioLecturaPort servicios, ReportePort reportes,
-                            RolConsultaPort roles) {
-        this.calificaciones = calificaciones;
-        this.resenas = resenas;
-        this.reputaciones = reputaciones;
-        this.verificaciones = verificaciones;
-        this.servicios = servicios;
-        this.reportes = reportes;
-        this.roles = roles;
-    }
-    public Calificacion calificar(UUID servicioId, UUID clienteId, int valor) {
-        Calificacion resultado = registrarCalificacion(servicioId, clienteId, valor);
-        recalcularReputacion(resultado.prestadorId());
-        return resultado;
+    public OperacionesConfianza(CalificacionRepository calificacionesRepository,
+            ResenaRepository resenasRepository, ReputacionRepository reputacionesRepository,
+            SolicitudVerificacionRepository solicitudesVerificacionRepository,
+            ServicioLecturaPort servicioLecturaPort, ReportePort reportePort,
+            RolConsultaPort rolConsultaPort) {
+        this.calificacionesRepository = calificacionesRepository;
+        this.resenasRepository = resenasRepository;
+        this.reputacionesRepository = reputacionesRepository;
+        this.solicitudesVerificacionRepository = solicitudesVerificacionRepository;
+        this.servicioLecturaPort = servicioLecturaPort;
+        this.reportePort = reportePort;
+        this.rolConsultaPort = rolConsultaPort;
     }
 
-    public Calificacion registrarCalificacion(UUID servicioId, UUID clienteId, int valor) {
-        if (valor < 1 || valor > 5) {
+    public Calificacion calificar(UUID servicioId, UUID clienteId, int valorCalificacion) {
+        Calificacion calificacionRegistrada = registrarCalificacion(servicioId, clienteId, valorCalificacion);
+        recalcularReputacion(calificacionRegistrada.prestadorId());
+        return calificacionRegistrada;
+    }
+
+    public Calificacion registrarCalificacion(UUID servicioId, UUID clienteId, int valorCalificacion) {
+        if (valorCalificacion < 1 || valorCalificacion > 5) {
             throw new BusinessException.BadRequest("VALOR_INVALIDO", "La calificación debe estar entre 1 y 5.");
         }
-        var servicio = servicios.porId(servicioId)
+        var servicioContratado = servicioLecturaPort.porId(servicioId)
                 .orElseThrow(() -> new BusinessException.NotFound("SERVICIO_NO_ENCONTRADO",
                         "Servicio no encontrado."));
-        if (!servicio.clienteId().equals(clienteId)) {
+        if (!servicioContratado.clienteId().equals(clienteId)) {
             throw new BusinessException.Forbidden("NO_AUTORIZADO",
                     "Solo el cliente del servicio puede calificarlo.");
         }
-        if (servicio.estado() != EstadoServicio.FINALIZADO) {
+        if (servicioContratado.estado() != EstadoServicio.FINALIZADO) {
             throw new BusinessException.Conflict("SERVICIO_NO_FINALIZADO",
                     "Solo se puede calificar un servicio finalizado.");
         }
-        if (calificaciones.porServicioId(servicioId).isPresent()) {
+        if (calificacionesRepository.porServicioId(servicioId).isPresent()) {
             throw new BusinessException.Conflict("YA_CALIFICADO",
                     "El servicio ya fue calificado (máximo una calificación por servicio).");
         }
         Calificacion calificacion = new Calificacion(UUID.randomUUID(), servicioId, clienteId,
-                servicio.prestadorId(), valor, OffsetDateTime.now());
-        Calificacion guardada = calificaciones.guardar(calificacion);
-        return guardada;
+                servicioContratado.prestadorId(), valorCalificacion, OffsetDateTime.now());
+        return calificacionesRepository.guardar(calificacion);
     }
 
     public void recalcularReputacion(UUID prestadorId) {
-        List<Calificacion> todas = calificaciones.porPrestadorId(prestadorId);
-        BigDecimal promedio = todas.isEmpty() ? BigDecimal.ZERO
-                : BigDecimal.valueOf(todas.stream().mapToInt(Calificacion::valor).average().orElse(0))
+        List<Calificacion> calificacionesDelPrestador = calificacionesRepository.porPrestadorId(prestadorId);
+        BigDecimal promedioCalificaciones = calificacionesDelPrestador.isEmpty() ? BigDecimal.ZERO
+                : BigDecimal.valueOf(calificacionesDelPrestador.stream()
+                        .mapToInt(Calificacion::valor).average().orElse(0))
                         .setScale(2, RoundingMode.HALF_UP);
-        reputaciones.guardar(new Reputacion(prestadorId, promedio, todas.size(), OffsetDateTime.now()));
+        reputacionesRepository.guardar(new Reputacion(prestadorId, promedioCalificaciones,
+                calificacionesDelPrestador.size(), OffsetDateTime.now()));
     }
-    public Resena agregarResena(UUID calificacionId, UUID clienteId, String texto) {
-        Calificacion calificacion = calificaciones.porId(calificacionId)
+
+    public Resena agregarResena(UUID calificacionId, UUID clienteId, String textoResena) {
+        Calificacion calificacion = calificacionesRepository.porId(calificacionId)
                 .orElseThrow(() -> new BusinessException.NotFound("CALIFICACION_NO_ENCONTRADA",
                         "Calificación no encontrada."));
         if (!calificacion.clienteId().equals(clienteId)) {
             throw new BusinessException.Forbidden("NO_AUTORIZADO",
                     "Solo el autor de la calificación puede agregar la reseña.");
         }
-        if (texto == null || texto.isBlank()) {
+        if (textoResena == null || textoResena.isBlank()) {
             throw new BusinessException.BadRequest("TEXTO_REQUERIDO", "El texto de la reseña es obligatorio.");
         }
-        if (resenas.porCalificacionId(calificacionId).isPresent()) {
+        if (resenasRepository.porCalificacionId(calificacionId).isPresent()) {
             throw new BusinessException.Conflict("RESENA_YA_EXISTE",
                     "La calificación ya tiene una reseña (máximo una por calificación).");
         }
-        return resenas.guardar(new Resena(UUID.randomUUID(), calificacionId, texto.trim(),
+        return resenasRepository.guardar(new Resena(UUID.randomUUID(), calificacionId, textoResena.trim(),
                 OffsetDateTime.now(), EstadoVisibilidadResena.VISIBLE));
     }
 
     public ConfianzaInfo confianzaDe(UUID prestadorId) {
-        if (!roles.esPrestador(prestadorId)) {
+        if (!rolConsultaPort.esPrestador(prestadorId)) {
             throw new BusinessException.NotFound("PRESTADOR_NO_ENCONTRADO", "Prestador no encontrado.");
         }
-        Reputacion reputacion = reputaciones.porPrestadorId(prestadorId).orElse(null);
-        NivelVerificacion nivel = verificaciones.contarAprobadasDePrestador(prestadorId) > 0
+        Reputacion reputacion = reputacionesRepository.porPrestadorId(prestadorId).orElse(null);
+        NivelVerificacion nivelVerificacion =
+                solicitudesVerificacionRepository.contarAprobadasDePrestador(prestadorId) > 0
                 ? NivelVerificacion.BASICO : NivelVerificacion.SIN_VERIFICAR;
         return new ConfianzaInfo(
                 new ReputacionInfo(reputacion == null ? BigDecimal.ZERO : reputacion.valorAgregado(),
                         reputacion == null ? 0 : reputacion.cantidadCalificaciones()),
-                nivel);
+                nivelVerificacion);
     }
 
     public List<ResenaPublica> resenasVisiblesDe(UUID prestadorId) {
-        if (!roles.esPrestador(prestadorId)) {
+        if (!rolConsultaPort.esPrestador(prestadorId)) {
             throw new BusinessException.NotFound("PRESTADOR_NO_ENCONTRADO", "Prestador no encontrado.");
         }
-        return calificaciones.porPrestadorId(prestadorId).stream()
-                .flatMap(calificacion -> resenas.porCalificacionId(calificacion.id()).stream()
+        return calificacionesRepository.porPrestadorId(prestadorId).stream()
+                .flatMap(calificacion -> resenasRepository.porCalificacionId(calificacion.id()).stream()
                         .filter(resena -> resena.estadoVisibilidad() == EstadoVisibilidadResena.VISIBLE)
                         .map(resena -> new ResenaPublica(resena.id(), calificacion.valor(),
                                 resena.texto(), resena.fechaCreacion())))
                 .sorted(Comparator.comparing(ResenaPublica::fechaCreacion).reversed())
                 .toList();
     }
-    public UUID reportarResena(UUID resenaId, UUID reportanteId, String motivo) {
-        Resena resena = resenas.porId(resenaId)
+    public UUID reportarResena(UUID resenaId, UUID reportanteId, String motivoReporte) {
+        Resena resena = resenasRepository.porId(resenaId)
                 .orElseThrow(() -> new BusinessException.NotFound("RESENA_NO_ENCONTRADA",
                         "Reseña no encontrada."));
         if (resena.estadoVisibilidad() == EstadoVisibilidadResena.OCULTA) {
             throw new BusinessException.Conflict("RESENA_OCULTA",
                     "No se puede reportar una reseña oculta.");
         }
-        return reportes.crearReporteResena(resenaId, reportanteId, motivo);
+        return reportePort.crearReporteResena(resenaId, reportanteId, motivoReporte);
     }
 
     public void ocultarResena(UUID resenaId) {
-        Resena resena = resenas.porId(resenaId)
+        Resena resena = resenasRepository.porId(resenaId)
                 .orElseThrow(() -> new BusinessException.NotFound("RESENA_NO_ENCONTRADA",
                         "Reseña no encontrada."));
-        resenas.guardar(new Resena(resena.id(), resena.calificacionId(), resena.texto(),
+        resenasRepository.guardar(new Resena(resena.id(), resena.calificacionId(), resena.texto(),
                 resena.fechaCreacion(), EstadoVisibilidadResena.OCULTA));
     }
 }
