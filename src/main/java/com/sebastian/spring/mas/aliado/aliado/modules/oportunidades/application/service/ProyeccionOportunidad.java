@@ -9,6 +9,7 @@ public class ProyeccionOportunidad {
   String categoria=consultas.categoriaPorId(s.categoriaId()).map(c->c.nombre()).orElse(s.categoriaId().toString());
   String zona=consultas.zonaPorId(s.zonaId()).map(z->z.nombre()).orElse(s.zonaId().toString());
   return new OportunidadResult(s.id(),categoria,zona,s.urgencia()==null?null:s.urgencia().name(),
-    s.descripcion(),s.fechaCreacion(),s.fotos().stream().map(f->f.archivoKey()).toList());
+    s.descripcion(),s.fechaCreacion(),
+    s.fotos().stream().map(f -> new OportunidadResult.FotoDetalleResult(f.id(), f.orden())).toList());
  }
 }

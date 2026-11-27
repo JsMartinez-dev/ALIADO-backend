@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/* Todas las rutas exigen rol CLIENTE. */
+/* Las operaciones de gestión exigen CLIENTE; la descarga permite dueño o Prestador ante solicitud publicada. */
 @RestController
 @RequestMapping("/api/v1/solicitudes")
 public class SolicitudController extends BaseController {
@@ -137,8 +137,9 @@ public class SolicitudController extends BaseController {
 
     @GetMapping("/{id}/fotos/{fotoId}")
     public ResponseEntity<byte[]> descargarFoto(@PathVariable UUID id, @PathVariable UUID fotoId) {
+        var usuario = SecurityUtils.actual();
         byte[] contenido = descargarFotoSolicitudUseCase.ejecutar(SolicitudPresentationMapper.aConsultarFotoCommand(
-                id, SecurityUtils.actual().id(), fotoId)).contenido();
+                id, usuario.id(), usuario.rol(), fotoId)).contenido();
         String tipo = ArchivoValidacion.detectarTipo(contenido);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(
@@ -158,8 +159,9 @@ public class SolicitudController extends BaseController {
     @DeleteMapping("/{id}/fotos/{fotoId}")
     public ResponseEntity<Void> eliminarFoto(@PathVariable UUID id, @PathVariable UUID fotoId) {
         SecurityUtils.exigirRol("CLIENTE");
+        var usuario = SecurityUtils.actual();
         eliminarFotoSolicitudUseCase.ejecutar(SolicitudPresentationMapper.aConsultarFotoCommand(
-                id, SecurityUtils.actual().id(), fotoId));
+                id, usuario.id(), usuario.rol(), fotoId));
         return ResponseEntity.noContent().build();
     }
 

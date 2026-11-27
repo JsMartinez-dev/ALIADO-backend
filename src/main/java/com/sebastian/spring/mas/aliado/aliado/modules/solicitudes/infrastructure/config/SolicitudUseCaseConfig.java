@@ -14,6 +14,7 @@ import com.sebastian.spring.mas.aliado.aliado.common.events.PublicadorEventos;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.service.DefinirZonaUrgenciaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.DefinirZonaUrgenciaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.port.ArchivoFotoSolicitudPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.port.AccesoFotoOportunidadPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.service.AgregarFotoSolicitudService;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.usecase.AgregarFotoSolicitudUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.solicitudes.application.service.ReemplazarFotoSolicitudService;
@@ -98,8 +99,9 @@ public class SolicitudUseCaseConfig {
 
     @Bean
     public DescargarFotoSolicitudUseCase descargarFotoSolicitudUseCase(SolicitudRepository solicitudes,
-            ArchivoFotoSolicitudPort archivos, PlatformTransactionManager transactionManager) {
-        DescargarFotoSolicitudService service = new DescargarFotoSolicitudService(solicitudes, archivos);
+            ArchivoFotoSolicitudPort archivos, AccesoFotoOportunidadPort accesoOportunidad,
+            PlatformTransactionManager transactionManager) {
+        DescargarFotoSolicitudService service = new DescargarFotoSolicitudService(solicitudes, archivos, accesoOportunidad);
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         transaction.setReadOnly(true);
         return command -> transaction.execute(status -> service.ejecutar(command));
