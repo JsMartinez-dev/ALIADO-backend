@@ -1,10 +1,16 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentation.mapper;
 
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.AvisoBandejaResult;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.BandejaAvisosResult;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ConsultarBandejaCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.MarcarAvisoLeidoCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.MarcarTodasLeidasCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.NotificacionOportunidadResult;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.OportunidadDesdeAvisoResult;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RegistrarDispositivoPushCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResolverOportunidadAvisoCommand;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.ResumenNoLeidasResult;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RetirarDispositivoPushCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.RevocarVinculoPushDiferidoCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.presentation.dto.NotificacionDtos;
@@ -28,6 +34,50 @@ public final class NotificacionPresentationMapper {
             com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.NotificacionResult result) {
         return new NotificacionDtos.NotificacionResponse(result.id(), result.tipo(), result.servicioId(),
                 result.solicitudId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion());
+    }
+
+    /**
+     * Consulta de una página de la bandeja (F09-BANDEJA-04). El destinatario procede de la
+     * sesión; los filtros y el cursor llegan como texto y los valida el caso de uso.
+     */
+    public static ConsultarBandejaCommand aConsultarBandejaCommand(UUID destinatarioId, String estadoLectura,
+                                                                  String tipo, Integer limite, String cursor) {
+        if (destinatarioId == null) {
+            throw datosInvalidos();
+        }
+        return new ConsultarBandejaCommand(destinatarioId, estadoLectura, tipo, limite, cursor);
+    }
+
+    /** Elemento de la bandeja: {@code leidaEn} se copia tal cual, nulo mientras siga pendiente. */
+    public static NotificacionDtos.AvisoBandejaResponse aResponse(AvisoBandejaResult result) {
+        return new NotificacionDtos.AvisoBandejaResponse(result.id(), result.tipo(), result.servicioId(),
+                result.solicitudId(), result.detalle(), result.estadoEntrega(), result.fechaGeneracion(),
+                result.leidaEn());
+    }
+
+    public static NotificacionDtos.BandejaResponse aResponse(BandejaAvisosResult result) {
+        return new NotificacionDtos.BandejaResponse(result.items().stream()
+                .map(NotificacionPresentationMapper::aResponse).toList(), result.cursorSiguiente());
+    }
+
+    public static NotificacionDtos.ResumenNoLeidasResponse aResponse(ResumenNoLeidasResult result) {
+        return new NotificacionDtos.ResumenNoLeidasResponse(result.hayNoLeidas());
+    }
+
+    /** Lectura individual: solo aviso y cuenta de la sesión (F09-BANDEJA-04). */
+    public static MarcarAvisoLeidoCommand aMarcarAvisoLeidoCommand(UUID notificacionId, UUID destinatarioId) {
+        if (notificacionId == null || destinatarioId == null) {
+            throw datosInvalidos();
+        }
+        return new MarcarAvisoLeidoCommand(notificacionId, destinatarioId);
+    }
+
+    /** Lectura masiva: el destinatario procede siempre de la sesión (F09-BANDEJA-04). */
+    public static MarcarTodasLeidasCommand aMarcarTodasLeidasCommand(UUID destinatarioId) {
+        if (destinatarioId == null) {
+            throw datosInvalidos();
+        }
+        return new MarcarTodasLeidasCommand(destinatarioId);
     }
 
     /** GET /api/v1/notificaciones/{notificacionId}/oportunidad: solo cuenta y aviso (F09-PUSH-10). */
