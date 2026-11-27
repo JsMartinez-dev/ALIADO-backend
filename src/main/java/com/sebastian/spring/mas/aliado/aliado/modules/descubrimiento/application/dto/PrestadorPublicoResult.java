@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public record PrestadorPublicoResult(UUID id, List<String> categorias, List<String> zonas,
+public record PrestadorPublicoResult(UUID id, String nombreVisible, List<String> categorias, List<String> zonas,
                                      BigDecimal reputacionAgregada, int cantidadCalificaciones,
                                      String nivelVerificacion, List<Bloque> disponibilidad,
                                      Map<String, Object> datosGenerales, List<Resena> resenas) {

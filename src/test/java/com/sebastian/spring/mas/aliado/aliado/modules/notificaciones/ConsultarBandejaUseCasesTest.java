@@ -15,6 +15,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repo
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +48,7 @@ class ConsultarBandejaUseCasesTest {
     private static final UUID ID_MENOR = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final NotificacionRepository notificaciones = mock(NotificacionRepository.class);
-    private final ConsultarBandejaService bandeja = new ConsultarBandejaService(notificaciones);
+    private final ConsultarBandejaService bandeja = new ConsultarBandejaService(notificaciones, (propuesta, destinatario) -> java.util.Optional.empty());
     private final ConsultarResumenNoLeidasService resumen =
             new ConsultarResumenNoLeidasService(notificaciones);
 
@@ -67,6 +68,26 @@ class ConsultarBandejaUseCasesTest {
         assertNull(resultado.items().get(0).leidaEn());
         assertNull(resultado.cursorSiguiente());
         verify(notificaciones).buscarBandeja(CUENTA, EstadoLectura.NO_LEIDA, null, null, null, 21);
+    }
+
+    @Test
+    void unAvisoDePropuestaSoloEnlazaUnaSolicitudPropia() {
+        UUID solicitudId = UUID.randomUUID();
+        var avisoPropio = aviso(ID_MAYOR, TipoNotificacion.PROPUESTA_RECIBIDA, GENERADA, null);
+        var avisoSinReferencia = aviso(ID_MENOR, TipoNotificacion.PROPUESTA_RECIBIDA,
+                GENERADA.minusMinutes(1), null);
+        when(notificaciones.buscarBandeja(CUENTA, EstadoLectura.NO_LEIDA, null, null, null, 21))
+                .thenReturn(List.of(avisoPropio, avisoSinReferencia));
+        var consultar = new ConsultarBandejaService(notificaciones, (propuestaId, destinatarioId) ->
+                avisoPropio.aggregateId().equals(propuestaId) && CUENTA.equals(destinatarioId)
+                        ? Optional.of(solicitudId) : Optional.empty());
+
+        var items = consultar.ejecutar(new ConsultarBandejaCommand(CUENTA, null, null, null, null)).items();
+
+        assertEquals(solicitudId, items.get(0).solicitudId());
+        assertEquals(avisoPropio.aggregateId(), items.get(0).propuestaId());
+        assertNull(items.get(1).solicitudId());
+        assertNull(items.get(1).propuestaId());
     }
 
     @Test

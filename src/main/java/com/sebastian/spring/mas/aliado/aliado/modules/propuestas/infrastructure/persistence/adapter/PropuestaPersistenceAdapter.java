@@ -8,6 +8,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.propuestas.infrastructure.
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,6 +39,12 @@ public class PropuestaPersistenceAdapter implements PropuestaRepository {
     @Override
     public List<Propuesta> porSolicitud(UUID solicitudId) {
         return jpa.findBySolicitudId(solicitudId).stream().map(PropuestaPersistenceMapper::aDominio).toList();
+    }
+
+    @Override
+    public List<Propuesta> porPrestador(UUID prestadorId, int pagina, int tamano) {
+        return jpa.findByPrestadorIdOrderByFechaCreacionDescIdDesc(prestadorId, PageRequest.of(pagina, tamano))
+                .stream().map(PropuestaPersistenceMapper::aDominio).toList();
     }
 
     @Override

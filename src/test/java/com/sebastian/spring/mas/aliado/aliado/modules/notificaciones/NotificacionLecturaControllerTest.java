@@ -80,9 +80,9 @@ class NotificacionLecturaControllerTest {
     void laBandejaUsaLaSesionYDevuelveLeidaEnNuloOEnIso8601() {
         autenticar();
         AvisoBandejaResult pendiente = new AvisoBandejaResult(AVISO, "NUEVA_OPORTUNIDAD", null,
-                UUID.randomUUID(), "detalle", "ENTREGADA", GENERADO, null);
+                UUID.randomUUID(), null, "detalle", "ENTREGADA", GENERADO, null);
         AvisoBandejaResult leido = new AvisoBandejaResult(UUID.randomUUID(), "NUEVA_OPORTUNIDAD", null,
-                UUID.randomUUID(), "detalle", "PENDIENTE", GENERADO.minusHours(1), GENERADO);
+                UUID.randomUUID(), null, "detalle", "PENDIENTE", GENERADO.minusHours(1), GENERADO);
         when(bandeja.ejecutar(any())).thenReturn(new BandejaAvisosResult(
                 List.of(pendiente, leido), "cursor-siguiente"));
 

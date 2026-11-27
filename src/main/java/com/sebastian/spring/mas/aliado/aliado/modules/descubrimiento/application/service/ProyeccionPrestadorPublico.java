@@ -16,7 +16,7 @@ public class ProyeccionPrestadorPublico {
 
     public PrestadorPublicoResult resultado(PerfilProfesional perfil) {
         PrestadorPublico publico = proyectar(perfil);
-        return new PrestadorPublicoResult(publico.id(), publico.categorias(), publico.zonas(),
+        return new PrestadorPublicoResult(publico.id(), consultas.nombreVisibleDe(publico.id()).orElse(null), publico.categorias(), publico.zonas(),
                 publico.reputacionAgregada(), publico.cantidadCalificaciones(), publico.nivelVerificacion(),
                 publico.disponibilidad().stream().map(b -> new PrestadorPublicoResult.Bloque(
                         b.diaSemana(), b.horaInicio(), b.horaFin())).toList(),

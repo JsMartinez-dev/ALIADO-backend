@@ -4,6 +4,6 @@ import java.util.List;
 import java.util.UUID;
 public record OportunidadResult(UUID solicitudId, String categoria, String zonaAproximada, String urgencia,
                                 String descripcion, OffsetDateTime fechaCreacion,
-                                List<FotoDetalleResult> fotosDetalle) {
+                                List<FotoDetalleResult> fotosDetalle, String nombreVisibleCliente) {
     public record FotoDetalleResult(UUID id, int orden) {}
 }

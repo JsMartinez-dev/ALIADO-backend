@@ -15,6 +15,7 @@ public interface ConsultaDescubrimientoPort {
     Optional<PerfilProfesional> porPrestadorId(UUID prestadorId);
     List<PerfilProfesional> visiblesPorCategoriaYZona(UUID categoriaId, UUID zonaId);
     Optional<Categoria> categoriaPorId(UUID id);
+    Optional<String> nombreVisibleDe(UUID usuarioId);
     Optional<Categoria> categoriaPorNombre(String nombre);
     Optional<Zona> zonaPorId(UUID id);
     Optional<Zona> zonaPorNombre(String nombre);

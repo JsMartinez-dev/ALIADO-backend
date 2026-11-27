@@ -15,6 +15,7 @@ public final class OportunidadPresentationMapper {
  public static OportunidadDtos.OportunidadResponse aResponse(OportunidadResult result) {
   return new OportunidadDtos.OportunidadResponse(result.solicitudId(),result.categoria(),result.zonaAproximada(),
     result.urgencia(),result.descripcion(),result.fechaCreacion(),
-    result.fotosDetalle().stream().map(f -> new OportunidadDtos.FotoDetalleResponse(f.id(), f.orden())).toList());
+    result.fotosDetalle().stream().map(f -> new OportunidadDtos.FotoDetalleResponse(f.id(), f.orden())).toList(),
+    result.nombreVisibleCliente());
  }
 }
