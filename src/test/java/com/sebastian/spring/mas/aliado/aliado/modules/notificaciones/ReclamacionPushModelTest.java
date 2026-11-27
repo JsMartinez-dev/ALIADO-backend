@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * F09-PUSH-07: invariantes de las reclamaciones y de los resultados de entrega, alineadas
- * con las restricciones de V9.
+ * con las restricciones de V14.
  */
 class ReclamacionPushModelTest {
 

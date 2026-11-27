@@ -10,7 +10,7 @@ import java.util.UUID;
  * del contrato completo de consulta de notificaciones.
  */
 public interface ActividadNotificacionesPort {
-    record ActividadNotificacion(String tipo, String detalle, OffsetDateTime fechaGeneracion) {}
+    record ActividadNotificacion(UUID id, String tipo, String detalle, OffsetDateTime fechaGeneracion) {}
 
     List<ActividadNotificacion> listarPropias(UUID usuarioId);
 }

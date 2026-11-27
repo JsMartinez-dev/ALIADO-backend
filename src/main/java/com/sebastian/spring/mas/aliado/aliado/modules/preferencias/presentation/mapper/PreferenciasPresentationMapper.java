@@ -34,6 +34,7 @@ public final class PreferenciasPresentationMapper {
     }
 
     public static PreferenciasDtos.ActividadResponse aResponse(ActividadResult r) {
-        return new PreferenciasDtos.ActividadResponse(r.tipo(), r.resumen(), r.fecha());
+        return new PreferenciasDtos.ActividadResponse(r.tipo(), r.resumen(), r.fecha(),
+                r.referenciaTipo(), r.referenciaId());
     }
 }

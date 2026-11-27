@@ -12,9 +12,8 @@ import java.util.UUID;
 public class UsuarioEntity {
     @Id
     private UUID id;
-    @Column(nullable = false)
     private String email;
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String passwordHash;
     @Column(nullable = false)
     private String rol;

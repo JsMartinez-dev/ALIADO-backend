@@ -1,5 +1,10 @@
 # F09-BANDEJA-05 — Validación de lectura y paginación en PostgreSQL
 
+> La evidencia histórica de este informe corresponde al commit del piloto anterior
+> a la integración de `develop`. En el esquema integrado, dispositivos y entregas
+> corresponden a V14 y lectura a V15. Para reproducir el avance con datos, prepara
+> PostgreSQL hasta V14 y aplica V15. Para la instalación desde cero, aplica V1 a V15.
+
 Fecha: 2026-11-27. Rama `task/f09-bandeja-05` (base `3262a48`, F09-BANDEJA-04).
 Alcance: verificación del flujo completo de bandeja y lectura sobre el backend integrado
 (SPEC-09, plan `plan-backend-lectura-bandeja.md`). No se modificó código de producción ni

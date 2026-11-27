@@ -6,6 +6,8 @@ import com.sebastian.spring.mas.aliado.aliado.common.web.SecurityUtils;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.dto.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usecase.*;
 import java.util.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.presentation.mapper.ServicioPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.presentation.dto.ServicioDtos;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,9 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 /** Contratación y ciclo de vida del servicio (SPEC-08). */
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Servicios", description = "SPEC-08. Operaciones autenticadas; el acceso se limita a participantes.")
 public class ServicioController extends BaseController {
     private final AceptarPropuestaUseCase aceptarPropuesta;
     private final ConsultarServicioUseCase consultarServicio;
+    private final ConsultarServiciosPropiosUseCase consultarServiciosPropios;
     private final MarcarServicioEnEjecucionUseCase enEjecucion;
     private final MarcarServicioTerminadoUseCase terminado;
     private final ConfirmarFinalizacionServicioUseCase confirmarFinalizacion;
@@ -34,10 +38,11 @@ public class ServicioController extends BaseController {
     private final ConsultarHistorialServicioUseCase historial;
     private final EnviarMensajeServicioUseCase enviarMensaje;
     private final ConsultarMensajesServicioUseCase listarMensajes;
-    public ServicioController(AceptarPropuestaUseCase aceptarPropuesta, ConsultarServicioUseCase consultarServicio, MarcarServicioEnEjecucionUseCase enEjecucion, MarcarServicioTerminadoUseCase terminado, ConfirmarFinalizacionServicioUseCase confirmarFinalizacion, CancelarServicioUseCase cancelar, ConsultarHistorialServicioUseCase historial, EnviarMensajeServicioUseCase enviarMensaje, ConsultarMensajesServicioUseCase listarMensajes, ObjectMapper objectMapper, IdempotenciaPort idempotencyService){
+    public ServicioController(AceptarPropuestaUseCase aceptarPropuesta, ConsultarServicioUseCase consultarServicio, ConsultarServiciosPropiosUseCase consultarServiciosPropios, MarcarServicioEnEjecucionUseCase enEjecucion, MarcarServicioTerminadoUseCase terminado, ConfirmarFinalizacionServicioUseCase confirmarFinalizacion, CancelarServicioUseCase cancelar, ConsultarHistorialServicioUseCase historial, EnviarMensajeServicioUseCase enviarMensaje, ConsultarMensajesServicioUseCase listarMensajes, ObjectMapper objectMapper, IdempotenciaPort idempotencyService){
         super(objectMapper,idempotencyService);
         this.aceptarPropuesta=aceptarPropuesta;
         this.consultarServicio=consultarServicio;
+        this.consultarServiciosPropios=consultarServiciosPropios;
         this.enEjecucion=enEjecucion;
         this.terminado=terminado;
         this.confirmarFinalizacion=confirmarFinalizacion;
@@ -56,6 +61,23 @@ public class ServicioController extends BaseController {
             var servicio = aceptarPropuesta.ejecutar(ServicioPresentationMapper.aAceptarCommand(id,clienteId));
             return ServicioPresentationMapper.aAceptarResponse(servicio);
         });
+    }
+
+    @GetMapping("/servicios/mios")
+    @Operation(summary = "Listar servicios propios",
+            description = "Requiere sesión. Devuelve solo servicios donde el usuario es cliente o prestador. "
+                    + "Orden descendente por fechaContratacion con desempate por id.")
+    public ResponseEntity<ServicioDtos.ServiciosPropiosPage> misServicios(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int pagina,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int tamano) {
+        if (pagina < 0 || tamano < 1 || tamano > 100) {
+            throw new com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException.BadRequest(
+                    "PAGINACION_INVALIDA", "pagina debe ser >= 0 y tamano debe estar entre 1 y 100.");
+        }
+        var resultado = consultarServiciosPropios.ejecutar(SecurityUtils.actual().id(), pagina, tamano);
+        return ResponseEntity.ok(new ServicioDtos.ServiciosPropiosPage(
+                resultado.items().stream().map(ServicioPresentationMapper::aResumenResponse).toList(),
+                resultado.pagina(), resultado.tamano(), resultado.totalElementos(), resultado.totalPaginas()));
     }
 
     @GetMapping("/servicios/{id}")

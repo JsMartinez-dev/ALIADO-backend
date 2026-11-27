@@ -32,6 +32,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,17 +94,16 @@ class CorreccionesVerificacionTest {
     // ---- PerfilProfesional.datosPublicos: lista blanca (SPEC-03) ----
 
     @Test
-    void datosPublicosExcluyeTelefonoDireccionYCorreo() {
+    void datosPublicosSoloExponeDescripcionAprobada() {
         Map<String, Object> datos = PerfilProfesional.datosPublicos(Map.of(
                 "descripcion", "Plomero con 10 años",
                 "telefono", "3001234567",
                 "direccion", "Calle 1 # 2-3",
                 "correo", "a@b.co",
+                "anosExperiencia", 10,
                 "especialidades", List.of("grifería")));
         assertEquals("Plomero con 10 años", datos.get("descripcion"));
-        assertTrue(!datos.containsKey("telefono") && !datos.containsKey("direccion")
-                && !datos.containsKey("correo"));
-        assertTrue(datos.containsKey("especialidades"));
+        assertEquals(Set.of("descripcion"), datos.keySet());
     }
 
     // ---- NotificacionService respeta preferencias (SPEC-09/14) ----

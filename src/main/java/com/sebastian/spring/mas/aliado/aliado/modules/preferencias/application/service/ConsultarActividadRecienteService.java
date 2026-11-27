@@ -23,12 +23,15 @@ public class ConsultarActividadRecienteService implements ConsultarActividadReci
     public List<ActividadResult> ejecutar(UUID usuarioId) {
         List<ActividadResult> actividades = new ArrayList<>();
         servicios.porUsuario(usuarioId).forEach(s -> actividades.add(new ActividadResult("SERVICIO",
-                "Servicio " + s.estado().name().toLowerCase(Locale.ROOT), s.fechaContratacion())));
+                "Servicio " + s.estado().name().toLowerCase(Locale.ROOT), s.fechaContratacion(),
+                "SERVICIO", s.id())));
         notificaciones.listarPropias(usuarioId).forEach(n -> actividades.add(
-                new ActividadResult("NOTIFICACION", n.tipo() + ": " + n.detalle(), n.fechaGeneracion())));
+                new ActividadResult("NOTIFICACION", n.tipo() + ": " + n.detalle(), n.fechaGeneracion(),
+                        "NOTIFICACION", n.id())));
         return actividades.stream()
                 .sorted(Comparator.comparing(ActividadResult::fecha).reversed()
-                        .thenComparing(ActividadResult::tipo).thenComparing(ActividadResult::resumen))
+                        .thenComparing(ActividadResult::referenciaTipo)
+                        .thenComparing(a -> a.referenciaId().toString()))
                 .limit(20)
                 .toList();
     }

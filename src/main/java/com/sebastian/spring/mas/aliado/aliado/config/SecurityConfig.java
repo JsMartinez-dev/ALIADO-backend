@@ -29,8 +29,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SessionAuthFilter sessionAuthFilter(SesionPort sesionService) {
-        return new SessionAuthFilter(sesionService);
+    public SessionAuthFilter sessionAuthFilter(SesionPort sesionService, ObjectMapper objectMapper) {
+        return new SessionAuthFilter(sesionService, objectMapper);
     }
 
     @Bean
@@ -66,6 +66,7 @@ public class SecurityConfig {
                                       HttpStatus status, String code, String message) throws IOException {
         res.setStatus(status.value());
         res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
         ApiError error = new ApiError(OffsetDateTime.now(), status.value(), code, message,
                 req.getRequestURI(), UUID.randomUUID().toString());
         res.getWriter().write(objectMapper.writeValueAsString(error));

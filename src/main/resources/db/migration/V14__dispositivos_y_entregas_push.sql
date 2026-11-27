@@ -36,7 +36,7 @@ CREATE INDEX ix_vinculo_push_usuario_activo
 
 CREATE TABLE trabajos_push (
     id UUID PRIMARY KEY,
-    notificacion_id UUID NOT NULL REFERENCES notificaciones (id),
+    notificacion_id UUID NOT NULL REFERENCES notificaciones (id) ON DELETE CASCADE,
     canal VARCHAR(16) NOT NULL CHECK (canal = 'PUSH'),
     estado VARCHAR(24) NOT NULL CHECK (estado IN ('PENDIENTE_PREPARACION', 'PREPARADO', 'FINALIZADO')),
     encolado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -66,7 +66,7 @@ CREATE INDEX ix_trabajo_push_expiracion
 
 CREATE TABLE entregas_push (
     id UUID PRIMARY KEY,
-    trabajo_id UUID NOT NULL REFERENCES trabajos_push (id),
+    trabajo_id UUID NOT NULL REFERENCES trabajos_push (id) ON DELETE CASCADE,
     instalacion_id UUID NOT NULL,
     generacion BIGINT NOT NULL,
     estado VARCHAR(24) NOT NULL CHECK (

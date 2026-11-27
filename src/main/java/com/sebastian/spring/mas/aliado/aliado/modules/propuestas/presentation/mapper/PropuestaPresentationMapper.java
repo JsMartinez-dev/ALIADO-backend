@@ -5,14 +5,14 @@ import java.util.UUID;
 public final class PropuestaPresentationMapper {
     private PropuestaPresentationMapper() {}
     public static CrearPropuestaCommand aCommand(UUID prestadorId, PropuestaDtos.CrearRequest req) {
-        return new CrearPropuestaCommand(prestadorId, req.solicitudId(), req.disponibilidad(), req.mensaje());
+        return new CrearPropuestaCommand(prestadorId, req.solicitudId(), req.disponibilidad(), req.mensaje(), req.tarifaCop());
     }
     public static PropuestaDtos.PropuestaResponse aResponse(PropuestaResult result) {
-        return new PropuestaDtos.PropuestaResponse(result.id(), result.solicitudId(), result.prestadorId(), result.disponibilidad(), result.mensaje(), result.estado());
+        return new PropuestaDtos.PropuestaResponse(result.id(), result.solicitudId(), result.prestadorId(), result.disponibilidad(), result.mensaje(), result.tarifaCop(), result.estado());
     }
 
     public static EditarPropuestaCommand aEditarCommand(UUID id, UUID prestadorId, PropuestaDtos.EditarRequest req) {
-        return new EditarPropuestaCommand(id, prestadorId, req.disponibilidad(), req.mensaje());
+        return new EditarPropuestaCommand(id, prestadorId, req.disponibilidad(), req.mensaje(), req.tarifaCop());
     }
     public static RetirarPropuestaCommand aRetirarCommand(UUID id, UUID prestadorId) {
         return new RetirarPropuestaCommand(id, prestadorId);

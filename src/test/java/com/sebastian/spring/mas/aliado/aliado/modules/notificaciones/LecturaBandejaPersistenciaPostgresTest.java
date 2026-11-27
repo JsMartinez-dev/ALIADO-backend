@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * F09-BANDEJA-01 sobre PostgreSQL real: Flyway aplica V10 sobre el esquema del piloto y
+ * F09-BANDEJA-01 sobre PostgreSQL real: Flyway aplica V15 sobre el esquema del piloto y
  * Hibernate valida el mapeo de {@code leida_en}. Comprueba que la fecha de primera lectura
  * se carga, sobrevive a una actualización del flujo de entrega y que un aviso nuevo nace
  * pendiente.

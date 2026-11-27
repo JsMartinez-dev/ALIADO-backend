@@ -9,7 +9,7 @@ public final class PropuestaPersistenceMapper {
 
     public static Propuesta aDominio(PropuestaEntity e) {
         return new Propuesta(e.getId(), e.getSolicitudId(), e.getPrestadorId(), e.getDisponibilidad(),
-                e.getMensaje(), EstadoPropuesta.valueOf(e.getEstado()), e.getFechaCreacion(),
+                e.getMensaje(), e.getTarifaCop(), EstadoPropuesta.valueOf(e.getEstado()), e.getFechaCreacion(),
                 e.getFechaActualizacion(), e.getVersion());
     }
 
@@ -20,6 +20,7 @@ public final class PropuestaPersistenceMapper {
         e.setPrestadorId(p.prestadorId());
         e.setDisponibilidad(p.disponibilidad());
         e.setMensaje(p.mensaje());
+        e.setTarifaCop(p.tarifaCop());
         e.setEstado(p.estado().name());
         e.setFechaCreacion(p.fechaCreacion());
         e.setFechaActualizacion(p.fechaActualizacion());

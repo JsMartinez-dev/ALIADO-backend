@@ -7,10 +7,13 @@ import java.util.UUID;
 
 public record SolicitudResult(UUID id, UUID clienteId, UUID categoriaId, UUID zonaId, String descripcion,
                               String urgencia, String estado, OffsetDateTime fechaCreacion,
-                              OffsetDateTime fechaActualizacion, List<String> fotos) {
+                              OffsetDateTime fechaActualizacion, List<String> fotos, List<FotoDetalleResult> fotosDetalle) {
+    public record FotoDetalleResult(UUID id, String archivoKey, int orden) {}
+
     public static SolicitudResult desde(Solicitud s) {
         return new SolicitudResult(s.id(), s.clienteId(), s.categoriaId(), s.zonaId(), s.descripcion(),
                 s.urgencia() == null ? null : s.urgencia().name(), s.estado().name(),
-                s.fechaCreacion(), s.fechaActualizacion(), s.fotos().stream().map(f -> f.archivoKey()).toList());
+                s.fechaCreacion(), s.fechaActualizacion(), s.fotos().stream().map(f -> f.archivoKey()).toList(),
+                s.fotos().stream().map(f -> new FotoDetalleResult(f.id(), f.archivoKey(), f.orden())).toList());
     }
 }

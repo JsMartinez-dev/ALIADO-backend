@@ -354,7 +354,7 @@ class DispositivoPushUseCasesTest {
         assertEquals(400, ex.status());
     }
 
-    /** Doble en memoria que reproduce las restricciones de unicidad de V9. */
+    /** Doble en memoria que reproduce las restricciones de unicidad de V14. */
     private static final class FakeDispositivoPushRepository implements DispositivoPushRepository {
         private final Map<UUID, InstalacionPush> instalaciones = new LinkedHashMap<>();
         private final Map<UUID, List<VinculoPush>> vinculos = new LinkedHashMap<>();

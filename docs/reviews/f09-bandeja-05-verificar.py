@@ -4,7 +4,7 @@
 F09-BANDEJA-05 — Verificación HTTP del flujo de bandeja y lectura sobre PostgreSQL real.
 
 Requiere el backend ALIADO en marcha (war empaquetado) apuntando a una base desechable
-con Flyway V1..V10 aplicadas, y psql disponible para leer/escribir las comprobaciones
+con las migraciones Flyway de la rama aplicadas, y psql disponible para leer/escribir las comprobaciones
 que no tienen ruta HTTP (fechas iguales, concurrencia y estado del worker push).
 
 Uso:

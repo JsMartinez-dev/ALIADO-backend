@@ -15,5 +15,6 @@ public final class PreferenciasDtos {
     public record DescargaResponse(UUID id, String archivoKey, String estado) {}
     public record IndicadoresResponse(long totalServicios, long enCurso, long finalizados,
                                       double reputacion, long cantidadCalificaciones) {}
-    public record ActividadResponse(String tipo, String resumen, OffsetDateTime fecha) {}
+    public record ActividadResponse(String tipo, String resumen, OffsetDateTime fecha,
+                                    String referenciaTipo, UUID referenciaId) {}
 }
