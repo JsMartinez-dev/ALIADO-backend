@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 @Configuration
 public class NotificacionUseCaseConfig {
@@ -70,6 +71,11 @@ public class NotificacionUseCaseConfig {
  /**
   * Entrega del canal de bandeja disparada por el evento de registro (F09-PUSH-11).
   * Sustituye al {@code @Scheduled} de 60 segundos que consultaba pendientes.
+  *
+  * <p>El listener corre en {@code AFTER_COMMIT}, con los recursos de la transacción ya
+  * confirmada todavía enlazados al hilo. Por eso este trabajo abre una transacción propia
+  * ({@code REQUIRES_NEW}): con la propagación por defecto participaría en la transacción
+  * ya confirmada y la actualización del aviso se descartaría sin commit.</p>
   */
  @Bean public EntregarAvisoBandejaUseCase entregarAvisoBandejaUseCase(
    NotificacionRepository notificaciones, CanalEntregaNotificacion canal,
@@ -77,6 +83,7 @@ public class NotificacionUseCaseConfig {
   var service = new EntregarAvisoBandejaService(notificaciones, canal, preferencias,
     Clock.systemUTC());
   var transaction = new TransactionTemplate(manager);
+  transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
   return command -> transaction.executeWithoutResult(status -> service.ejecutar(command));
  }
 
