@@ -56,8 +56,9 @@ public class LocalArchivoStorageAdapter implements ArchivoStorageService {
     public void eliminar(String clave) {
         try {
             Files.deleteIfExists(raiz.resolve(clave).normalize());
-        } catch (IOException ignored) {
-            // La eliminación es best-effort; el registro en BD ya no referencia la clave.
+        } catch (IOException ex) {
+            throw new BusinessException(500, "ERROR_ELIMINACION_ALMACENAMIENTO",
+                    "No se pudo eliminar el archivo.");
         }
     }
 }

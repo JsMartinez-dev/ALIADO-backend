@@ -1,5 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.servicios.presentation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -11,6 +12,7 @@ public final class ServicioDtos {
 
     public record ServicioResponse(UUID id, UUID solicitudId, UUID propuestaId, UUID clienteId, UUID prestadorId,
                                    String estado, boolean comunicacionHabilitada, OffsetDateTime fechaContratacion,
+                                   boolean clienteEliminado, boolean prestadorEliminado,
                                    SolicitudResumen solicitud, PropuestaResumen propuesta) {}
 
     public record SolicitudResumen(UUID id, String descripcion, UUID categoriaId, UUID zonaId, String urgencia,
@@ -28,11 +30,12 @@ public final class ServicioDtos {
     public record AceptarResponse(UUID servicioId, String estado) {}
 
     public record HistorialResponse(String estadoAnterior, String estadoNuevo,
-                                    UUID actorId, OffsetDateTime fecha) {}
+                                    UUID actorId, boolean actorEliminado, OffsetDateTime fecha) {}
 
     public record MensajeRequest(@NotBlank String contenido) {}
 
-    public record MensajeResponse(UUID id, UUID remitenteId, String contenido, OffsetDateTime fechaEnvio) {}
+    @Schema(name = "ServicioMensajeResponse")
+    public record MensajeResponse(UUID id, UUID remitenteId, String contenido, boolean remitenteEliminado, OffsetDateTime fechaEnvio) {}
 
     public record IdEstadoResponse(UUID id, String estado) {}
 }

@@ -6,6 +6,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Sesion;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Usuario;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.SesionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaEliminadaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.repository.UsuarioRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -58,6 +59,9 @@ public class SesionService implements SesionPort {
                 .flatMap(sesion -> usuarios.porId(sesion.usuarioId()));
         if (usuario.isEmpty()) {
             return Optional.empty();
+        }
+        if (usuario.get().eliminada()) {
+            throw new CuentaEliminadaException();
         }
         if (usuario.get().bloqueado()) {
             throw new CuentaBloqueadaException();

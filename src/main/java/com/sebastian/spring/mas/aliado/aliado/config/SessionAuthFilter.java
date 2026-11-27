@@ -5,6 +5,7 @@ import com.sebastian.spring.mas.aliado.aliado.common.web.ApiError;
 import com.sebastian.spring.mas.aliado.aliado.common.web.CurrentUser;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.SesionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaEliminadaException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,6 +54,9 @@ public class SessionAuthFilter extends OncePerRequestFilter {
                             principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + usuario.rol())));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 });
+            } catch (CuentaEliminadaException ex) {
+                escribirError(request, response, "CUENTA_ELIMINADA", ex.getMessage());
+                return;
             } catch (CuentaBloqueadaException ex) {
                 escribirError(request, response, "CUENTA_BLOQUEADA", ex.getMessage());
                 return;

@@ -26,7 +26,7 @@ Las decisiones pendientes bloquean únicamente su trabajo dependiente. Se puede 
 | D-02 | Catálogo válido de categorías/zonas, granularidad/coincidencia y modelo categoría/oferta/portafolio | F03/04/05/12 | Catálogo aprobado y contrato inequívoco; puentes del manual no sustituyen definición de oferta |
 | D-03 | Solicitud no tiene ventana temporal; propuesta tiene disponibilidad VARCHAR, agenda usa instantes/horarios | F04/05/06/07/08 | Regla temporal formal, DTO/campos/zonas horarias y migración si aplica; matriz evaluable/no evaluable. No prometer matching horario completo sin esto |
 | D-04 | Duración de sesión, sesión simultánea, transporte/almacenamiento web y proveedor de recuperación | F01/F00 | Configuración/documentación y pruebas revocación, expiración, CORS/CSRF según transporte |
-| D-05 | Eliminación/anonimización con FK, historial y auditoría; qué datos se retienen | F02, integración F08 | Política aprobada y test de cuenta con servicios activos/cerrados; ninguna cascada destructiva accidental |
+| D-05 | Eliminación/anonimización con FK, historial y auditoría; qué datos se retienen | F02, integración F08 | **Resuelta para el MVP académico:** política aprobada e implementada con matriz en [05-eliminacion-definitiva-d05.md](05-eliminacion-definitiva-d05.md). No se declara cumplimiento legal ni retención productiva. |
 | D-06 | Storage productivo, credenciales, ciclo de vida de objetos y backups | F04 y piloto | Adaptador S3-compatible probado, URLs privadas y restauración; desarrollo puede avanzar con MinIO |
 | D-07 | MIME/tamaño/cantidad de fotos, portafolio, documentos/evidencias y documentos exigidos | F04/05/10/11 | Parámetros aprobados y consistentes API/UI; no usar 250 KB de demo como regla definitiva |
 | D-08 | FCM/correo productivos, registro de tokens de dispositivos ausente del modelo, reintentos/claim del worker y unicidad multicanal | F06/07/09/14 y piloto | Contrato y migración aditiva para dispositivos/cola si se necesitan; backoff y deduplicación por evento/canal; mock explícito en desarrollo |
@@ -40,6 +40,16 @@ Las decisiones pendientes bloquean únicamente su trabajo dependiente. Se puede 
 | D-16 | Could: proveedor mapa, chat, WhatsApp/gestores, referidos/idiomas | F15–F19 | Decisión separada por capacidad, contrato, proveedor operativo y flag; no bloquea MVP |
 | D-17 | Pagos: monetización, aprobación, proveedor, moneda, comisiones, conciliación y reembolsos | F20 | Aprobación de producto y diseño piloto antes de proveedor real; no bloquea MVP |
 | D-18 | PK idempotency_keys=(clave,operacion), usuario nullable, sin hash de payload | F00/04/07/08 | Aislamiento por actor y operación; rechazar misma clave con payload distinto; resolver registro preautenticado y carrera antes de persistir respuestas. Migración si requiere ampliar esquema |
+
+**D-05 resuelta (2026-11-26):** eliminación definitiva con anonimización, bloqueo, revocación de sesiones y limpieza de archivos implementada según la matriz aprobada. El historial compartido se conserva sin identidad visible.
+
+### Decisión operativa MVP para disponibilidad/agenda (parcial D-03)
+
+- Zona horaria: `America/Bogota`.
+- La disponibilidad semanal (`diaSemana`, `horaInicio`, `horaFin`) se interpreta en esa zona.
+- Los compromisos son instantes persistidos en `TIMESTAMPTZ`; al comparar se convierten con `atZoneSameInstant(ZoneId.of("America/Bogota"))`, sin reutilizar el offset original.
+- Un compromiso que cruce medianoche se compara por tramos contra el día y bloque semanal correspondiente.
+- Esta decisión cubre solo el conflicto disponibilidad/agenda. D-03 sigue abierta para ventanas de solicitud, matching y otras reglas temporales; no se modifica el DTO ni se añade migración.
 
 ## Dependencias y entregas parciales
 

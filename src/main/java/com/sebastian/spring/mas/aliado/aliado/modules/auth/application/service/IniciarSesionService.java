@@ -10,6 +10,7 @@ import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Rol;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CredencialesInvalidasException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaEliminadaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.EstadoSesion;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Sesion;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.model.Usuario;
@@ -55,6 +56,9 @@ public class IniciarSesionService implements IniciarSesionUseCase {
         }
         Usuario usuario = usuarioEncontrado.get();
 
+        if (usuario.eliminada()) {
+            throw new CuentaEliminadaException();
+        }
         if (usuario.bloqueado()) {
             throw new CuentaBloqueadaException();
         }

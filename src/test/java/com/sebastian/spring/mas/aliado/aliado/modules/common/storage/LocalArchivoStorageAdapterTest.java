@@ -40,6 +40,7 @@ class LocalArchivoStorageAdapterTest {
         String clave = adapter.guardar("historial.csv", "text/csv", contenido);
         assertArrayEquals(contenido, adapter.leer(clave));
         adapter.eliminar(clave);
+        adapter.eliminar(clave);
     }
 
     private static void deleteTree(Path root) throws Exception {

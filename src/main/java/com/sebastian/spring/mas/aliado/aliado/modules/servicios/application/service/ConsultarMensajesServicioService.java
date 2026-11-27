@@ -10,6 +10,6 @@ import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usec
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
 import com.sebastian.spring.mas.aliado.aliado.common.events.*;
 public class ConsultarMensajesServicioService implements ConsultarMensajesServicioUseCase {
- private final ServicioRepository servicios;public ConsultarMensajesServicioService(ServicioRepository r){servicios=r;}
- public List<MensajeServicioResult> ejecutar(AccionServicioCommand c){var s=AccesoServicio.participante(servicios,c);AccesoServicio.comunicacion(s);return s.mensajes().stream().map(MensajeServicioResult::desde).toList();}
+ private final ServicioRepository servicios;private final CuentaEliminadaPort cuentas;public ConsultarMensajesServicioService(ServicioRepository r,CuentaEliminadaPort c){servicios=r;cuentas=c;}
+ public List<MensajeServicioResult> ejecutar(AccionServicioCommand c){var s=AccesoServicio.participante(servicios,c);AccesoServicio.comunicacion(s);return s.mensajes().stream().map(m->MensajeServicioResult.desde(m,cuentas.eliminada(m.remitenteId()))).toList();}
 }

@@ -10,6 +10,9 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.presentation.mapper
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase.SolicitarEliminacionCuentaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase.ConfirmarEliminacionCuentaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.presentation.dto.PerfilDtos;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -84,12 +87,21 @@ public class PerfilController {
     }
 
     @PostMapping("/me/eliminacion")
+    @Operation(summary = "Solicitar eliminación definitiva de cuenta",
+            description = "Crea una solicitud PENDIENTE con expiración de 24 h. Se bloquea si hay un servicio activo.")
+    @ApiResponses({@ApiResponse(responseCode = "202", description = "Solicitud PENDIENTE"),
+            @ApiResponse(responseCode = "409", description = "ELIMINACION_PENDIENTE o SERVICIO_EN_EJECUCION")})
     public ResponseEntity<PerfilDtos.EliminacionResponse> solicitarEliminacion() {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(PerfilPresentationMapper.aResponse(solicitarEliminacionCuentaUseCase.ejecutar(SecurityUtils.actual().id())));
     }
 
     @PostMapping("/me/eliminacion/confirmar")
+    @Operation(summary = "Confirmar eliminación definitiva de cuenta",
+            description = "Elimina credenciales, sesiones, datos de contacto/perfil y archivos personales; conserva historial compartido anonimizado y bloquea el acceso. Es idempotente a nivel de caso de uso.")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Cuenta eliminada o confirmación ya aplicada"),
+            @ApiResponse(responseCode = "409", description = "SERVICIO_EN_EJECUCION"),
+            @ApiResponse(responseCode = "410", description = "SOLICITUD_EXPIRADA")})
     public ResponseEntity<PerfilDtos.EliminacionResponse> confirmarEliminacion() {
         return ResponseEntity.ok(PerfilPresentationMapper.aResponse(confirmarEliminacionCuentaUseCase.ejecutar(SecurityUtils.actual().id())));
     }

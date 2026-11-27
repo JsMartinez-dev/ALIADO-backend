@@ -40,6 +40,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.excepti
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CorreoYaRegistradoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CredencialesInvalidasException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaEliminadaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.PasswordInvalidaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.RolNoRegistrableException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.TerminosNoAceptadosException;
@@ -259,6 +260,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CuentaBloqueadaException.class)
     public ResponseEntity<ApiError> cuentaBloqueada(CuentaBloqueadaException ex, HttpServletRequest req) {
         return respuesta(HttpStatus.FORBIDDEN, "CUENTA_BLOQUEADA", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(CuentaEliminadaException.class)
+    public ResponseEntity<ApiError> cuentaEliminada(CuentaEliminadaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.FORBIDDEN, "CUENTA_ELIMINADA", ex.getMessage(), req);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

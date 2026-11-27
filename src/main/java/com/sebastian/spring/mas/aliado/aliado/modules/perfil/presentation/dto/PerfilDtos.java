@@ -24,5 +24,6 @@ public final class PerfilDtos {
 
     public record PerfilPublicoResponse(UUID usuarioId, String zonaAproximada) {}
 
-    public record EliminacionResponse(String estado, OffsetDateTime expiraEn) {}
+    public record EliminacionResponse(String estado, OffsetDateTime expiraEn, long archivosPendientes,
+                                      String politicaEliminacion) {}
 }
