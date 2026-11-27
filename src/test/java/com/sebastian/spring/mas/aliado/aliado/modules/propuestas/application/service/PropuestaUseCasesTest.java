@@ -145,12 +145,27 @@ class PropuestaUseCasesTest {
         assertEquals(180000,result.tarifaCop());
     }
 
+    @Test
+    void listaSoloPropuestasPropiasIncluidasLasRetiradas() {
+        var propia = repo.guardar(propuesta(EstadoPropuesta.RETIRADA));
+        repo.guardar(new Propuesta(UUID.randomUUID(), solicitudId, UUID.randomUUID(),
+                "Lunes", null, EstadoPropuesta.ACTIVA, propia.fechaCreacion(), propia.fechaActualizacion(), 0));
+
+        var resultados = new ListarPropuestasPropiasService(repo).ejecutar(prestador, 0, 20);
+
+        assertEquals(List.of(PropuestaResult.desde(propia)), resultados);
+    }
+
     static class Repo implements PropuestaRepository {
         final Map<UUID,Propuesta> datos=new HashMap<>();
         public Optional<Propuesta> porId(UUID id){return Optional.ofNullable(datos.get(id));}
         public Optional<Propuesta> activaDePrestadorEnSolicitud(UUID s,UUID p){return datos.values().stream().filter(x->x.solicitudId().equals(s)&&x.prestadorId().equals(p)&&x.estado()==EstadoPropuesta.ACTIVA).findFirst();}
         public List<Propuesta> activasDeSolicitud(UUID id){return porSolicitud(id).stream().filter(x->x.estado()==EstadoPropuesta.ACTIVA).toList();}
         public List<Propuesta> porSolicitud(UUID id){return datos.values().stream().filter(x->x.solicitudId().equals(id)).toList();}
+        public List<Propuesta> porPrestador(UUID prestadorId, int pagina, int tamano) {
+            return datos.values().stream().filter(p -> p.prestadorId().equals(prestadorId))
+                    .skip((long) pagina * tamano).limit(tamano).toList();
+        }
         public Propuesta guardar(Propuesta p){datos.put(p.id(),p);return p;}
     }
 }

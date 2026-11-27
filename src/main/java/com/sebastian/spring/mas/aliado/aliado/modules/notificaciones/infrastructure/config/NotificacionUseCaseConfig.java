@@ -1,4 +1,6 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.config;
+
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.ReferenciaPropuestaAvisoPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarBandejaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesOportunidadesService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarResumenNoLeidasService;
@@ -134,8 +136,8 @@ public class NotificacionUseCaseConfig {
  @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarCambioEstadoServicioUseCase notificarCambioEstadoServicio(com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort port) { return new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarCambioEstadoServicioService(port); }
 
  @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ConsultarNotificacionesUseCase consultarNotificacionesUseCase(
-   com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionConsultaPort consultas, PlatformTransactionManager manager) {
-  var service = new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesService(consultas);
+   com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionConsultaPort consultas, ReferenciaPropuestaAvisoPort referencias, PlatformTransactionManager manager) {
+  var service = new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesService(consultas, referencias);
   var transaction = new TransactionTemplate(manager);
   transaction.setReadOnly(true);
   return command -> transaction.execute(status -> service.ejecutar(command));
@@ -147,8 +149,8 @@ public class NotificacionUseCaseConfig {
   * destinatario procede del comando de sesión.
   */
  @Bean public ConsultarBandejaUseCase consultarBandejaUseCase(
-   NotificacionRepository notificaciones, PlatformTransactionManager manager) {
-  var service = new ConsultarBandejaService(notificaciones);
+   NotificacionRepository notificaciones, ReferenciaPropuestaAvisoPort referencias, PlatformTransactionManager manager) {
+  var service = new ConsultarBandejaService(notificaciones, referencias);
   var transaction = new TransactionTemplate(manager);
   transaction.setReadOnly(true);
   return command -> transaction.execute(status -> service.ejecutar(command));

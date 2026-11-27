@@ -1,8 +1,10 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.perfil.application;
 
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.NombreVisiblePerfilPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.PerfilVisibilidadPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.Visibilidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.PerfilRepository;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +16,21 @@ import org.springframework.transaction.annotation.Transactional;
  * OportunidadService si lo implementara PerfilService.
  */
 @Service
-public class PreferenciaVisibilidadService implements PerfilVisibilidadPort {
+public class PreferenciaVisibilidadService implements PerfilVisibilidadPort, NombreVisiblePerfilPort {
     private final PerfilRepository perfiles;
 
     public PreferenciaVisibilidadService(PerfilRepository perfiles) {
         this.perfiles = perfiles;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<String> nombreVisibleDe(UUID usuarioId) {
+        return perfiles.porUsuarioId(usuarioId)
+                .filter(perfil -> perfil.preferenciaVisibilidad() != Visibilidad.PRIVADO)
+                .map(perfil -> perfil.nombre())
+                .map(String::strip)
+                .filter(nombre -> !nombre.isEmpty());
     }
 
     @Override

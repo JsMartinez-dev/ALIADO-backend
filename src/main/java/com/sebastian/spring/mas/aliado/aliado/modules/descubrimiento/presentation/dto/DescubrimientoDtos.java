@@ -11,7 +11,7 @@ import java.util.UUID;
 public final class DescubrimientoDtos {
     private DescubrimientoDtos() {}
 
-    public record PrestadorPublicoResponse(UUID id, List<String> categorias, List<String> zonas,
+    public record PrestadorPublicoResponse(UUID id, String nombreVisible, List<String> categorias, List<String> zonas,
                                            BigDecimal reputacionAgregada, int cantidadCalificaciones,
                                            String nivelVerificacion, List<BloqueResponse> disponibilidad,
                                            Map<String, Object> datosGenerales,

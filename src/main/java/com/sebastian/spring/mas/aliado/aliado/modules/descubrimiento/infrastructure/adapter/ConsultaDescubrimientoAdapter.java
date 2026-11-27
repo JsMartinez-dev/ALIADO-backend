@@ -7,6 +7,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.catalogo.domain.model.Zona
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.port.ConfianzaConsultaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.port.ConfianzaConsultaPort.ConfianzaInfo;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.port.ConfianzaConsultaPort.ResenaPublica;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.NombreVisiblePerfilPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.PerfilVisibilidadPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.Visibilidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.port.PerfilProfesionalConsultaPort;
@@ -23,13 +24,16 @@ public class ConsultaDescubrimientoAdapter implements ConsultaDescubrimientoPort
     private final CatalogoConsultaPort catalogo;
     private final ConfianzaConsultaPort confianza;
     private final PerfilVisibilidadPort visibilidad;
+    private final NombreVisiblePerfilPort nombres;
 
     public ConsultaDescubrimientoAdapter(PerfilProfesionalConsultaPort perfiles, CatalogoConsultaPort catalogo,
-                                         ConfianzaConsultaPort confianza, PerfilVisibilidadPort visibilidad) {
+                                         ConfianzaConsultaPort confianza, PerfilVisibilidadPort visibilidad,
+                                         NombreVisiblePerfilPort nombres) {
         this.perfiles = perfiles;
         this.catalogo = catalogo;
         this.confianza = confianza;
         this.visibilidad = visibilidad;
+        this.nombres = nombres;
     }
     @Override public Optional<PerfilProfesional> porPrestadorId(UUID prestadorId) {
         return perfiles.porPrestadorId(prestadorId);
@@ -37,6 +41,7 @@ public class ConsultaDescubrimientoAdapter implements ConsultaDescubrimientoPort
     @Override public List<PerfilProfesional> visiblesPorCategoriaYZona(UUID categoriaId, UUID zonaId) {
         return perfiles.visiblesPorCategoriaYZona(categoriaId, zonaId);
     }
+    @Override public Optional<String> nombreVisibleDe(UUID id) { return nombres.nombreVisibleDe(id); }
     @Override public Optional<Categoria> categoriaPorId(UUID id) { return catalogo.categoriaPorId(id); }
     @Override public Optional<Categoria> categoriaPorNombre(String nombre) { return catalogo.categoriaPorNombre(nombre); }
     @Override public Optional<Zona> zonaPorId(UUID id) { return catalogo.zonaPorId(id); }

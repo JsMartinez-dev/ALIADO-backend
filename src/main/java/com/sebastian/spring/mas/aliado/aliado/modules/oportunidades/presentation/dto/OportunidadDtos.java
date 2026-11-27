@@ -10,7 +10,7 @@ public final class OportunidadDtos {
 
     public record OportunidadResponse(UUID solicitudId, String categoria, String zonaAproximada, String urgencia,
                                       String descripcion, OffsetDateTime fechaCreacion,
-                                      List<FotoDetalleResponse> fotosDetalle) {}
+                                      List<FotoDetalleResponse> fotosDetalle, String nombreVisibleCliente) {}
 
     public record FotoDetalleResponse(UUID id, int orden) {}
 }

@@ -11,7 +11,7 @@ import java.util.UUID;
 public final class NotificacionDtos {
     private NotificacionDtos() {}
 
-    public record NotificacionResponse(UUID id, String tipo, UUID servicioId, UUID solicitudId, String detalle,
+    public record NotificacionResponse(UUID id, String tipo, UUID servicioId, UUID solicitudId, UUID propuestaId, String detalle,
                                        String estadoEntrega, OffsetDateTime fechaGeneracion) {}
 
     /**
@@ -20,7 +20,7 @@ public final class NotificacionDtos {
      * en ISO 8601 cuando la cuenta ya lo leyó. Es un campo distinto de {@code estadoEntrega}:
      * la lectura no depende del resultado del envío push.
      */
-    public record AvisoBandejaResponse(UUID id, String tipo, UUID servicioId, UUID solicitudId, String detalle,
+    public record AvisoBandejaResponse(UUID id, String tipo, UUID servicioId, UUID solicitudId, UUID propuestaId, String detalle,
                                        String estadoEntrega, OffsetDateTime fechaGeneracion,
                                        OffsetDateTime leidaEn) {}
 

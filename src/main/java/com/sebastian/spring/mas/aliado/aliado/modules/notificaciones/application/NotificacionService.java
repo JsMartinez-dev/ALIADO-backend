@@ -70,7 +70,7 @@ public class NotificacionService implements NotificacionPort, NotificacionConsul
 
     private NotificacionConsulta aConsulta(Notificacion n) {
         // La interpretación del agregado vive en el dominio y la comparte la bandeja paginada.
-        return new NotificacionConsulta(n.id(), n.tipo(), n.servicioId(), n.solicitudId(),
+        return new NotificacionConsulta(n.id(), n.tipo(), n.servicioId(), n.solicitudId(), n.propuestaId(),
                 n.detalle(), n.estadoEntrega(), n.fechaGeneracion());
     }
 }
