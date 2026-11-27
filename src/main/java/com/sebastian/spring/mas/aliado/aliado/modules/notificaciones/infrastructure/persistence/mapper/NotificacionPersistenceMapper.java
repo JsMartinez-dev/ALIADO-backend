@@ -13,7 +13,7 @@ public final class NotificacionPersistenceMapper {
         return new Notificacion(e.getId(), e.getDestinatarioId(), TipoNotificacion.valueOf(e.getTipo()),
                 e.getAggregateId(), e.getEventVersion(), e.getDetalle(), Canal.valueOf(e.getCanal()),
                 EstadoEntrega.valueOf(e.getEstadoEntrega()), e.getIntentos(), e.getFechaGeneracion(),
-                e.getFechaEntrega());
+                e.getFechaEntrega(), e.getLeidaEn());
     }
 
     public static NotificacionEntity aEntidad(Notificacion n) {
@@ -29,6 +29,7 @@ public final class NotificacionPersistenceMapper {
         e.setIntentos(n.intentos());
         e.setFechaGeneracion(n.fechaGeneracion());
         e.setFechaEntrega(n.fechaEntrega());
+        e.setLeidaEn(n.leidaEn());
         return e;
     }
 }

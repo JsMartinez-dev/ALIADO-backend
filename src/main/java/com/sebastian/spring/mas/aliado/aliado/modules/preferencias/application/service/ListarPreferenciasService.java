@@ -5,6 +5,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.d
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.repository.PreferenciaRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.TipoAviso;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.PreferenciaNotificacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.PreferenciaPredeterminada;
 import java.util.UUID;
 import java.util.List;
 import java.util.ArrayList;
@@ -25,7 +26,9 @@ public class ListarPreferenciasService implements ListarPreferenciasUseCase {
                 boolean configurable = tipo != TipoAviso.AVISO_SEGURIDAD_CUENTA;
                 boolean habilitada = !configurable || guardadas.stream()
                         .filter(p -> p.tipoAviso() == tipo && p.canal().equals(canal))
-                        .findFirst().map(PreferenciaNotificacion::habilitada).orElse(true);
+                        .findFirst().map(PreferenciaNotificacion::habilitada)
+                        // Sin fila guardada se aplica el mismo default que el encolado y la entrega.
+                        .orElseGet(() -> PreferenciaPredeterminada.habilitada(tipo, canal));
                 resultado.add(new PreferenciaResult(tipo.name(), canal, habilitada, configurable));
             }
         }

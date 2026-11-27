@@ -20,6 +20,11 @@ public record Usuario(UUID id, String email, String passwordHash, Rol rol,
     }
 
     public boolean bloqueado() {
-        return estadoCuenta == EstadoCuenta.BLOQUEADA_PREVENTIVAMENTE;
+        return estadoCuenta == EstadoCuenta.BLOQUEADA_PREVENTIVAMENTE
+                || estadoCuenta == EstadoCuenta.ELIMINADA;
+    }
+
+    public boolean eliminada() {
+        return estadoCuenta == EstadoCuenta.ELIMINADA;
     }
 }

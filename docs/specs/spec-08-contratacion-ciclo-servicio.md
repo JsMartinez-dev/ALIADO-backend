@@ -19,7 +19,7 @@ Como cliente, quiero consultar las propuestas que recibí para mi solicitud y ac
     
     - **Given** un Cliente tiene una solicitud publicada con una o más propuestas activas
     - **When** consulta las propuestas recibidas para esa solicitud
-    - **Then** el sistema muestra todas las propuestas activas, con la disponibilidad y el mensaje de cada Prestador
+    - **Then** el sistema muestra todas las propuestas activas, con la disponibilidad, la tarifa y el mensaje de cada Prestador
 2. **Scenario**: Aceptar una propuesta [UC046]
     
     - **Given** un Cliente tiene varias propuestas activas para su solicitud

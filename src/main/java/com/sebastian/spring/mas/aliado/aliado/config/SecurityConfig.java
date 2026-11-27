@@ -29,8 +29,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SessionAuthFilter sessionAuthFilter(SesionPort sesionService) {
-        return new SessionAuthFilter(sesionService);
+    public SessionAuthFilter sessionAuthFilter(SesionPort sesionService, ObjectMapper objectMapper) {
+        return new SessionAuthFilter(sesionService, objectMapper);
     }
 
     @Bean
@@ -44,6 +44,10 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs", "/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/prestadores/*/confianza").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/perfil/*/publico").permitAll()
+                        // Baja diferida: la credencial opaca del vínculo sustituye a la sesión (F09-PUSH-01).
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/notificaciones/dispositivos/*/revocacion").permitAll()
+                        .requestMatchers("/api/v1/notificaciones/dispositivos/**").hasRole("PRESTADOR")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated())
 
@@ -62,6 +66,7 @@ public class SecurityConfig {
                                       HttpStatus status, String code, String message) throws IOException {
         res.setStatus(status.value());
         res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
         ApiError error = new ApiError(OffsetDateTime.now(), status.value(), code, message,
                 req.getRequestURI(), UUID.randomUUID().toString());
         res.getWriter().write(objectMapper.writeValueAsString(error));

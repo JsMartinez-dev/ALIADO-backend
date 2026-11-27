@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 /**
@@ -24,9 +25,11 @@ public abstract class BaseController {
         this.idempotencyService = idempotencyService;
     }
 
-    protected Optional<ResponseEntity<JsonNode>> respuestaGuardada(UUID clave, String operacion) {
+    protected Optional<ResponseEntity<String>> respuestaGuardada(UUID clave, String operacion) {
         return idempotencyService.buscar(clave, operacion)
-                .map(guardada -> ResponseEntity.status(guardada.statusCode()).body(guardada.cuerpo()));
+                .map(guardada -> ResponseEntity.status(guardada.statusCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(guardada.cuerpo().toString()));
     }
 
     protected void guardarRespuesta(UUID clave, String operacion, UUID usuarioId, int status, Object cuerpo) {

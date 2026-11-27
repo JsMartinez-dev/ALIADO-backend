@@ -13,7 +13,8 @@ public final class PerfilPresentationMapper {
     private PerfilPresentationMapper() {}
 
     public static PerfilDtos.EliminacionResponse aResponse(EliminacionResult resultado) {
-        return new PerfilDtos.EliminacionResponse(resultado.estado(), resultado.expiraEn());
+        return new PerfilDtos.EliminacionResponse(resultado.estado(), resultado.expiraEn(),
+                resultado.archivosPendientes(), "DEFINITIVA_MVP_V1");
     }
 
     public static PerfilDtos.PerfilPublicoResponse aResponse(PerfilPublicoResult resultado) {

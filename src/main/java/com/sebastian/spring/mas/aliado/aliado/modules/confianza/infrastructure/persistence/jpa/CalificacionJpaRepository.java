@@ -9,4 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CalificacionJpaRepository extends JpaRepository<CalificacionEntity, UUID> {
     Optional<CalificacionEntity> findByServicioId(UUID servicioId);
     List<CalificacionEntity> findByPrestadorId(UUID prestadorId);
+    List<CalificacionEntity> findByClienteIdOrderByFechaDesc(UUID clienteId);
 }

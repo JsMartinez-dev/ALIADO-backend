@@ -101,7 +101,7 @@ Conservar el orden por fases y las dependencias `Txxx` del documento de origen; 
 |---|---|---|---|---|
 | GET | `/api/v1/solicitudes/{solicitudId}/propuestas` | — | `200 [ Propuesta activa, ... ]` | `403/404` no es el Cliente dueño |
 | POST | `/api/v1/propuestas/{id}/aceptar` | — | `200 { servicioId, estado: "CONTRATADO" }` | `403/404` no autorizado o propuesta inexistente; `409` la solicitud ya tiene servicio contratado |
-| GET | `/api/v1/servicios/{id}` | — | `200 { ...detalle: solicitud, propuesta, estado actual }` | `403/404` actor ajeno al servicio |
+| GET | `/api/v1/servicios/{id}` | — | `200 { ...detalle: solicitud, propuesta con tarifaCop, estado actual }` | `403/404` actor ajeno al servicio |
 | POST | `/api/v1/servicios/{id}/en-ejecucion` | — | `200 { estado: "EN_EJECUCION" }` | `403/404` no es el Prestador del servicio; `409` transición inválida |
 | POST | `/api/v1/servicios/{id}/terminado` | — | `200 { estado: "TERMINADO" }` | `403/404`; `409` transición inválida |
 | POST | `/api/v1/servicios/{id}/confirmar-finalizacion` | — | `200 { estado: "FINALIZADO" }` | `403/404` no es el Cliente del servicio; `409` transición inválida |
@@ -117,7 +117,7 @@ Todos los endpoints validan que el actor autenticado sea el Cliente o el Prestad
 
 Destino principal: app-movil (React Native); panel-admin solo para superficies administrativas definidas.
 
-- [ ] **F08-FE-01** Cliente lista propuestas activas propias, compara disponibilidad/mensaje y confirma aceptación.
+- [ ] **F08-FE-01** Cliente lista propuestas activas propias, compara disponibilidad, tarifa y mensaje, y confirma aceptación.
 - [ ] **F08-FE-02** Detalle compartido con acciones según rol y estado, confirmación de finalización para Cliente y cancelación válida.
 - [ ] **F08-FE-03** Historial ordenado de estados; manejar 409 refrescando servicio antes de ofrecer nueva acción.
 - [ ] **F08-FE-04** Canal de mensajes REST autorizado tras contratación, con errores y reintento; realtime permanece en F15.

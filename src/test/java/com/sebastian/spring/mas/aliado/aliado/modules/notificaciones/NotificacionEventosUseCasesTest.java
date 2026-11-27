@@ -1,18 +1,22 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones;
 
 import com.sebastian.spring.mas.aliado.aliado.common.events.Eventos;
+import com.sebastian.spring.mas.aliado.aliado.common.events.PublicadorEventos;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.NotificacionService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.AvisoBandejaRegistrado;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarAceptacionPropuestaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarCambioEstadoServicioService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.adapter.LogCanalEntregaAdapter;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 class NotificacionEventosUseCasesTest {
@@ -40,17 +44,36 @@ class NotificacionEventosUseCasesTest {
         verify(registro).registrar(eq(TipoNotificacion.CAMBIO_ESTADO_SERVICIO), eq(servicio), eq(prestador), eq(4), contains("FINALIZADO"), eq(Canal.PUSH));
     }
 
-    @Test void logNoConsumeIntentosDeAceptacionNiCambio() {
+    @Test void cadaAvisoRegistradoDisparaSoloSuPropiaEntrega() {
         NotificacionRepository repository = mock(NotificacionRepository.class);
         ConsultaPreferenciasPort preferencias = mock(ConsultaPreferenciasPort.class);
-        var ahora = OffsetDateTime.now();
-        var aceptacion = new Notificacion(UUID.randomUUID(), UUID.randomUUID(), TipoNotificacion.ACEPTACION_PROPUESTA,
-                UUID.randomUUID(), 1, "aceptada", Canal.PUSH, EstadoEntrega.PENDIENTE, 0, ahora, null);
-        var cambio = new Notificacion(UUID.randomUUID(), UUID.randomUUID(), TipoNotificacion.CAMBIO_ESTADO_SERVICIO,
-                UUID.randomUUID(), 2, "cambio", Canal.PUSH, EstadoEntrega.PENDIENTE, 0, ahora, null);
-        when(repository.pendientesParaEntrega()).thenReturn(List.of(aceptacion, cambio));
-        new NotificacionService(repository, new LogCanalEntregaAdapter(), preferencias).entregarPendientes();
+        PublicadorEventos eventos = mock(PublicadorEventos.class);
+        when(repository.existeEvento(any(), any(), any(), anyInt())).thenReturn(false);
+        when(preferencias.avisoHabilitado(any(), any(), any())).thenReturn(true);
+        var servicio = new NotificacionService(repository, preferencias, eventos);
+        servicio.registrar(TipoNotificacion.ACEPTACION_PROPUESTA, UUID.randomUUID(), UUID.randomUUID(), 1,
+                "aceptada", Canal.PUSH);
+        servicio.registrar(TipoNotificacion.CAMBIO_ESTADO_SERVICIO, UUID.randomUUID(), UUID.randomUUID(), 2,
+                "cambio", Canal.PUSH);
+        var guardadas = ArgumentCaptor.forClass(Notificacion.class);
+        verify(repository, times(2)).guardar(guardadas.capture());
+        var avisos = ArgumentCaptor.forClass(AvisoBandejaRegistrado.class);
+        verify(eventos, times(2)).publicar(avisos.capture());
+        // Un evento por aviso registrado, y el identificador es el del aviso guardado:
+        // no hay barrido de la tabla ni entrega de avisos ajenos.
+        assertEquals(List.of(guardadas.getAllValues().get(0).id(), guardadas.getAllValues().get(1).id()),
+                avisos.getAllValues().stream().map(AvisoBandejaRegistrado::notificacionId).toList());
+    }
+
+    @Test void unEventoYaProcesadoNoVuelveADispararEntrega() {
+        NotificacionRepository repository = mock(NotificacionRepository.class);
+        ConsultaPreferenciasPort preferencias = mock(ConsultaPreferenciasPort.class);
+        PublicadorEventos eventos = mock(PublicadorEventos.class);
+        when(repository.existeEvento(any(), any(), any(), anyInt())).thenReturn(true);
+        new NotificacionService(repository, preferencias, eventos).registrar(
+                TipoNotificacion.NUEVA_OPORTUNIDAD, UUID.randomUUID(), UUID.randomUUID(), 1,
+                "oportunidad", Canal.PUSH);
         verify(repository, never()).guardar(any());
-        verifyNoInteractions(preferencias);
+        verifyNoInteractions(eventos, preferencias);
     }
 }

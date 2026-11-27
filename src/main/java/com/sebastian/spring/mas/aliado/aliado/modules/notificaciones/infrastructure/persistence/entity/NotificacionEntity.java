@@ -31,6 +31,9 @@ public class NotificacionEntity {
     private OffsetDateTime fechaGeneracion;
     @Column(name = "fecha_entrega")
     private OffsetDateTime fechaEntrega;
+    /** Primera lectura del aviso; {@code null} mientras esté pendiente. */
+    @Column(name = "leida_en")
+    private OffsetDateTime leidaEn;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -54,4 +57,6 @@ public class NotificacionEntity {
     public void setFechaGeneracion(OffsetDateTime fechaGeneracion) { this.fechaGeneracion = fechaGeneracion; }
     public OffsetDateTime getFechaEntrega() { return fechaEntrega; }
     public void setFechaEntrega(OffsetDateTime fechaEntrega) { this.fechaEntrega = fechaEntrega; }
+    public OffsetDateTime getLeidaEn() { return leidaEn; }
+    public void setLeidaEn(OffsetDateTime leidaEn) { this.leidaEn = leidaEn; }
 }

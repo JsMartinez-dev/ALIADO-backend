@@ -7,8 +7,10 @@ import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.e
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ArchivoHistorialPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ActividadNotificacionesPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.HistorialServiciosPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.dto.PreferenciaResult;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.IndicadoresPrestadorPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.service.ActualizarPreferenciaService;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.ConsultaPreferenciasService;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.service.ConsultarActividadRecienteService;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.service.ConsultarHistorialService;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.service.ConsultarIndicadoresPrestadorService;
@@ -60,6 +62,69 @@ class PreferenciasUseCasesTest {
 
         assertEquals(2, obligatorios.size());
         assertTrue(obligatorios.stream().allMatch(p -> p.habilitada() && !p.configurable()));
+    }
+
+    @Test
+    void sinFilaElPilotoArrancaApagadoYMantieneElComportamientoDeLosDemasPares() {
+        var repo = mock(PreferenciaRepository.class);
+        when(repo.porUsuarioTipoCanal(any(), any(), any())).thenReturn(Optional.empty());
+        var consulta = new ConsultaPreferenciasService(repo);
+
+        assertFalse(consulta.avisoHabilitado(usuario, "NUEVA_OPORTUNIDAD", "PUSH"),
+                "sin elección persistida el encolado del piloto vale false");
+        assertTrue(consulta.avisoHabilitado(usuario, "NUEVA_OPORTUNIDAD", "EMAIL"),
+                "los otros pares conservan el comportamiento previo");
+        assertTrue(consulta.avisoHabilitado(usuario, "PROPUESTA_RECIBIDA", "PUSH"));
+        assertTrue(consulta.avisoHabilitado(usuario, "AVISO_SEGURIDAD_CUENTA", "PUSH"));
+    }
+
+    @Test
+    void lasEleccionesPersistidasDelPilotoPrevalecenSobreElDefault() {
+        var repo = mock(PreferenciaRepository.class);
+        var consulta = new ConsultaPreferenciasService(repo);
+        when(repo.porUsuarioTipoCanal(usuario, "NUEVA_OPORTUNIDAD", "PUSH")).thenReturn(Optional.of(
+                new PreferenciaNotificacion(usuario, TipoAviso.NUEVA_OPORTUNIDAD, "PUSH", true, true)));
+        assertTrue(consulta.avisoHabilitado(usuario, "NUEVA_OPORTUNIDAD", "PUSH"));
+
+        when(repo.porUsuarioTipoCanal(usuario, "NUEVA_OPORTUNIDAD", "PUSH")).thenReturn(Optional.of(
+                new PreferenciaNotificacion(usuario, TipoAviso.NUEVA_OPORTUNIDAD, "PUSH", false, true)));
+        assertFalse(consulta.avisoHabilitado(usuario, "NUEVA_OPORTUNIDAD", "PUSH"));
+    }
+
+    @Test
+    void elListadoAplicaElDefaultApagadoDelPilotoSoloSinFila() {
+        var repo = mock(PreferenciaRepository.class);
+        when(repo.porUsuario(usuario)).thenReturn(List.of());
+
+        var resultado = new ListarPreferenciasService(repo).ejecutar(usuario);
+
+        assertEquals(10, resultado.size());
+        assertFalse(preferencia(resultado, "NUEVA_OPORTUNIDAD", "PUSH").habilitada());
+        assertTrue(preferencia(resultado, "NUEVA_OPORTUNIDAD", "EMAIL").habilitada());
+        assertTrue(preferencia(resultado, "PROPUESTA_RECIBIDA", "PUSH").habilitada());
+        var seguridad = preferencia(resultado, "AVISO_SEGURIDAD_CUENTA", "PUSH");
+        assertTrue(seguridad.habilitada());
+        assertFalse(seguridad.configurable());
+    }
+
+    @Test
+    void elListadoRespetaLaEleccionPersistidaDelPiloto() {
+        var repo = mock(PreferenciaRepository.class);
+        when(repo.porUsuario(usuario)).thenReturn(List.of(
+                new PreferenciaNotificacion(usuario, TipoAviso.NUEVA_OPORTUNIDAD, "PUSH", true, true)));
+        assertTrue(preferencia(new ListarPreferenciasService(repo).ejecutar(usuario),
+                "NUEVA_OPORTUNIDAD", "PUSH").habilitada());
+
+        when(repo.porUsuario(usuario)).thenReturn(List.of(
+                new PreferenciaNotificacion(usuario, TipoAviso.NUEVA_OPORTUNIDAD, "PUSH", false, true)));
+        assertFalse(preferencia(new ListarPreferenciasService(repo).ejecutar(usuario),
+                "NUEVA_OPORTUNIDAD", "PUSH").habilitada());
+    }
+
+    private PreferenciaResult preferencia(List<PreferenciaResult> resultado, String tipoAviso, String canal) {
+        return resultado.stream()
+                .filter(p -> p.tipoAviso().equals(tipoAviso) && p.canal().equals(canal))
+                .findFirst().orElseThrow();
     }
 
     @Test
@@ -133,12 +198,14 @@ class PreferenciasUseCasesTest {
         var notificaciones = mock(ActividadNotificacionesPort.class);
         var mismaFecha = OffsetDateTime.parse("2026-11-20T10:00:00-05:00");
         when(notificaciones.listarPropias(usuario)).thenReturn(List.of(
-                new ActividadNotificacionesPort.ActividadNotificacion("AVISO", "Z", mismaFecha),
-                new ActividadNotificacionesPort.ActividadNotificacion("AVISO", "A", mismaFecha)));
+                new ActividadNotificacionesPort.ActividadNotificacion(
+                        UUID.fromString("00000000-0000-0000-0000-0000000000aa"), "AVISO", "Z", mismaFecha),
+                new ActividadNotificacionesPort.ActividadNotificacion(
+                        UUID.fromString("00000000-0000-0000-0000-0000000000bb"), "AVISO", "A", mismaFecha)));
 
         var actividad = new ConsultarActividadRecienteService(servicios, notificaciones).ejecutar(usuario);
 
-        assertEquals(List.of("AVISO: A", "AVISO: Z"), actividad.stream().map(a -> a.resumen()).toList());
+        assertEquals(List.of("AVISO: Z", "AVISO: A"), actividad.stream().map(a -> a.resumen()).toList());
     }
 
     private ServicioContratado servicio(EstadoServicio estado) {

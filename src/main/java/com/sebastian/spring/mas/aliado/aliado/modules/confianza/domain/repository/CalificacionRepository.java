@@ -9,5 +9,6 @@ public interface CalificacionRepository {
     Optional<Calificacion> porId(UUID id);
     Optional<Calificacion> porServicioId(UUID servicioId);
     List<Calificacion> porPrestadorId(UUID prestadorId);
+    List<Calificacion> porClienteId(UUID clienteId);
     Calificacion guardar(Calificacion calificacion);
 }

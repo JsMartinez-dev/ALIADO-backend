@@ -21,6 +21,8 @@ public class PropuestaEntity {
     private String disponibilidad;
     @Column(length = 1000)
     private String mensaje;
+    @Column(name = "tarifa_cop")
+    private Integer tarifaCop;
     @Column(nullable = false)
     private String estado;
     @Column(name = "fecha_creacion", nullable = false)
@@ -40,6 +42,8 @@ public class PropuestaEntity {
     public void setDisponibilidad(String disponibilidad) { this.disponibilidad = disponibilidad; }
     public String getMensaje() { return mensaje; }
     public void setMensaje(String mensaje) { this.mensaje = mensaje; }
+    public Integer getTarifaCop() { return tarifaCop; }
+    public void setTarifaCop(Integer tarifaCop) { this.tarifaCop = tarifaCop; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
     public OffsetDateTime getFechaCreacion() { return fechaCreacion; }

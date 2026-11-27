@@ -14,8 +14,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.auth.presentation.dto.Auth
 public final class AuthPresentationMapper {
     private AuthPresentationMapper() {}
 
-    public static LoginCommand aCommand(AuthDtos.LoginRequest request) {
-        return new LoginCommand(request.email(), request.password());
+    public static LoginCommand aCommand(AuthDtos.LoginRequest request, boolean clienteMovil) {
+        return new LoginCommand(request.email(), request.password(), clienteMovil);
     }
 
     public static AuthDtos.LoginResponse aResponse(ResultadoLogin result) {

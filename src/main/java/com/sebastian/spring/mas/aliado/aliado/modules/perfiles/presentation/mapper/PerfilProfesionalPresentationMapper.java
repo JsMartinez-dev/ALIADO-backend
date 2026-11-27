@@ -13,6 +13,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.A
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.CrearPerfilProfesionalCommand;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.ExperienciaDatos;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.dto.PerfilProfesionalResult;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.DatosGeneralesDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.PerfilProfesionalDtos;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +43,8 @@ public final class PerfilProfesionalPresentationMapper {
 
     public static EditarPerfilProfesionalCommand aEditarCommand(
             UUID prestadorId, PerfilProfesionalDtos.ActualizarDatosRequest request) {
-        return new EditarPerfilProfesionalCommand(prestadorId, request.datosGenerales());
+        var datos = request.datosGenerales();
+        return new EditarPerfilProfesionalCommand(prestadorId, datos == null ? null : datos.descripcion());
     }
 
     public static AgregarServicioPortafolioCommand aPortafolioCommand(UUID prestadorId,
@@ -74,7 +76,8 @@ public final class PerfilProfesionalPresentationMapper {
     public static PerfilProfesionalDtos.VistaPreviaResponse aVistaPreviaResponse(VistaPreviaPerfilResult result) {
         return new PerfilProfesionalDtos.VistaPreviaResponse(result.prestadorId(),result.categorias(),result.zonas(),result.reputacion(),
                 result.cantidadCalificaciones(),result.nivelVerificacion(),result.disponibilidad().stream().map(d -> new
-                    PerfilProfesionalDtos.DisponibilidadResponse(d.id(),d.diaSemana(),d.horaInicio(),d.horaFin())).toList(),result.datosGenerales(),
+                    PerfilProfesionalDtos.DisponibilidadResponse(d.id(),d.diaSemana(),d.horaInicio(),d.horaFin())).toList(),
+                DatosGeneralesDtos.DatosGeneralesResponse.desde(result.datosGenerales()),
                 result.resenas().stream().map(r -> new PerfilProfesionalDtos.ResenaPublicaResponse(r.id(),r.valor(),r.texto(),r.fechaCreacion())).toList());
     }
 
@@ -82,12 +85,14 @@ public final class PerfilProfesionalPresentationMapper {
         List<ExperienciaDatos> experiencias = request.experiencia() == null ? List.of()
                 : request.experiencia().stream().map(e -> e == null ? new ExperienciaDatos(null, null, null) : new ExperienciaDatos(
                         e.descripcion(), e.fechaInicio(), e.fechaFin())).toList();
-        return new CrearPerfilProfesionalCommand(prestadorId, request.datosGenerales(),
+        var datos = request.datosGenerales();
+        return new CrearPerfilProfesionalCommand(prestadorId, datos == null ? null : datos.descripcion(),
                 request.categoriaIds(), request.zonaIds(), experiencias);
     }
 
     public static PerfilProfesionalDtos.PerfilResponse aResponse(PerfilProfesionalResult result) {
-        return new PerfilProfesionalDtos.PerfilResponse(result.id(), result.prestadorId(), result.datosGenerales(),
+        return new PerfilProfesionalDtos.PerfilResponse(result.id(), result.prestadorId(),
+                DatosGeneralesDtos.DatosGeneralesResponse.desde(result.datosGenerales()),
                 result.estadoExposicion(), result.categoriaIds(), result.zonaIds(),
                 result.experiencias().stream().map(e -> new PerfilProfesionalDtos.ExperienciaResponse(
                         e.id(), e.descripcion(), e.fechaInicio(), e.fechaFin())).toList(),

@@ -139,6 +139,10 @@ public class OperacionesReportes {
         return descargarEvidencia(reporteId, evidenciaId);
     }
 
+    public List<Reporte> reportesDe(UUID reportanteId) {
+        return reportes.porReportante(reportanteId);
+    }
+
     public List<Reporte> cola(String estado) {
         return reportes.cola(estado);
     }

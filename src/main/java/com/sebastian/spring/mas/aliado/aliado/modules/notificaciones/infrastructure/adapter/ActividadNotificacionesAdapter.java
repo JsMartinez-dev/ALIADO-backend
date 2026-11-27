@@ -18,7 +18,7 @@ public class ActividadNotificacionesAdapter implements ActividadNotificacionesPo
     @Override
     public List<ActividadNotificacion> listarPropias(UUID usuarioId) {
         return consultas.listarPropias(usuarioId).stream()
-                .map(n -> new ActividadNotificacion(n.tipo().name(), n.detalle(), n.fechaGeneracion()))
+                .map(n -> new ActividadNotificacion(n.id(), n.tipo().name(), n.detalle(), n.fechaGeneracion()))
                 .toList();
     }
 }

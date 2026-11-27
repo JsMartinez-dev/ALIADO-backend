@@ -16,6 +16,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase.ConfirmarEliminacionCuentaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase.ExpirarSolicitudesEliminacionUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.ConsultaServiciosActivosPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.EliminacionDefinitivaPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase.LimpiarArchivosPendientesUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.SolicitudExpiradaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.EstadoEliminacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.repository.SolicitudEliminacionRepository;
@@ -43,9 +45,12 @@ public class PerfilUseCaseConfig {
     @Bean
     public ConfirmarEliminacionCuentaUseCase confirmarEliminacionCuentaUseCase(SolicitudEliminacionRepository eliminaciones,
                                                                              ConsultaServiciosActivosPort servicios,
+                                                                             EliminacionDefinitivaPort eliminacionDefinitiva,
+                                                                             LimpiarArchivosPendientesUseCase limpiezaArchivos,
                                                                              PublicadorEventos eventos,
                                                                              PlatformTransactionManager transactionManager) {
-        ConfirmarEliminacionCuentaService service = new ConfirmarEliminacionCuentaService(eliminaciones, servicios, eventos);
+        ConfirmarEliminacionCuentaService service = new ConfirmarEliminacionCuentaService(
+                eliminaciones, servicios, eliminacionDefinitiva, eventos);
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         return usuarioId -> {
             var resultado = transaction.execute(status -> service.ejecutar(usuarioId));
@@ -53,8 +58,20 @@ public class PerfilUseCaseConfig {
             if (resultado != null && EstadoEliminacion.EXPIRADA.name().equals(resultado.estado())) {
                 throw new SolicitudExpiradaException();
             }
-            return resultado;
+            if (resultado == null) {
+                return null;
+            }
+            var limpieza = limpiezaArchivos.ejecutar(resultado.operacionId());
+            return resultado.conArchivosPendientes(limpieza.pendientes());
         };
+    }
+
+    @Bean
+    public LimpiarArchivosPendientesUseCase limpiarArchivosPendientesUseCase(
+            com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.ArchivosPendientesEliminacionPort pendientes,
+            com.sebastian.spring.mas.aliado.aliado.common.storage.ArchivoStorageService storage) {
+        return new com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.service.LimpiarArchivosPendientesService(
+                pendientes, storage);
     }
 
     @Bean

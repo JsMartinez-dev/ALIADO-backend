@@ -27,6 +27,7 @@ public class CrearPropuestaService implements CrearPropuestaUseCase {
     @Override public PropuestaResult ejecutar(CrearPropuestaCommand command) {
         String disponibilidadValidada = disponibilidad.ejecutar(command.disponibilidad());
         String mensajeValidado = mensaje.ejecutar(command.mensaje());
+        Integer tarifaValidada = ValidarTarifaPropuesta.validar(command.tarifaCop(), true);
         var solicitud = solicitudes.porId(command.solicitudId()).orElseThrow(() ->
                 new RecursoPropuestaNoEncontradoException("SOLICITUD_NO_ENCONTRADA", "Solicitud no encontrada."));
         if (solicitud.estado() != EstadoSolicitud.PUBLICADA) {
@@ -40,7 +41,7 @@ public class CrearPropuestaService implements CrearPropuestaUseCase {
         }
         OffsetDateTime ahora = OffsetDateTime.now();
         var guardada = propuestas.guardar(new Propuesta(UUID.randomUUID(), command.solicitudId(), command.prestadorId(),
-                disponibilidadValidada, mensajeValidado, EstadoPropuesta.ACTIVA, ahora, ahora, 0));
+                disponibilidadValidada, mensajeValidado, tarifaValidada, EstadoPropuesta.ACTIVA, ahora, ahora, 0));
         eventos.publicar(new Eventos.PropuestaCreada(guardada.id(), command.solicitudId(), command.prestadorId(), solicitud.clienteId(), ahora));
         return PropuestaResult.desde(guardada);
     }

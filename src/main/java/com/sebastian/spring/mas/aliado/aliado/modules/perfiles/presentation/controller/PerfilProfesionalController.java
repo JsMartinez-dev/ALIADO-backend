@@ -4,6 +4,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.useca
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.EliminarServicioPortafolioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.CrearCompromisoAgendaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConsultarVistaPreviaPerfilUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConsultarPerfilPropioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConfigurarDisponibilidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.AgregarServicioPortafolioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ActualizarCompromisoAgendaUseCase;
@@ -18,7 +19,11 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.useca
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.mapper.PerfilProfesionalPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.EstadoExposicion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.PerfilProfesional;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.DatosGeneralesDtos;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.presentation.dto.PerfilProfesionalDtos;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
@@ -40,9 +45,11 @@ import org.springframework.web.multipart.MultipartFile;
 /** Perfil profesional del Prestador (SPEC-05). Todas las rutas exigen rol PRESTADOR. */
 @RestController
 @RequestMapping("/api/v1/perfiles")
+@Tag(name = "Perfil profesional", description = "SPEC-05. Todas las operaciones requieren rol PRESTADOR.")
 public class PerfilProfesionalController {
     private final PerfilProfesionalService service;
     private final ConsultarVistaPreviaPerfilUseCase vistaPreviaUseCase;
+    private final ConsultarPerfilPropioUseCase perfilPropioUseCase;
     private final ListarCompromisosAgendaUseCase listarAgendaUseCase;
     private final ActualizarCompromisoAgendaUseCase actualizarCompromisoUseCase;
     private final CrearCompromisoAgendaUseCase crearCompromisoUseCase;
@@ -67,7 +74,8 @@ public class PerfilProfesionalController {
                                        CrearCompromisoAgendaUseCase crearCompromisoUseCase,
                                        ActualizarCompromisoAgendaUseCase actualizarCompromisoUseCase,
                                        ListarCompromisosAgendaUseCase listarAgendaUseCase,
-                                       ConsultarVistaPreviaPerfilUseCase vistaPreviaUseCase) {
+                                       ConsultarVistaPreviaPerfilUseCase vistaPreviaUseCase,
+                                       ConsultarPerfilPropioUseCase perfilPropioUseCase) {
         this.service = service;
         this.crearPerfilProfesionalUseCase = crearPerfilProfesionalUseCase;
         this.actualizarCategoriasUseCase = actualizarCategoriasUseCase;
@@ -76,6 +84,7 @@ public class PerfilProfesionalController {
         this.agregarPortafolioUseCase = agregarPortafolioUseCase;
         this.eliminarPortafolioUseCase = eliminarPortafolioUseCase;
         this.vistaPreviaUseCase = vistaPreviaUseCase;
+        this.perfilPropioUseCase = perfilPropioUseCase;
         this.listarAgendaUseCase = listarAgendaUseCase;
         this.actualizarCompromisoUseCase = actualizarCompromisoUseCase;
         this.crearCompromisoUseCase = crearCompromisoUseCase;
@@ -84,7 +93,8 @@ public class PerfilProfesionalController {
     }
 
     private PerfilProfesionalDtos.PerfilResponse aRespuesta(PerfilProfesional p) {
-        return new PerfilProfesionalDtos.PerfilResponse(p.id(), p.prestadorId(), p.datosGenerales(),
+        return new PerfilProfesionalDtos.PerfilResponse(p.id(), p.prestadorId(),
+                DatosGeneralesDtos.DatosGeneralesResponse.desde(p.datosGenerales()),
                 p.estadoExposicion().name(), List.copyOf(p.categoriaIds()), List.copyOf(p.zonaIds()),
                 p.experiencias().stream().map(e -> new PerfilProfesionalDtos.ExperienciaResponse(
                         e.id(), e.descripcion(), e.fechaInicio(), e.fechaFin())).toList(),
@@ -188,6 +198,16 @@ public class PerfilProfesionalController {
         SecurityUtils.exigirRol("PRESTADOR");
         var resultado = actualizarCompromisoUseCase.ejecutar(PerfilProfesionalPresentationMapper.aCompromisoCommand(SecurityUtils.actual().id(), req));
         return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aCompromisoResponse(resultado));
+    }
+
+    @GetMapping("/mio")
+    @Operation(summary = "Consultar perfil profesional propio",
+            description = "Requiere rol PRESTADOR. Devuelve el perfil completo del usuario autenticado.")
+    @ApiResponse(responseCode = "404", description = "El Prestador aún no ha creado su perfil")
+    public ResponseEntity<PerfilProfesionalDtos.PerfilResponse> propio() {
+        SecurityUtils.exigirRol("PRESTADOR");
+        return ResponseEntity.ok(PerfilProfesionalPresentationMapper.aResponse(
+                perfilPropioUseCase.ejecutar(SecurityUtils.actual().id())));
     }
 
     @GetMapping("/mio/agenda")

@@ -16,5 +16,8 @@ public final class ReporteDtos {
 
     public record EvidenciaResponse(UUID id, String archivoKey, String tipoContenido) {}
 
+    public record ReportesPropiosPage(List<ReporteResponse> items, int pagina, int tamano,
+                                      long totalElementos, int totalPaginas) {}
+
     public record ReporteIdResponse(UUID reporteId) {}
 }
