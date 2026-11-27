@@ -148,6 +148,22 @@ class EntregaAvisoBandejaTest {
         assertEquals(List.of(primero, segundo), entregados);
     }
 
+    @Test
+    void laEntregaPreservaLaFechaDeLecturaExistente() {
+        RepositorioFalso repositorio = new RepositorioFalso();
+        OffsetDateTime leida = OffsetDateTime.ofInstant(AHORA.minusSeconds(60), ZoneOffset.UTC);
+        Notificacion aviso = aviso(TipoNotificacion.PROPUESTA_RECIBIDA, EstadoEntrega.PENDIENTE, 0, leida);
+        repositorio.guardadas.put(aviso.id(), aviso);
+
+        servicio(repositorio, new LogCanalEntregaAdapter()).ejecutar(
+                new EntregarAvisoBandejaCommand(aviso.id()));
+
+        Notificacion entregada = repositorio.escrituras.get(0);
+        assertEquals(EstadoEntrega.ENTREGADA, entregada.estadoEntrega());
+        assertEquals(leida, entregada.leidaEn(),
+                "la entrega no es una lectura: conserva la primera fecha de lectura");
+    }
+
     private static EntregarAvisoBandejaService servicio(NotificacionRepository repositorio,
                                                         CanalEntregaNotificacion canal) {
         return servicio(repositorio, canal, true);
@@ -161,9 +177,14 @@ class EntregaAvisoBandejaTest {
     }
 
     private static Notificacion aviso(TipoNotificacion tipo, EstadoEntrega estado, int intentos) {
+        return aviso(tipo, estado, intentos, null);
+    }
+
+    private static Notificacion aviso(TipoNotificacion tipo, EstadoEntrega estado, int intentos,
+                                      OffsetDateTime leidaEn) {
         return new Notificacion(UUID.randomUUID(), UUID.randomUUID(), tipo, UUID.randomUUID(), 1,
                 "detalle", Canal.PUSH, estado, intentos,
-                OffsetDateTime.ofInstant(AHORA.minusSeconds(5), ZoneOffset.UTC), null);
+                OffsetDateTime.ofInstant(AHORA.minusSeconds(5), ZoneOffset.UTC), null, leidaEn);
     }
 
     static final class RepositorioFalso implements NotificacionRepository {

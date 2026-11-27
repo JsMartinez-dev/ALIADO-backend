@@ -50,7 +50,7 @@ public class NotificacionService implements NotificacionPort, NotificacionConsul
             return;
         }
         Notificacion notificacion = new Notificacion(UUID.randomUUID(), destinatarioId, tipo, aggregateId,
-                eventVersion, detalle, canalEfectivo, EstadoEntrega.PENDIENTE, 0, OffsetDateTime.now(), null);
+                eventVersion, detalle, canalEfectivo, EstadoEntrega.PENDIENTE, 0, OffsetDateTime.now(), null, null);
         notificaciones.guardar(notificacion);
         // Solo este aviso se entrega, y solo tras confirmar la transacción de negocio.
         eventos.publicar(new AvisoBandejaRegistrado(notificacion.id()));

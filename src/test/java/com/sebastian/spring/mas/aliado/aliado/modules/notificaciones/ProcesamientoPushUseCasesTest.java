@@ -439,7 +439,7 @@ class ProcesamientoPushUseCasesTest {
     private static Notificacion aviso() {
         return new Notificacion(NOTIFICACION, PRESTADOR, TipoNotificacion.NUEVA_OPORTUNIDAD,
                 SOLICITUD, 1, "detalle", Canal.PUSH, EstadoEntrega.PENDIENTE, 0,
-                OffsetDateTime.ofInstant(AHORA, ZoneOffset.UTC), null);
+                OffsetDateTime.ofInstant(AHORA, ZoneOffset.UTC), null, null);
     }
 
     private static TrabajoPush trabajo(EstadoTrabajoPush estado, Instant expiraEn) {

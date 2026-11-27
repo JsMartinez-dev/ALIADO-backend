@@ -55,7 +55,7 @@ public class RegistrarAvisoOportunidadService implements RegistrarAvisoOportunid
     public void ejecutar(RegistrarAvisoOportunidadCommand command) {
         Notificacion aviso = new Notificacion(UUID.randomUUID(), command.prestadorId(),
                 TipoNotificacion.NUEVA_OPORTUNIDAD, command.solicitudId(), command.version(),
-                command.detalle(), Canal.PUSH, EstadoEntrega.PENDIENTE, 0, OffsetDateTime.now(), null);
+                command.detalle(), Canal.PUSH, EstadoEntrega.PENDIENTE, 0, OffsetDateTime.now(), null, null);
         // La bandeja no depende del push. El aviso se conserva aunque la preferencia esté apagada.
         if (!notificaciones.insertarSiNoExiste(aviso)) {
             return; // Evento ya procesado: no duplica aviso ni trabajo.

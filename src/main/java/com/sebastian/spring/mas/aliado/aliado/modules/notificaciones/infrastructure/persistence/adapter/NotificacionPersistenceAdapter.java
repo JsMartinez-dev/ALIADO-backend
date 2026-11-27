@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 public class NotificacionPersistenceAdapter implements NotificacionRepository {
     private static final String SQL_INSERTAR_AVISO = """
             INSERT INTO notificaciones (id, destinatario_id, tipo, aggregate_id, event_version, detalle,
-                                        canal, estado_entrega, intentos, fecha_generacion)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                        canal, estado_entrega, intentos, fecha_generacion, leida_en)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (tipo, aggregate_id, destinatario_id, event_version) DO NOTHING
             """;
 
@@ -54,7 +54,7 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
     public Optional<Notificacion> porId(UUID id) {
         List<Notificacion> filas = jdbc.query("""
                 SELECT id, destinatario_id, tipo, aggregate_id, event_version, detalle, canal,
-                       estado_entrega, intentos, fecha_generacion, fecha_entrega
+                       estado_entrega, intentos, fecha_generacion, fecha_entrega, leida_en
                 FROM notificaciones WHERE id = ?
                 """, this::mapearNotificacion, id);
         return filas.stream().findFirst();
@@ -71,7 +71,7 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
                 notificacion.id(), notificacion.destinatarioId(), notificacion.tipo().name(),
                 notificacion.aggregateId(), notificacion.eventVersion(), notificacion.detalle(),
                 notificacion.canal().name(), notificacion.estadoEntrega().name(), notificacion.intentos(),
-                notificacion.fechaGeneracion());
+                notificacion.fechaGeneracion(), notificacion.leidaEn());
         return creados == 1;
     }
 
@@ -86,6 +86,7 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
                 EstadoEntrega.valueOf(rs.getString("estado_entrega")),
                 rs.getInt("intentos"),
                 rs.getObject("fecha_generacion", OffsetDateTime.class),
-                rs.getObject("fecha_entrega", OffsetDateTime.class));
+                rs.getObject("fecha_entrega", OffsetDateTime.class),
+                rs.getObject("leida_en", OffsetDateTime.class));
     }
 }

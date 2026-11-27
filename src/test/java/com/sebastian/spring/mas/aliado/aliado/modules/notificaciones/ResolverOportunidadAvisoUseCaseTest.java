@@ -162,6 +162,6 @@ class ResolverOportunidadAvisoUseCaseTest {
 
     private Notificacion aviso(UUID destinatario, TipoNotificacion tipo) {
         return new Notificacion(AVISO, destinatario, tipo, SOLICITUD, 1, "detalle",
-                Canal.PUSH, EstadoEntrega.ENTREGADA, 1, OffsetDateTime.now(), null);
+                Canal.PUSH, EstadoEntrega.ENTREGADA, 1, OffsetDateTime.now(), null, null);
     }
 }

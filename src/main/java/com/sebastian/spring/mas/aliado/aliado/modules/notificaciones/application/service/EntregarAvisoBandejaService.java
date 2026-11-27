@@ -75,6 +75,6 @@ public class EntregarAvisoBandejaService implements EntregarAvisoBandejaUseCase 
         notificaciones.guardar(new Notificacion(aviso.id(), aviso.destinatarioId(), aviso.tipo(),
                 aviso.aggregateId(), aviso.eventVersion(), aviso.detalle(), aviso.canal(), estado,
                 intentos, aviso.fechaGeneracion(),
-                entregada ? OffsetDateTime.now(reloj) : null));
+                entregada ? OffsetDateTime.now(reloj) : null, aviso.leidaEn()));
     }
 }
