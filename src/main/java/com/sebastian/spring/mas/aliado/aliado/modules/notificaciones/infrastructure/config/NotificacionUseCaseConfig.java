@@ -1,5 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.infrastructure.config;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ConsultarNotificacionesOportunidadesService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.MarcarAvisoLeidoService;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.MarcarTodasLeidasService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarAvisoOportunidadService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.ResolverOportunidadAvisoService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.CanalEntregaNotificacion;
@@ -7,6 +9,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.MetricasPushPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.EntregarAvisoBandejaService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.EntregarAvisoBandejaUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.MarcarAvisoLeidoUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.MarcarTodasLeidasUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.ResolverOportunidadAvisoUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RegistrarDispositivoPushService;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.RetirarDispositivoPushService;
@@ -95,6 +99,30 @@ public class NotificacionUseCaseConfig {
   var transaction = new TransactionTemplate(manager);
   transaction.setReadOnly(true);
   return command -> transaction.execute(status -> service.ejecutar(command));
+ }
+
+ /**
+  * Primera lectura de un aviso propio (F09-BANDEJA-02). La sentencia filtra por ID y
+  * destinatario y conserva la fecha ya guardada; cero filas produce el recurso no
+  * encontrado que el borde HTTP traducirá en F09-BANDEJA-04. No toca estados, intentos ni
+  * trabajos push.
+  */
+ @Bean public MarcarAvisoLeidoUseCase marcarAvisoLeidoUseCase(
+   NotificacionRepository notificaciones, PlatformTransactionManager manager) {
+  var service = new MarcarAvisoLeidoService(notificaciones, Clock.systemUTC());
+  var transaction = new TransactionTemplate(manager);
+  return command -> transaction.executeWithoutResult(status -> service.ejecutar(command));
+ }
+
+ /**
+  * Lectura masiva de los pendientes de la cuenta (F09-BANDEJA-02): una sola transacción
+  * con la condición {@code leida_en IS NULL} y el destinatario de la sesión.
+  */
+ @Bean public MarcarTodasLeidasUseCase marcarTodasLeidasUseCase(
+   NotificacionRepository notificaciones, PlatformTransactionManager manager) {
+  var service = new MarcarTodasLeidasService(notificaciones, Clock.systemUTC());
+  var transaction = new TransactionTemplate(manager);
+  return command -> transaction.executeWithoutResult(status -> service.ejecutar(command));
  }
 
  @Bean public com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.usecase.NotificarAceptacionPropuestaUseCase notificarAceptacionPropuesta(com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.NotificacionPort port) { return new com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.service.NotificarAceptacionPropuestaService(port); }

@@ -1,6 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Notificacion;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,4 +23,23 @@ public interface NotificacionRepository {
      * @return {@code true} solo si esta llamada creó la fila.
      */
     boolean insertarSiNoExiste(Notificacion notificacion);
+
+    /**
+     * Registra la primera lectura de un aviso propio (F09-BANDEJA-02). Filtra por
+     * identificador y destinatario y conserva la fecha ya guardada, de modo que un
+     * reintento o una escritura concurrente no sustituyen la primera lectura.
+     *
+     * @return {@code true} si el aviso pertenece al destinatario, estuviera ya leído o
+     *         pendiente; {@code false} si no existe o pertenece a otra cuenta, sin
+     *         distinguir ambos casos.
+     */
+    boolean marcarLeida(UUID id, UUID destinatarioId, OffsetDateTime leidaEn);
+
+    /**
+     * Marca como leídas todas las pendientes de un destinatario en una sola sentencia
+     * (F09-BANDEJA-02).
+     *
+     * @return número de filas actualizadas; {@code 0} si la cuenta no tenía pendientes.
+     */
+    int marcarTodasLeidas(UUID destinatarioId, OffsetDateTime leidaEn);
 }

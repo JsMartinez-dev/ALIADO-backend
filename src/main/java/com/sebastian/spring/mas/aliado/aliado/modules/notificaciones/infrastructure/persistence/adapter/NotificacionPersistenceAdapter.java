@@ -25,6 +25,23 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
             ON CONFLICT (tipo, aggregate_id, destinatario_id, event_version) DO NOTHING
             """;
 
+    /**
+     * Una sola sentencia resuelve pertenencia y primera lectura: filtra por identificador
+     * y destinatario y conserva la fecha ya guardada. Cero filas significa aviso
+     * inexistente o ajeno, sin una consulta de existencia previa.
+     */
+    private static final String SQL_MARCAR_LEIDA = """
+            UPDATE notificaciones
+               SET leida_en = COALESCE(leida_en, ?)
+             WHERE id = ? AND destinatario_id = ?
+            """;
+
+    private static final String SQL_MARCAR_TODAS_LAS_LEIDAS = """
+            UPDATE notificaciones
+               SET leida_en = ?
+             WHERE destinatario_id = ? AND leida_en IS NULL
+            """;
+
     private final NotificacionJpaRepository jpa;
     private final JdbcTemplate jdbc;
 
@@ -73,6 +90,19 @@ public class NotificacionPersistenceAdapter implements NotificacionRepository {
                 notificacion.canal().name(), notificacion.estadoEntrega().name(), notificacion.intentos(),
                 notificacion.fechaGeneracion(), notificacion.leidaEn());
         return creados == 1;
+    }
+
+    @Override
+    public boolean marcarLeida(UUID id, UUID destinatarioId, OffsetDateTime leidaEn) {
+        // PostgreSQL cuenta la fila aunque COALESCE conserve la fecha ya guardada, así que
+        // un aviso propio ya leído se distingue de un aviso ajeno o inexistente sin una
+        // consulta de existencia adicional.
+        return jdbc.update(SQL_MARCAR_LEIDA, leidaEn, id, destinatarioId) == 1;
+    }
+
+    @Override
+    public int marcarTodasLeidas(UUID destinatarioId, OffsetDateTime leidaEn) {
+        return jdbc.update(SQL_MARCAR_TODAS_LAS_LEIDAS, leidaEn, destinatarioId);
     }
 
     private Notificacion mapearNotificacion(ResultSet rs, int fila) throws SQLException {

@@ -541,6 +541,32 @@ class ProcesamientoPushUseCasesTest {
             insertados.incrementAndGet();
             return true;
         }
+        @Override public boolean marcarLeida(UUID id, UUID destinatarioId, OffsetDateTime leidaEn) {
+            Notificacion actual = guardadas.get(id);
+            if (actual == null || !actual.destinatarioId().equals(destinatarioId)) {
+                return false;
+            }
+            if (actual.leidaEn() == null) {
+                guardadas.put(id, conLectura(actual, leidaEn));
+            }
+            return true;
+        }
+        @Override public int marcarTodasLeidas(UUID destinatarioId, OffsetDateTime leidaEn) {
+            int actualizadas = 0;
+            for (Notificacion actual : List.copyOf(guardadas.values())) {
+                if (actual.destinatarioId().equals(destinatarioId) && actual.leidaEn() == null) {
+                    guardadas.put(actual.id(), conLectura(actual, leidaEn));
+                    actualizadas++;
+                }
+            }
+            return actualizadas;
+        }
+
+        private static Notificacion conLectura(Notificacion n, OffsetDateTime leidaEn) {
+            return new Notificacion(n.id(), n.destinatarioId(), n.tipo(), n.aggregateId(),
+                    n.eventVersion(), n.detalle(), n.canal(), n.estadoEntrega(), n.intentos(),
+                    n.fechaGeneracion(), n.fechaEntrega(), leidaEn);
+        }
     }
 
     private static final class DispositivoRepositorioFalso implements DispositivoPushRepository {
