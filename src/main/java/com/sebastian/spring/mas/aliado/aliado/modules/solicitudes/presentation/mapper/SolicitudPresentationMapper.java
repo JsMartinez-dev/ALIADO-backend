@@ -20,8 +20,8 @@ public final class SolicitudPresentationMapper {
         return new GuardarFotoSolicitudCommand(id, usuarioId, fotoId, nombre, tipo, contenido);
     }
 
-    public static ConsultarFotoSolicitudCommand aConsultarFotoCommand(UUID id, UUID usuarioId, UUID fotoId) {
-        return new ConsultarFotoSolicitudCommand(id, usuarioId, fotoId);
+    public static ConsultarFotoSolicitudCommand aConsultarFotoCommand(UUID id, UUID usuarioId, String rol, UUID fotoId) {
+        return new ConsultarFotoSolicitudCommand(id, usuarioId, rol, fotoId);
     }
 
     public static SolicitudDtos.FotoResponse aResponse(FotoSolicitudResult foto) {
