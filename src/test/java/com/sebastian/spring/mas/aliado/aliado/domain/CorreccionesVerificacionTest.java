@@ -3,6 +3,7 @@ package com.sebastian.spring.mas.aliado.aliado.domain;
 import com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException;
 import com.sebastian.spring.mas.aliado.aliado.common.storage.ArchivoValidacion;
 import com.sebastian.spring.mas.aliado.aliado.common.auditoria.AuditoriaPort;
+import com.sebastian.spring.mas.aliado.aliado.common.events.PublicadorEventos;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.AuthService;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.service.SesionService;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.application.port.PerfilBasePort;
@@ -20,7 +21,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.Veri
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.domain.repository.DocumentoVerificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.domain.repository.SolicitudVerificacionRepository;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.NotificacionService;
-import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.port.CanalEntregaNotificacion;
+import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.application.dto.AvisoBandejaRegistrado;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.Canal;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.model.TipoNotificacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.notificaciones.domain.repository.NotificacionRepository;
@@ -47,6 +48,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -109,7 +111,7 @@ class CorreccionesVerificacionTest {
     @Mock
     private NotificacionRepository notificaciones;
     @Mock
-    private CanalEntregaNotificacion canal;
+    private PublicadorEventos eventos;
     @Mock
     private ConsultaPreferenciasPort preferencias;
 
@@ -117,20 +119,22 @@ class CorreccionesVerificacionTest {
     void registrarNoGuardaCuandoElAvisoEstaDeshabilitado() {
         when(notificaciones.existeEvento(any(), any(), any(), anyInt())).thenReturn(false);
         when(preferencias.avisoHabilitado(any(), any(), any())).thenReturn(false);
-        var servicio = new NotificacionService(notificaciones, canal, preferencias);
+        var servicio = new NotificacionService(notificaciones, preferencias, eventos);
         servicio.registrar(TipoNotificacion.NUEVA_OPORTUNIDAD, UUID.randomUUID(), UUID.randomUUID(), 1,
                 "Nueva oportunidad.", Canal.PUSH);
         verify(notificaciones, never()).guardar(any());
+        verifyNoInteractions(eventos);
     }
 
     @Test
     void registrarGuardaCuandoElAvisoEstaHabilitado() {
         when(notificaciones.existeEvento(any(), any(), any(), anyInt())).thenReturn(false);
         when(preferencias.avisoHabilitado(any(), any(), any())).thenReturn(true);
-        var servicio = new NotificacionService(notificaciones, canal, preferencias);
+        var servicio = new NotificacionService(notificaciones, preferencias, eventos);
         servicio.registrar(TipoNotificacion.NUEVA_OPORTUNIDAD, UUID.randomUUID(), UUID.randomUUID(), 1,
                 "Nueva oportunidad.", Canal.PUSH);
         verify(notificaciones).guardar(any());
+        verify(eventos).publicar(any(AvisoBandejaRegistrado.class));
     }
 
     // ---- CatalogoService.actualizarCategoria valida nombre y duplicado (SPEC-12) ----

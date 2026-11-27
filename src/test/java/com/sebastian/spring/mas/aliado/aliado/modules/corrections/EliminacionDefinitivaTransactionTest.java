@@ -77,4 +77,54 @@ class EliminacionDefinitivaTransactionTest {
         assertEquals(0, jdbc.queryForObject("select count(*) from archivos_pendientes_eliminacion where clave = ?",
                 Integer.class, "rollback-file.png"));
     }
+
+
+    @Test
+    void eliminaAvisosConTrabajosPushYRevocaElTokenDeLaCuenta() {
+        UUID usuario = UUID.randomUUID();
+        UUID instalacion = UUID.randomUUID();
+        UUID aviso = UUID.randomUUID();
+        UUID trabajo = UUID.randomUUID();
+        UUID entrega = UUID.randomUUID();
+        jdbc.update("""
+                insert into usuarios (id,email,password_hash,rol,estado_cuenta,fecha_creacion)
+                values (?,?,'hash','PRESTADOR','ACTIVA',current_timestamp)
+                """, usuario, "push-" + usuario + "@example.test");
+        jdbc.update("""
+                insert into instalaciones_push (id,plataforma,prueba_sha256)
+                values (?,'ANDROID',sha256(convert_to('prueba','UTF8')))
+                """, instalacion);
+        jdbc.update("""
+                insert into vinculos_push (instalacion_id,generacion,usuario_id,token_fcm,
+                    token_fcm_sha256,revocacion_sha256)
+                values (?,1,?,'token-prueba',sha256(convert_to('token-prueba','UTF8')),
+                    sha256(convert_to('revocacion','UTF8')))
+                """, instalacion, usuario);
+        jdbc.update("""
+                insert into notificaciones (id,destinatario_id,tipo,aggregate_id,event_version,
+                    detalle,canal,estado_entrega,intentos,fecha_generacion)
+                values (?,?,'NUEVA_OPORTUNIDAD',?,1,'Aviso','PUSH','PENDIENTE',0,current_timestamp)
+                """, aviso, usuario, UUID.randomUUID());
+        jdbc.update("""
+                insert into trabajos_push (id,notificacion_id,canal,estado,expira_en)
+                values (?,?,'PUSH','PREPARADO',current_timestamp + interval '1 hour')
+                """, trabajo, aviso);
+        jdbc.update("""
+                insert into entregas_push (id,trabajo_id,instalacion_id,generacion,estado,proximo_intento_en)
+                values (?,?,?,1,'PENDIENTE',current_timestamp)
+                """, entrega, trabajo, instalacion);
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                eliminacion.anonimizarYEncolarArchivos(usuario, UUID.randomUUID()));
+
+        assertEquals("ELIMINADA", jdbc.queryForObject(
+                "select estado_cuenta from usuarios where id = ?", String.class, usuario));
+        assertEquals(0, jdbc.queryForObject("select count(*) from notificaciones where id = ?", Integer.class, aviso));
+        assertEquals(0, jdbc.queryForObject("select count(*) from trabajos_push where id = ?", Integer.class, trabajo));
+        assertEquals(0, jdbc.queryForObject("select count(*) from entregas_push where id = ?", Integer.class, entrega));
+        assertEquals(1, jdbc.queryForObject("""
+                select count(*) from vinculos_push where instalacion_id = ?
+                and revocado_en is not null and token_fcm is null and token_fcm_sha256 is null
+                """, Integer.class, instalacion));
+    }
 }

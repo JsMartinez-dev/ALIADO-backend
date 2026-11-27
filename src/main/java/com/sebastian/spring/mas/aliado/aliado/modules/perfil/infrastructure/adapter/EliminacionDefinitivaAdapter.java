@@ -61,6 +61,11 @@ public class EliminacionDefinitivaAdapter implements EliminacionDefinitivaPort {
         jdbc.update("delete from sesiones where usuario_id = ?", usuarioId);
         jdbc.update("delete from tokens_recuperacion where usuario_id = ?", usuarioId);
         jdbc.update("delete from preferencias_notificacion where usuario_id = ?", usuarioId);
+        jdbc.update("""
+                update vinculos_push
+                set revocado_en = current_timestamp, token_fcm = null, token_fcm_sha256 = null
+                where usuario_id = ? and revocado_en is null
+                """, usuarioId);
         jdbc.update("delete from notificaciones where destinatario_id = ?", usuarioId);
         jdbc.update("delete from descargas_historial where usuario_id = ?", usuarioId);
         jdbc.update("delete from progreso_formalizacion where prestador_id = ?", usuarioId);

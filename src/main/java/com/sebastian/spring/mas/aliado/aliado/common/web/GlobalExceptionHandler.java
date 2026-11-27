@@ -54,6 +54,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
@@ -317,6 +318,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> argumentoInvalido(IllegalArgumentException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.BAD_REQUEST, "DATOS_INVALIDOS", "Datos inválidos.", req);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> parametroConTipoInvalido(MethodArgumentTypeMismatchException ex,
+                                                              HttpServletRequest req) {
+        // UUID u otro parámetro de ruta con formato inválido: 400, no 500.
         return respuesta(HttpStatus.BAD_REQUEST, "DATOS_INVALIDOS", "Datos inválidos.", req);
     }
 

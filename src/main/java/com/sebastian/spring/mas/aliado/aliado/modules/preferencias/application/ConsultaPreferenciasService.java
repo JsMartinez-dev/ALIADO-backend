@@ -1,6 +1,7 @@
 package com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application;
 
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.application.port.ConsultaPreferenciasPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.PreferenciaPredeterminada;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.model.TipoAviso;
 import com.sebastian.spring.mas.aliado.aliado.modules.preferencias.domain.repository.PreferenciaRepository;
 import java.util.UUID;
@@ -34,6 +35,7 @@ public class ConsultaPreferenciasService implements ConsultaPreferenciasPort {
         }
         return preferencias.porUsuarioTipoCanal(usuarioId, tipo.name(), canal)
                 .map(p -> p.habilitada())
-                .orElse(true); // Sin preferencia guardada: habilitado por defecto.
+                // Sin fila: NUEVA_OPORTUNIDAD/PUSH arranca apagado (F09-PUSH-01); el resto, habilitado.
+                .orElseGet(() -> PreferenciaPredeterminada.habilitada(tipo, canal));
     }
 }
