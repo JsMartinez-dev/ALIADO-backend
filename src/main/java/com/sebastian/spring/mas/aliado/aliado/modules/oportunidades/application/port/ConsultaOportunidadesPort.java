@@ -13,6 +13,7 @@ public interface ConsultaOportunidadesPort {
  Optional<Solicitud> solicitudPorId(UUID id);
  Optional<PerfilProfesional> perfilPorPrestadorId(UUID id);
  Optional<Categoria> categoriaPorId(UUID id);
+ Optional<String> nombreVisibleDe(UUID usuarioId);
  Optional<Categoria> categoriaPorNombre(String nombre);
  Optional<Zona> zonaPorId(UUID id);
  Visibilidad preferenciaDe(UUID prestadorId);

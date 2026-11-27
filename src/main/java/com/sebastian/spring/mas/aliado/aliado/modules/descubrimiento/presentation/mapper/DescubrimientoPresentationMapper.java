@@ -19,7 +19,7 @@ public final class DescubrimientoPresentationMapper {
     }
 
     public static DescubrimientoDtos.PrestadorPublicoResponse aResponse(PrestadorPublicoResult perfil) {
-        return new DescubrimientoDtos.PrestadorPublicoResponse(perfil.id(), perfil.categorias(), perfil.zonas(),
+        return new DescubrimientoDtos.PrestadorPublicoResponse(perfil.id(), perfil.nombreVisible(), perfil.categorias(), perfil.zonas(),
                 perfil.reputacionAgregada(), perfil.cantidadCalificaciones(), perfil.nivelVerificacion(),
                 perfil.disponibilidad().stream().map(b -> new DescubrimientoDtos.BloqueResponse(
                         b.diaSemana(), b.horaInicio(), b.horaFin())).toList(), perfil.datosGenerales(),

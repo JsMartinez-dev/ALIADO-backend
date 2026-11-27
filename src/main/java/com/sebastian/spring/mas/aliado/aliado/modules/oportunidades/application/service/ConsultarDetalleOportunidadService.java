@@ -16,6 +16,6 @@ public class ConsultarDetalleOportunidadService implements ConsultarDetalleOport
   var perfil=consultas.perfilPorPrestadorId(query.prestadorId()).orElse(null);
   var solicitud=consultas.solicitudPorId(query.solicitudId()).orElse(null);
   if(perfil==null || solicitud==null || !evaluacion.compatible(solicitud,perfil)) {throw new OportunidadNoDisponibleException();}
-  return proyeccion.proyectar(solicitud);
+  return proyeccion.proyectarDetalle(solicitud);
  }
 }

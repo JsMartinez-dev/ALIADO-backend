@@ -9,5 +9,5 @@ public final class OportunidadDtos {
     private OportunidadDtos() {}
 
     public record OportunidadResponse(UUID solicitudId, String categoria, String zonaAproximada, String urgencia,
-                                      String descripcion, OffsetDateTime fechaCreacion, List<String> fotos) {}
+                                      String descripcion, OffsetDateTime fechaCreacion, List<String> fotos, String nombreVisibleCliente) {}
 }

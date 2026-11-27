@@ -14,6 +14,6 @@ public final class OportunidadPresentationMapper {
  }
  public static OportunidadDtos.OportunidadResponse aResponse(OportunidadResult result) {
   return new OportunidadDtos.OportunidadResponse(result.solicitudId(),result.categoria(),result.zonaAproximada(),
-    result.urgencia(),result.descripcion(),result.fechaCreacion(),result.fotos());
+    result.urgencia(),result.descripcion(),result.fechaCreacion(),result.fotos(),result.nombreVisibleCliente());
  }
 }
