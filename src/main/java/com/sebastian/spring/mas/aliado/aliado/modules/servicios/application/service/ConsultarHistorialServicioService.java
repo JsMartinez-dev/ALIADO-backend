@@ -10,6 +10,6 @@ import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.usec
 import com.sebastian.spring.mas.aliado.aliado.modules.servicios.application.exception.ServicioOperacionException;
 import com.sebastian.spring.mas.aliado.aliado.common.events.*;
 public class ConsultarHistorialServicioService implements ConsultarHistorialServicioUseCase {
- private final ServicioRepository servicios;public ConsultarHistorialServicioService(ServicioRepository r){servicios=r;}
- public List<HistorialServicioResult> ejecutar(AccionServicioCommand c){return AccesoServicio.participante(servicios,c).historial().stream().map(HistorialServicioResult::desde).toList();}
+ private final ServicioRepository servicios;private final CuentaEliminadaPort cuentas;public ConsultarHistorialServicioService(ServicioRepository r,CuentaEliminadaPort c){servicios=r;cuentas=c;}
+ public List<HistorialServicioResult> ejecutar(AccionServicioCommand c){return AccesoServicio.participante(servicios,c).historial().stream().map(h->HistorialServicioResult.desde(h,cuentas.eliminada(h.actorId()))).toList();}
 }

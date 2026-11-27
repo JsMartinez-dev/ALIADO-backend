@@ -7,6 +7,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.excepti
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.SinSolicitudPendienteException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.exception.ServicioBloqueaEliminacionException;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.ConsultaServiciosActivosPort;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.port.EliminacionDefinitivaPort;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.usecase.ConfirmarEliminacionCuentaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.EstadoEliminacion;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfil.domain.model.SolicitudEliminacion;
@@ -17,12 +18,16 @@ import java.util.UUID;
 public class ConfirmarEliminacionCuentaService implements ConfirmarEliminacionCuentaUseCase {
     private final SolicitudEliminacionRepository eliminaciones;
     private final ConsultaServiciosActivosPort servicios;
+    private final EliminacionDefinitivaPort eliminacionDefinitiva;
     private final PublicadorEventos eventos;
 
     public ConfirmarEliminacionCuentaService(SolicitudEliminacionRepository eliminaciones,
-                                            ConsultaServiciosActivosPort servicios, PublicadorEventos eventos) {
+                                            ConsultaServiciosActivosPort servicios,
+                                            EliminacionDefinitivaPort eliminacionDefinitiva,
+                                            PublicadorEventos eventos) {
         this.eliminaciones = eliminaciones;
         this.servicios = servicios;
+        this.eliminacionDefinitiva = eliminacionDefinitiva;
         this.eventos = eventos;
     }
 
@@ -32,6 +37,12 @@ public class ConfirmarEliminacionCuentaService implements ConfirmarEliminacionCu
                 .orElseThrow(SinSolicitudPendienteException::new);
         if (solicitud.estado() == EstadoEliminacion.EXPIRADA) {
             return new EliminacionResult(EstadoEliminacion.EXPIRADA.name(), solicitud.fechaExpiracion());
+        }
+        if (solicitud.estado() == EstadoEliminacion.CONFIRMADA) {
+            if (!eliminacionDefinitiva.estaEliminada(usuarioId)) {
+                eliminacionDefinitiva.anonimizarYEncolarArchivos(usuarioId, solicitud.id());
+            }
+            return new EliminacionResult(EstadoEliminacion.CONFIRMADA.name(), solicitud.fechaExpiracion(), 0, solicitud.id());
         }
         if (solicitud.estado() != EstadoEliminacion.PENDIENTE) {
             throw new SinSolicitudPendienteException();
@@ -52,8 +63,9 @@ public class ConfirmarEliminacionCuentaService implements ConfirmarEliminacionCu
                 EstadoEliminacion.CONFIRMADA, ahora)) {
             return resolverCambioConcurrente(usuarioId);
         }
+        eliminacionDefinitiva.anonimizarYEncolarArchivos(usuarioId, solicitud.id());
         eventos.publicar(new Eventos.EliminacionConfirmada(usuarioId, ahora));
-        return new EliminacionResult(EstadoEliminacion.CONFIRMADA.name(), solicitud.fechaExpiracion());
+        return new EliminacionResult(EstadoEliminacion.CONFIRMADA.name(), solicitud.fechaExpiracion(), 0, solicitud.id());
     }
 
     private EliminacionResult resolverCambioConcurrente(UUID usuarioId) {
@@ -61,6 +73,12 @@ public class ConfirmarEliminacionCuentaService implements ConfirmarEliminacionCu
                 .orElseThrow(SinSolicitudPendienteException::new);
         if (actual.estado() == EstadoEliminacion.EXPIRADA) {
             return new EliminacionResult(EstadoEliminacion.EXPIRADA.name(), actual.fechaExpiracion());
+        }
+        if (actual.estado() == EstadoEliminacion.CONFIRMADA) {
+            if (!eliminacionDefinitiva.estaEliminada(usuarioId)) {
+                eliminacionDefinitiva.anonimizarYEncolarArchivos(usuarioId, actual.id());
+            }
+            return new EliminacionResult(EstadoEliminacion.CONFIRMADA.name(), actual.fechaExpiracion(), 0, actual.id());
         }
         throw new ConflictoEliminacionException();
     }

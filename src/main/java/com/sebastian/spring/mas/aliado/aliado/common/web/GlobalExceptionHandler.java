@@ -40,6 +40,7 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfil.application.excepti
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CorreoYaRegistradoException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CredencialesInvalidasException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaBloqueadaException;
+import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.CuentaEliminadaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.PasswordInvalidaException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.RolNoRegistrableException;
 import com.sebastian.spring.mas.aliado.aliado.modules.auth.domain.exception.TerminosNoAceptadosException;
@@ -261,8 +262,18 @@ public class GlobalExceptionHandler {
         return respuesta(HttpStatus.FORBIDDEN, "CUENTA_BLOQUEADA", ex.getMessage(), req);
     }
 
+    @ExceptionHandler(CuentaEliminadaException.class)
+    public ResponseEntity<ApiError> cuentaEliminada(CuentaEliminadaException ex, HttpServletRequest req) {
+        return respuesta(HttpStatus.FORBIDDEN, "CUENTA_ELIMINADA", ex.getMessage(), req);
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> cuerpoInvalido(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        String causa = ex.getMostSpecificCause().getMessage();
+        if (causa != null && causa.contains("La tarifa debe ser un entero positivo en pesos colombianos.")) {
+            return respuesta(HttpStatus.BAD_REQUEST, "TARIFA_INVALIDA",
+                    "La tarifa debe ser un entero positivo en pesos colombianos.", req);
+        }
         return respuesta(HttpStatus.BAD_REQUEST, "DATOS_INVALIDOS", "Datos inválidos.", req);
     }
 

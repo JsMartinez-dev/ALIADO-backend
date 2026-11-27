@@ -54,6 +54,6 @@ public final class SolicitudPresentationMapper {
 
     public static SolicitudDtos.SolicitudResponse aResponse(SolicitudResult result) {
         return new SolicitudDtos.SolicitudResponse(result.id(), result.clienteId(), result.categoriaId(), result.zonaId(),
-                result.descripcion(), result.urgencia(), result.estado(), result.fechaCreacion(), result.fechaActualizacion(), result.fotos());
+                result.descripcion(), result.urgencia(), result.estado(), result.fechaCreacion(), result.fechaActualizacion(), result.fotos(), result.fotosDetalle().stream().map(f -> new SolicitudDtos.FotoDetalleResponse(f.id(), f.archivoKey(), f.orden())).toList());
     }
 }

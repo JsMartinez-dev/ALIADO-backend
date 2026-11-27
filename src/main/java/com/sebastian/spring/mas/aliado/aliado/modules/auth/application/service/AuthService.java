@@ -94,6 +94,10 @@ public class AuthService implements UsuarioConsultaPort, RolConsultaPort, Cuenta
     public void bloquearCuenta(UUID usuarioId) {
         Usuario usuario = usuarioRepository.porId(usuarioId)
                 .orElseThrow(() -> new BusinessException.NotFound("USUARIO_NO_ENCONTRADO", "Usuario no encontrado."));
+        if (usuario.eliminada()) {
+            sesionPort.cerrarSesionesDeUsuario(usuarioId);
+            return;
+        }
         usuarioRepository.guardar(new Usuario(usuario.id(), usuario.email(), usuario.passwordHash(), usuario.rol(),
                 EstadoCuenta.BLOQUEADA_PREVENTIVAMENTE, usuario.fechaCreacion()));
         sesionPort.cerrarSesionesDeUsuario(usuarioId);
@@ -104,6 +108,10 @@ public class AuthService implements UsuarioConsultaPort, RolConsultaPort, Cuenta
     public void desbloquearCuenta(UUID usuarioId) {
         Usuario usuario = usuarioRepository.porId(usuarioId)
                 .orElseThrow(() -> new BusinessException.NotFound("USUARIO_NO_ENCONTRADO", "Usuario no encontrado."));
+        if (usuario.eliminada()) {
+            throw new BusinessException.Conflict("CUENTA_ELIMINADA",
+                    "La cuenta fue eliminada y no puede reactivarse.");
+        }
         usuarioRepository.guardar(new Usuario(usuario.id(), usuario.email(), usuario.passwordHash(), usuario.rol(),
                 EstadoCuenta.ACTIVA, usuario.fechaCreacion()));
     }

@@ -21,9 +21,12 @@ public final class SolicitudDtos {
 
     public record SolicitudResponse(UUID id, UUID clienteId, UUID categoriaId, UUID zonaId, String descripcion,
                                     String urgencia, String estado, OffsetDateTime fechaCreacion,
-                                    OffsetDateTime fechaActualizacion, List<String> fotos) {}
+                                    OffsetDateTime fechaActualizacion, List<String> fotos,
+                                    List<FotoDetalleResponse> fotosDetalle) {}
 
     public record FotoResponse(UUID id, String archivoKey, int orden) {}
+
+    public record FotoDetalleResponse(UUID id, String archivoKey, int orden) {}
 
     public record IdEstadoResponse(UUID id, String estado) {}
 }

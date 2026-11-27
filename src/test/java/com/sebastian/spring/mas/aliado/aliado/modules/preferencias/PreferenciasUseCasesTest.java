@@ -133,12 +133,14 @@ class PreferenciasUseCasesTest {
         var notificaciones = mock(ActividadNotificacionesPort.class);
         var mismaFecha = OffsetDateTime.parse("2026-11-20T10:00:00-05:00");
         when(notificaciones.listarPropias(usuario)).thenReturn(List.of(
-                new ActividadNotificacionesPort.ActividadNotificacion("AVISO", "Z", mismaFecha),
-                new ActividadNotificacionesPort.ActividadNotificacion("AVISO", "A", mismaFecha)));
+                new ActividadNotificacionesPort.ActividadNotificacion(
+                        UUID.fromString("00000000-0000-0000-0000-0000000000aa"), "AVISO", "Z", mismaFecha),
+                new ActividadNotificacionesPort.ActividadNotificacion(
+                        UUID.fromString("00000000-0000-0000-0000-0000000000bb"), "AVISO", "A", mismaFecha)));
 
         var actividad = new ConsultarActividadRecienteService(servicios, notificaciones).ejecutar(usuario);
 
-        assertEquals(List.of("AVISO: A", "AVISO: Z"), actividad.stream().map(a -> a.resumen()).toList());
+        assertEquals(List.of("AVISO: Z", "AVISO: A"), actividad.stream().map(a -> a.resumen()).toList());
     }
 
     private ServicioContratado servicio(EstadoServicio estado) {

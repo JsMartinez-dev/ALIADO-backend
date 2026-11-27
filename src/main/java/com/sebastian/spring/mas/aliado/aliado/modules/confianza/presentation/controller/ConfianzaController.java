@@ -6,6 +6,9 @@ import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.usec
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.application.dto.*;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.presentation.mapper.ConfianzaPresentationMapper;
 import com.sebastian.spring.mas.aliado.aliado.modules.confianza.presentation.dto.ConfianzaDtos;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 /** Calificaciones, reseñas, reputación y verificación (SPEC-10). */
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Confianza", description = "SPEC-10. Calificaciones, reseñas y verificación.")
 public class ConfianzaController {
 
     private final CalificarServicioUseCase calificarUseCase;
@@ -35,7 +39,9 @@ public class ConfianzaController {
     private final SolicitarVerificacionUseCase verificacionUseCase;
     private final ConsultarVerificacionPropiaUseCase miVerificacionUseCase;
     private final ReportarResenaUseCase reporteUseCase;
-    public ConfianzaController(CalificarServicioUseCase calificarUseCase, AgregarResenaUseCase resenaUseCase, ConsultarConfianzaUseCase confianzaUseCase, ConsultarResenasPublicasUseCase resenasUseCase, SolicitarVerificacionUseCase verificacionUseCase, ConsultarVerificacionPropiaUseCase miVerificacionUseCase, ReportarResenaUseCase reporteUseCase) {
+    private final ConsultarCalificacionPropiaUseCase calificacionPropiaUseCase;
+    private final ConsultarCalificacionesPropiasUseCase calificacionesPropiasUseCase;
+    public ConfianzaController(CalificarServicioUseCase calificarUseCase, AgregarResenaUseCase resenaUseCase, ConsultarConfianzaUseCase confianzaUseCase, ConsultarResenasPublicasUseCase resenasUseCase, SolicitarVerificacionUseCase verificacionUseCase, ConsultarVerificacionPropiaUseCase miVerificacionUseCase, ReportarResenaUseCase reporteUseCase, ConsultarCalificacionPropiaUseCase calificacionPropiaUseCase, ConsultarCalificacionesPropiasUseCase calificacionesPropiasUseCase) {
         this.calificarUseCase = calificarUseCase;
         this.resenaUseCase = resenaUseCase;
         this.confianzaUseCase = confianzaUseCase;
@@ -43,6 +49,8 @@ public class ConfianzaController {
         this.verificacionUseCase = verificacionUseCase;
         this.miVerificacionUseCase = miVerificacionUseCase;
         this.reporteUseCase = reporteUseCase;
+        this.calificacionPropiaUseCase = calificacionPropiaUseCase;
+        this.calificacionesPropiasUseCase = calificacionesPropiasUseCase;
     }
 
     @PostMapping("/servicios/{servicioId}/calificacion")
@@ -51,6 +59,38 @@ public class ConfianzaController {
         var calificacion = calificarUseCase.ejecutar(ConfianzaPresentationMapper.aCommand(servicioId, SecurityUtils.actual().id(), req));
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ConfianzaPresentationMapper.aResponse(calificacion));
+    }
+
+    @GetMapping("/calificaciones/mias")
+    @Operation(summary = "Historial de calificaciones propias",
+            description = "Requiere rol CLIENTE. Incluye reseña cuando existe. Orden descendente por fecha.")
+    public ResponseEntity<ConfianzaDtos.CalificacionesPropiasPage> misCalificaciones(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int pagina,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int tamano) {
+        SecurityUtils.exigirRol("CLIENTE");
+        if (pagina < 0 || tamano < 1 || tamano > 100) {
+            throw new com.sebastian.spring.mas.aliado.aliado.common.exception.BusinessException.BadRequest(
+                    "PAGINACION_INVALIDA", "pagina debe ser >= 0 y tamano debe estar entre 1 y 100.");
+        }
+        var result = calificacionesPropiasUseCase.ejecutar(SecurityUtils.actual().id(), pagina, tamano);
+        return ResponseEntity.ok(new ConfianzaDtos.CalificacionesPropiasPage(
+                result.items().stream().map(i -> new ConfianzaDtos.CalificacionHistorialItem(
+                        i.calificacionId(), i.servicioId(), i.valor(), i.fechaCalificacion(),
+                        i.resena() == null ? null : new ConfianzaDtos.ResenaHistorial(
+                                i.resena().id(), i.resena().texto(), i.resena().fechaCreacion()))).toList(),
+                result.pagina(), result.tamano(), result.totalElementos(), result.totalPaginas()));
+    }
+
+    @GetMapping("/servicios/{servicioId}/calificacion")
+    @Operation(summary = "Consultar calificación propia de un servicio",
+            description = "Requiere rol CLIENTE y ser propietario del servicio.")
+    @ApiResponse(responseCode = "404", description = "Servicio sin calificación o inexistente")
+    public ResponseEntity<ConfianzaDtos.CalificacionPropiaResponse> miCalificacion(@PathVariable UUID servicioId) {
+        SecurityUtils.exigirRol("CLIENTE");
+        var resultado = calificacionPropiaUseCase.ejecutar(new ConsultarCalificacionPropiaCommand(
+                servicioId, SecurityUtils.actual().id()));
+        return ResponseEntity.ok(new ConfianzaDtos.CalificacionPropiaResponse(
+                resultado.calificacionId(), resultado.valor(), resultado.tieneResena()));
     }
 
     @PostMapping("/calificaciones/{id}/resena")

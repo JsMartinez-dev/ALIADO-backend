@@ -5,10 +5,15 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.useca
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.CompromisoAgenda;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.model.Disponibilidad;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.domain.repository.PerfilProfesionalRepository;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 public class ConfigurarDisponibilidadService implements ConfigurarDisponibilidadUseCase {
+    private static final ZoneId MVP_ZONE = ZoneId.of("America/Bogota");
     private final PerfilProfesionalRepository perfiles;
     public ConfigurarDisponibilidadService(PerfilProfesionalRepository perfiles) { this.perfiles = perfiles; }
     @Override
@@ -40,13 +45,27 @@ public class ConfigurarDisponibilidadService implements ConfigurarDisponibilidad
     }
 
     private boolean chocaConCompromiso(DisponibilidadDatos bloque, CompromisoAgenda compromiso) {
-        int diaCompromiso = compromiso.fechaHoraInicio().getDayOfWeek().getValue();
-        if (bloque.diaSemana() != null && bloque.diaSemana() != diaCompromiso) {
-            return false;
+        ZonedDateTime inicio = compromiso.fechaHoraInicio().atZoneSameInstant(MVP_ZONE);
+        ZonedDateTime fin = compromiso.fechaHoraFin().atZoneSameInstant(MVP_ZONE);
+        ZonedDateTime cursor = inicio;
+
+        while (cursor.isBefore(fin)) {
+            LocalDate dia = cursor.toLocalDate();
+            ZonedDateTime finDelDia = dia.plusDays(1).atStartOfDay(MVP_ZONE);
+            ZonedDateTime finTramo = fin.isBefore(finDelDia) ? fin : finDelDia;
+            int diaSemana = dia.getDayOfWeek().getValue();
+            if (bloque.diaSemana() == null || bloque.diaSemana() == diaSemana) {
+                LocalDateTime inicioTramo = cursor.toLocalDateTime();
+                LocalDateTime finTramoLocal = finTramo.toLocalDateTime();
+                LocalDateTime inicioBloque = dia.atTime(bloque.horaInicio());
+                LocalDateTime finBloque = dia.atTime(bloque.horaFin());
+                if (inicioBloque.isBefore(finTramoLocal) && inicioTramo.isBefore(finBloque)) {
+                    return true;
+                }
+            }
+            cursor = finTramo;
         }
-        LocalTime inicio = compromiso.fechaHoraInicio().toLocalTime();
-        LocalTime fin = compromiso.fechaHoraFin().toLocalTime();
-        return bloque.horaInicio().isBefore(fin) && inicio.isBefore(bloque.horaFin());
+        return false;
     }
 
 }

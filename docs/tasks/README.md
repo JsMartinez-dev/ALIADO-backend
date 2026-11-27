@@ -74,7 +74,7 @@ No sustituir estas condiciones por un porcentaje genérico de cobertura. No intr
 
 - El modelo entregado tiene 42 tablas, pero no se recibieron los SQL V1–V6. Está planificada su recuperación/reconstrucción y comparación; no hay base creada por este trabajo.
 - Falta ventana temporal explícita en solicitud para matching horario; cerrar D-03 antes de prometer compatibilidad completa.
-- El esquema no incluye tokens de dispositivo push, precio de propuesta ni detalle de checklist por paso. Cualquier incorporación requiere contrato y migración aprobados.
+- El esquema no incluye tokens de dispositivo push ni detalle de checklist por paso. La tarifa de propuesta queda incorporada por decisión D-09 como `tarifaCop`; pagos, comisiones y anticipos siguen fuera del MVP.
 - La revisión administrativa de documentos necesita cerrar API/metadata de revisión. El manual tampoco especifica todo el DDL de restricciones/índices.
 - `backend-rifas` es guía de dependencias: su Boot 4.0.5/JWT no cambia automáticamente la línea base Boot 3.3.x/sesiones opacas de ALIADO.
 - La demo React/Vite usa datos locales. Se usa para recorridos y referencia visual; el objetivo mantiene React Native + panel React y autorización real en Spring Boot.

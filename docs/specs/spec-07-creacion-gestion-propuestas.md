@@ -120,7 +120,9 @@ Como prestador, quiero retirar una propuesta que ya no puedo o no quiero cumplir
 
 ### Key Entities _(include if feature involves data)_
 
-- **Propuesta**: solicitud a la que responde, Prestador que la crea, disponibilidad indicada, mensaje opcional y estado (activa, editada, retirada, aceptada, cerrada).
+- **Propuesta**: solicitud a la que responde, Prestador que la crea, disponibilidad indicada, tarifa acordada en COP, mensaje opcional y estado (activa, editada, retirada, aceptada, cerrada).
+
+**Actualización D-09 (2026-11-25):** la tarifa `tarifaCop` es obligatoria en propuestas nuevas, entero positivo en COP; en propuestas históricas puede ser nula. El JSON debe enviar un número entero: decimales y cadenas se rechazan con `400 TARIFA_INVALIDA` antes de cualquier coerción de Jackson. En edición, `null` u omitido conserva la tarifa actual. No representa pagos, anticipos ni comisiones.
 - **Actor asignado y autorización**: solo el Prestador propietario de una propuesta puede editarla o retirarla.
 - **Notificación de propuesta recibida**: aviso generado hacia el Cliente al crearse una propuesta.
 

@@ -248,6 +248,7 @@ CREATE TABLE propuestas (
                             prestador_id         UUID         NOT NULL REFERENCES usuarios (id),
                             disponibilidad       VARCHAR(255) NOT NULL,
                             mensaje              VARCHAR(1000),                                   -- nullable
+                            tarifa_cop           INTEGER      CHECK (tarifa_cop IS NULL OR tarifa_cop > 0), -- nullable solo para históricos
                             estado               VARCHAR(20)  NOT NULL
                                 CHECK (estado IN ('ACTIVA', 'RETIRADA', 'ACEPTADA', 'CERRADA')),
                             fecha_creacion       TIMESTAMPTZ  NOT NULL,

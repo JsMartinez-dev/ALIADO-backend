@@ -4,6 +4,8 @@ import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.useca
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.EliminarServicioPortafolioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.CrearCompromisoAgendaUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConsultarVistaPreviaPerfilUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConsultarPerfilPropioUseCase;
+import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.service.ConsultarPerfilPropioService;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ConfigurarDisponibilidadUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.AgregarServicioPortafolioUseCase;
 import com.sebastian.spring.mas.aliado.aliado.modules.perfiles.application.usecase.ActualizarCompromisoAgendaUseCase;
@@ -67,6 +69,15 @@ public class PerfilProfesionalUseCaseConfig {
         var transaction = new TransactionTemplate(transactionManager);
         transaction.setReadOnly(true);
         return command -> transaction.execute(status -> service.ejecutar(command));
+    }
+
+    @Bean
+    public ConsultarPerfilPropioUseCase consultarPerfilPropioUseCase(
+            PerfilProfesionalRepository perfiles, PlatformTransactionManager transactionManager) {
+        var service = new ConsultarPerfilPropioService(perfiles);
+        var transaction = new TransactionTemplate(transactionManager);
+        transaction.setReadOnly(true);
+        return prestadorId -> transaction.execute(status -> service.ejecutar(prestadorId));
     }
 
     @Bean

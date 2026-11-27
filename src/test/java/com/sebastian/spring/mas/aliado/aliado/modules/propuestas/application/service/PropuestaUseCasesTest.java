@@ -29,7 +29,7 @@ class PropuestaUseCasesTest {
         return new CrearPropuestaService(repo, id -> Optional.of(solicitud(estado)), (s,p) -> compatible,
                 eventos::add, disponibilidad, mensaje);
     }
-    private CrearPropuestaCommand command(String d, String m) { return new CrearPropuestaCommand(prestador, solicitudId, d, m); }
+    private CrearPropuestaCommand command(String d, String m) { return new CrearPropuestaCommand(prestador, solicitudId, d, m, 250000); }
     private Propuesta propuesta(EstadoPropuesta estado) {
         var ahora = OffsetDateTime.now();
         return new Propuesta(UUID.randomUUID(), solicitudId, prestador, "Lunes", "Mensaje", estado, ahora, ahora, 4);
@@ -83,21 +83,21 @@ class PropuestaUseCasesTest {
     @Test void editarConservaOmitidosYVersion() {
         var actual=propuesta(EstadoPropuesta.ACTIVA); repo.guardar(actual);
         var service=new EditarPropuestaService(repo,disponibilidad,mensaje);
-        var result=service.ejecutar(new EditarPropuestaCommand(actual.id(),prestador,null,"Nuevo"));
+        var result=service.ejecutar(new EditarPropuestaCommand(actual.id(),prestador,null,"Nuevo",250000));
         assertEquals("Lunes",result.disponibilidad()); assertEquals("Nuevo",result.mensaje());
         assertEquals(4,repo.porId(actual.id()).orElseThrow().version());
     }
     @Test void editarAjenaEInexistenteUsanMismoError() {
         var actual=propuesta(EstadoPropuesta.ACTIVA);repo.guardar(actual);
         var service=new EditarPropuestaService(repo,disponibilidad,mensaje);
-        var ajena=assertThrows(RecursoPropuestaNoEncontradoException.class,()->service.ejecutar(new EditarPropuestaCommand(actual.id(),UUID.randomUUID(),null,"Otro")));
-        var ausente=assertThrows(RecursoPropuestaNoEncontradoException.class,()->service.ejecutar(new EditarPropuestaCommand(UUID.randomUUID(),prestador,null,"Otro")));
+        var ajena=assertThrows(RecursoPropuestaNoEncontradoException.class,()->service.ejecutar(new EditarPropuestaCommand(actual.id(),UUID.randomUUID(),null,"Otro",250000)));
+        var ausente=assertThrows(RecursoPropuestaNoEncontradoException.class,()->service.ejecutar(new EditarPropuestaCommand(UUID.randomUUID(),prestador,null,"Otro",250000)));
         assertEquals(ajena.codigo(),ausente.codigo()); assertEquals(actual,repo.porId(actual.id()).orElseThrow());
     }
     @Test void editarInactivaNoGuarda() {
         for(var estado: List.of(EstadoPropuesta.RETIRADA,EstadoPropuesta.ACEPTADA,EstadoPropuesta.CERRADA)) {
             var actual=propuesta(estado);repo.guardar(actual);
-            assertThrows(PropuestaNoActivaException.class,()->new EditarPropuestaService(repo,disponibilidad,mensaje).ejecutar(new EditarPropuestaCommand(actual.id(),prestador,"Martes",null)));
+            assertThrows(PropuestaNoActivaException.class,()->new EditarPropuestaService(repo,disponibilidad,mensaje).ejecutar(new EditarPropuestaCommand(actual.id(),prestador,"Martes",null,250000)));
             assertEquals(actual,repo.porId(actual.id()).orElseThrow());
         }
     }
@@ -126,6 +126,25 @@ class PropuestaUseCasesTest {
             assertThrows(PropuestaNoActivaException.class,()->propuesta(estado).editada("Martes",null,OffsetDateTime.now()));
         }
     }
+    @Test void tarifaObligatoriaEnCreacionYPositiva() {
+        assertThrows(DatosPropuestaInvalidosException.class, () -> crear(EstadoSolicitud.PUBLICADA,true)
+                .ejecutar(new CrearPropuestaCommand(prestador,solicitudId,"Lunes",null,null)));
+        assertThrows(DatosPropuestaInvalidosException.class, () -> crear(EstadoSolicitud.PUBLICADA,true)
+                .ejecutar(new CrearPropuestaCommand(prestador,solicitudId,"Lunes",null,0)));
+        assertThrows(DatosPropuestaInvalidosException.class, () -> crear(EstadoSolicitud.PUBLICADA,true)
+                .ejecutar(new CrearPropuestaCommand(prestador,solicitudId,"Lunes",null,-1)));
+        var result=crear(EstadoSolicitud.PUBLICADA,true)
+                .ejecutar(new CrearPropuestaCommand(prestador,solicitudId,"Lunes",null,250000));
+        assertEquals(250000,result.tarifaCop());
+    }
+
+    @Test void editarActualizaTarifa() {
+        var actual=propuesta(EstadoPropuesta.ACTIVA); repo.guardar(actual);
+        var result=new EditarPropuestaService(repo,disponibilidad,mensaje)
+                .ejecutar(new EditarPropuestaCommand(actual.id(),prestador,null,null,180000));
+        assertEquals(180000,result.tarifaCop());
+    }
+
     static class Repo implements PropuestaRepository {
         final Map<UUID,Propuesta> datos=new HashMap<>();
         public Optional<Propuesta> porId(UUID id){return Optional.ofNullable(datos.get(id));}

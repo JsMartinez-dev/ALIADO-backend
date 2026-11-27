@@ -18,6 +18,7 @@ public class EditarPropuestaService implements EditarPropuestaUseCase {
         }
         String nuevaDisponibilidad = command.disponibilidad() == null ? null : disponibilidad.ejecutar(command.disponibilidad());
         String nuevoMensaje = mensaje.ejecutar(command.mensaje());
-        return PropuestaResult.desde(propuestas.guardar(actual.editada(nuevaDisponibilidad, nuevoMensaje, OffsetDateTime.now())));
+        Integer nuevaTarifa = ValidarTarifaPropuesta.validar(command.tarifaCop(), false);
+        return PropuestaResult.desde(propuestas.guardar(actual.editada(nuevaDisponibilidad, nuevoMensaje, nuevaTarifa, OffsetDateTime.now())));
     }
 }
